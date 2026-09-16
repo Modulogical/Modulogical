@@ -1,0 +1,100 @@
+{
+    "Chats": [
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Hey",
+            "response": "Hello. How can I help you?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Hi",
+            "response": "Hello. What do you need assistance with?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Ha",
+            "response": "Hello. What do you need assistance with?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Bs",
+            "response": "What is \u201cBs\u201d? Can you elaborate on what you\u2019re referring to?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Ahhaja",
+            "response": "Ahhaja. Can you elaborate on what you require?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Kakaudbd",
+            "response": "What is \u201cKakaudbd\u201d? Can you clarify what you mean?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Nsnsns",
+            "response": "What is \u201cnsnsns\u201d? Can you provide context?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Bsbsbs",
+            "response": "What is \u201cBsbsbs\u201d? Please explain."
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Nsbsbs",
+            "response": "What is \u201cnsbsbs\u201d? Can you tell me what you\u2019re asking about?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Nsnzbz",
+            "response": "What is \u201cnsnzbz\u201d?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Hsbsbsb",
+            "response": "What is \u201cHsbsbsb\u201d? Can you provide more information?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Dkkdkdjs",
+            "response": "What is \u201cdkkdkdjs\u201d? Can you tell me what you\u2019re asking about?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Snsnsns",
+            "response": "What is \u201cnsnsns\u201d? Can you provide context?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Nznznznz",
+            "response": "What is \u201cnznznznz\u201d? Can you tell me what you\u2019re asking about?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Tickle",
+            "response": "What is \u201cTickle\u201d? Can you describe what you mean by that?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "I will end u atlas",
+            "response": "I will end you, Atlas. Can you clarify what you intend?"
+        }
+    ]
+}

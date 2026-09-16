@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"> 
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>chat</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #f4f4f4;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .box {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            height: auto;
+            display: flexbox;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        input, button {
+            width: 99%;
+            box-sizing: border-box;
+            padding: 10px;
+            margin-top: 8px;
+            margin-bottom: 12px;
+            font-size: 16px;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        #message {
+            min-height: 50px;
+            min-width: 100%;
+            resize: vertical;
+        }
+
+         #status {
+            white-space: pre-wrap;
+        }
+        .nav-button {
+           display: inline-block;
+           padding: 12px 20px;
+           margin: 5px;
+           background: #ddd;
+           color: black;
+           text-decoration: none;
+           border: 1px solid #888;
+           border-radius: 4px;
+        }
+
+        .nav-button:hover {
+           background: #ccc;
+        }
+
+        .model-button {
+            max-width: fit-content;
+            font-size: 10px;
+        }
+        .context-box {
+            height: 300px;
+            overflow-y: auto;
+        }
+
+        .context-message {
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #ddd;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        .context-message strong {
+            display: block;
+            margin-bottom: 3px;
+        }
+    </style>
+</head>
+<body>
+    <a href="/modules" class="nav-button">Modules</a>
+    <div class="box">
+        <h2>Chat</h2>
+        <div class="context-box" id="context-box" style="display: none;">
+            <h3>Context</h3>
+            <div id="context-messages"></div>
+        </div>
+        <textarea id="message" placeholder="Message"></textarea> 
+        <label for="temperature">
+    Temperature: <span id="temperatureValue">0.2</span>
+</label>
+
+<input
+    type="range"
+    id="temperature"
+    min="0"
+    max="1"
+    step="0.01"
+    value="0.2"
+>
+        <button class="model-button" onclick="efficient()">Efficient</button>
+        <button onclick="chat()">Send</button>
+        <p id="messages"><b>Default Reasoning:</b> Efficient</p>
+    </div>
+    <script>
+        const API = window.location.protocol === "file:" 
+    ? "http://localhost:81" 
+    : "https://most-foil-outweigh.ngrok-free.dev";
+
+    const token = localStorage.getItem("atlas_token");
+    localStorage
+if (!token) {
+    window.location.href = "/";
+}
+if (token === undefined) {
+    window.location.href = "/";
+}
+        async function checkLogin() {
+    const token = localStorage.getItem("atlas_token");
+
+    if (!token) {
+        window.location.href = "/";
+        return;
+    }
+
+    const response = await fetch(
+        API + "/auth/check?token=" + encodeURIComponent(token)
+    );
+
+    const result = await response.json();
+
+    if (!result.valid) {
+        localStorage.removeItem("atlas_token");
+        window.location.href = "/";
+    }
+}
+
+checkLogin();
+
+        async function efficient() {
+            const model = localStorage.setItem('model', 'YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E');
+           document.getElementById("messages").innerHTML = 
+            `<p><b>Selected Reasoning:</b> Efficient</p>`;
+        }
+        const contextBox = document.getElementById("context-box");
+        const contextMessages = document.getElementById("context-messages");
+
+
+        function addContextMessage(role, content) {
+            // Show the context box whenever a context message exists.
+            contextBox.style.display = "block";
+            const messageElement = document.createElement("div");
+            messageElement.className = "context-message";
+
+            const roleElement = document.createElement("strong");
+            roleElement.textContent = role + ":";
+            
+
+            const contentElement = document.createElement("div");
+            contentElement.textContent = content;
+
+            messageElement.appendChild(roleElement);
+            messageElement.appendChild(contentElement);
+            contextMessages.appendChild(messageElement);
+            contextBox.scrollTop = contextBox.scrollHeight;
+
+            return contentElement;
+        }
+
+
+        async function loadOriginalContext() {
+            const token = localStorage.getItem("atlas_token");
+
+            try {
+                const response = await fetch(
+                    API + "/context?token=" + encodeURIComponent(token),
+                    {
+                        headers: {
+                            "ngrok-skip-browser-warning": "69420"
+                        }
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!result.valid) {
+                    localStorage.removeItem("atlas_token");
+                    window.location.href = "/";
+                    return;
+                }
+
+                contextMessages.innerHTML = "";
+
+                if (result.messages.length > 0) {
+    contextBox.style.display = "block";
+
+    for (const message of result.messages) {
+        addContextMessage(message.role, message.content);
+    }
+
+    contextBox.scrollTop = contextBox.scrollHeight;
+};
+
+            } catch (error) {
+                console.error("Could not load context:", error);
+            }
+        }
+
+
+        loadOriginalContext();
+
+        async function chat() {
+          const message = document.getElementById("message").value;
+          const token = localStorage.getItem("atlas_token");
+          document.getElementById("message").value = "";
+          if (!message.trim()) {
+              return;
+          }
+          
+          addContextMessage("You", message);
+          const atlasContext = addContextMessage("Atlas", "");
+          const response = await fetch(API + "/chat",
+         {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "ngrok-skip-browser-warning": "69420"
+            },
+            body: JSON.stringify({
+                token: token,
+                message: message,
+                model: 'YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E',
+                temperature: document.getElementById("temperatureValue").textContent
+            })
+
+        }
+    );
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let output = "";
+            const model = response.headers.get("X-Atlas-Model");
+            const outputElement = document.getElementById("messages");
+
+            while (true) {
+                const { value, done } = await reader.read();
+                if (done) break;
+                const chunk = decoder.decode(value, { stream: true });
+                output += chunk;
+                atlasContext.textContent = output;
+
+                contextBox.scrollTop = contextBox.scrollHeight;
+            }
+
+            const finalChunk = decoder.decode();
+            output += finalChunk;
+            atlasContext.textContent = output;
+            contextBox.scrollTop = contextBox.scrollHeight;
+        }
+    </script>
+
+
+</body>

@@ -1,0 +1,10 @@
+{
+    "Chats": [
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Yoo",
+            "response": "Hello Cami, how can I help you today?"
+        }
+    ]
+}

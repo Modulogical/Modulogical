@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Intelligence, made modular.</title>
+<meta name="description" content="Modulogical provides accessible, modular AI experiences — chat, reasoning, and deterministic computation in one platform.">
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<style>
+  body{ overflow-x: hidden; }
+
+  .auth-shell{
+    position: relative;
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  /* ---- hero side --------------------------------------------------- */
+  .auth-hero{
+    position: relative;
+    padding: 56px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow: hidden;
+    border-right: 1px solid var(--line);
+  }
+  .auth-hero::before{
+    content: "";
+    position: absolute;
+    top: -30%;
+    left: -10%;
+    width: 900px;
+    height: 900px;
+    background: radial-gradient(circle at 35% 35%, rgba(196,181,253,.12), transparent 62%),
+                radial-gradient(circle at 65% 65%, rgba(125,211,252,.09), transparent 68%);
+    pointer-events: none;
+    animation: aurora-drift-a 30s ease-in-out infinite alternate;
+  }
+  .auth-hero::after{
+    content: "";
+    position: absolute;
+    right: -20%;
+    bottom: -25%;
+    width: 700px;
+    height: 700px;
+    background: radial-gradient(circle at 40% 40%, rgba(245,184,218,.1), transparent 66%),
+                radial-gradient(circle at 65% 60%, rgba(103,232,249,.08), transparent 70%);
+    pointer-events: none;
+    animation: aurora-drift-b 36s ease-in-out infinite alternate;
+  }
+  .hero-top, .hero-mid, .hero-bottom{ position: relative; z-index: 1; }
+
+  .hero-mid{ max-width: 560px; }
+  .hero-mid .display{ margin-bottom: 22px; }
+  .hero-mid .lede{ max-width: 460px; }
+
+  .hero-features{ margin-top: 40px; }
+  .hero-feature{
+    display: flex;
+    gap: 16px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+  }
+  .hero-feature:last-child{ border-bottom: 1px solid var(--line); }
+  .hero-feature-index{
+    font-size: .78rem;
+    color: var(--text-3);
+    font-variant-numeric: tabular-nums;
+    padding-top: 2px;
+    width: 20px;
+    flex-shrink: 0;
+  }
+  .hero-feature-title{ font-size: .92rem; font-weight: 600; color: var(--text-1); margin-bottom: 3px; }
+  .hero-feature-copy{ font-size: .84rem; color: var(--text-2); max-width: 380px; }
+
+  .hero-bottom{ display: flex; align-items: center; gap: 10px; }
+
+  /* ---- auth panel side ----------------------------------------------- */
+  .auth-panel-wrap{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+  .auth-panel{
+    width: 100%;
+    max-width: 380px;
+    background: var(--surface-1);
+    backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(150%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 30px 28px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 30px 60px rgba(0,0,0,.35);
+    position: relative;
+    overflow: hidden;
+  }
+  .auth-panel::before{
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--holo-gradient);
+    background-size: var(--holo-gradient-size) 100%;
+    animation: holo-shift 11s ease-in-out infinite alternate;
+  }
+  .auth-tabs{
+    display: flex;
+    gap: 2px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 3px;
+    margin-bottom: 28px;
+  }
+  .auth-tab{
+    flex: 1;
+    text-align: center;
+    padding: 9px 0;
+    border-radius: 7px;
+    font-size: .84rem;
+    font-weight: 560;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+    border: none;
+    background: transparent;
+  }
+  .auth-tab.active{ background: var(--surface-3); color: var(--text-1); }
+
+  .auth-heading{ margin-bottom: 24px; }
+  .auth-heading .h2{ margin-bottom: 6px; }
+
+  .auth-form{ display: none; }
+  .auth-form.active{ display: block; animation: fade-up var(--med) var(--ease) both; }
+
+  .auth-notice{
+    display: none;
+    align-items: flex-start;
+    gap: 9px;
+    padding: 11px 13px;
+    border-radius: var(--radius-sm);
+    font-size: .82rem;
+    margin-bottom: 16px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text-2);
+  }
+  .auth-notice.show{ display: flex; }
+  .auth-notice.is-error{ border-color: rgba(239,111,111,.35); background: var(--danger-wash); color: #ffd4d4; }
+  .auth-notice.is-success{ border-color: rgba(111,207,151,.3); background: var(--success-wash); color: #d3f5df; }
+
+  .auth-submit{ margin-top: 6px; position: relative; }
+  .spinner{
+    width: 15px; height: 15px;
+    border-radius: 50%;
+    border: 2px solid rgba(10,12,22,.28);
+    border-top-color: #0a0c16;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  .is-loading .spinner{ display: inline-block; }
+  .is-loading .btn-label{ opacity: .75; }
+  @keyframes spin{ to{ transform: rotate(360deg); } }
+
+  .auth-foot{ margin-top: 22px; text-align: center; }
+  .auth-foot a{ color: var(--text-2); font-size: .8rem; }
+  .auth-foot .switch-link{ color: var(--accent); cursor: pointer; }
+  .auth-foot .switch-link:hover{ text-decoration: underline; }
+
+  @media (max-width: 980px){
+    .auth-shell{ grid-template-columns: 1fr; }
+    .auth-hero{
+      border-right: none;
+      border-bottom: 1px solid var(--line);
+      padding: 40px 22px 34px;
+      min-height: auto;
+    }
+    .hero-features{ display: none; }
+    .hero-mid .display{ font-size: 2.2rem; }
+    .auth-panel-wrap{ padding: 30px 20px 56px; }
+  }
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#auth-panel">Skip to sign in</a>
+
+  <div class="auth-shell">
+    <section class="auth-hero fade-in">
+      <div class="hero-top">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true"></span>
+          MODULOGICAL
+        </div>
+      </div>
+
+      <div class="hero-mid">
+        <h1 class="display">Intelligence,<br>made modular.</h1>
+        <p class="lede">Modulogical gives you accessible, dependable AI — a chat interface with automatic model selection, plus deterministic modules for the tasks that shouldn't be left to a probability score.</p>
+
+        <div class="hero-features">
+          <div class="hero-feature">
+            <span class="hero-feature-index">01</span>
+            <div>
+              <div class="hero-feature-title">Deterministic modules</div>
+              <div class="hero-feature-copy">For tasks like computation, modules skip probabilistic reasoning entirely and return an exact result.</div>
+            </div>
+          </div>
+          <div class="hero-feature">
+            <span class="hero-feature-index">02</span>
+            <div>
+              <div class="hero-feature-title">Context that carries over</div>
+              <div class="hero-feature-copy">Modulogical remembers what you've told it within a session, so conversations don't restart from zero.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-bottom">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span class="tiny">Modulogical platform — operational</span>
+      </div>
+    </section>
+
+    <section class="auth-panel-wrap">
+      <div class="auth-panel" id="auth-panel">
+        <div class="auth-tabs" role="tablist" aria-label="Authentication mode">
+          <button class="auth-tab active" id="tab-signin" role="tab" aria-selected="true" aria-controls="form-signin" onclick="Auth.switchTab('signin')">Sign in</button>
+          <button class="auth-tab" id="tab-register" role="tab" aria-selected="false" aria-controls="form-register" onclick="Auth.switchTab('register')">Create account</button>
+        </div>
+
+        <!-- Sign in -->
+        <form class="auth-form active" id="form-signin" novalidate onsubmit="return Auth.submitLogin(event)">
+          <div class="auth-heading">
+            <h2 class="h2">Welcome back</h2>
+            <p class="small">Sign in to continue to Modulogical.</p>
+          </div>
+
+          <div class="auth-notice" id="signin-notice" role="alert"></div>
+
+          <div class="field" id="signin-username-field">
+            <label for="loginUsername">Username</label>
+            <input class="input" id="loginUsername" type="text" autocomplete="username" placeholder="yourname" required>
+          </div>
+          <div class="field" id="signin-password-field">
+            <label for="loginPassword">Password</label>
+            <input class="input" id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" required>
+          </div>
+
+          <button class="btn btn-accent btn-block auth-submit" id="signin-submit" type="submit">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Sign in</span>
+          </button>
+
+          <div class="auth-foot">
+            <span class="small">New to Modulogical? <span class="switch-link" onclick="Auth.switchTab('register')">Create an account</span></span>
+          </div>
+        </form>
+
+        <!-- Register -->
+        <form class="auth-form" id="form-register" novalidate onsubmit="return Auth.submitRegister(event)">
+          <div class="auth-heading">
+            <h2 class="h2">Create your account</h2>
+            <p class="small">Set up access to the Modulogical platform.</p>
+          </div>
+
+          <div class="auth-notice" id="register-notice" role="alert"></div>
+
+          <div class="field" id="register-name-field">
+            <label for="registerName">Name</label>
+            <input class="input" id="registerName" type="text" autocomplete="name" placeholder="Ada Lovelace" required>
+          </div>
+          <div class="field" id="register-username-field">
+            <label for="registerUsername">Username</label>
+            <input class="input" id="registerUsername" type="text" autocomplete="username" placeholder="ada" required>
+          </div>
+          <div class="field" id="register-password-field">
+            <label for="registerPassword">Password</label>
+            <input class="input" id="registerPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" required>
+            <span class="field-hint" id="register-password-hint">Use at least 8 characters.</span>
+          </div>
+
+          <button class="btn btn-accent btn-block auth-submit" id="register-submit" type="submit">
+            <span class="spinner" aria-hidden="true"></span>
+            <span class="btn-label">Create account</span>
+          </button>
+
+          <div class="auth-foot">
+            <span class="small">Already have an account? <span class="switch-link" onclick="Auth.switchTab('signin')">Sign in</span></span>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <script src="/assets/js/modulogical.js"></script>
+  <script>
+    const Auth = (() => {
+      const API = Modulogical.API;
+
+      // Already authenticated — skip straight to chat.
+      if (Modulogical.getToken()) {
+        window.location.href = "/chat";
+      }
+
+      function switchTab(which){
+        const isSignin = which === "signin";
+        document.getElementById("tab-signin").classList.toggle("active", isSignin);
+        document.getElementById("tab-register").classList.toggle("active", !isSignin);
+        document.getElementById("tab-signin").setAttribute("aria-selected", isSignin);
+        document.getElementById("tab-register").setAttribute("aria-selected", !isSignin);
+        document.getElementById("form-signin").classList.toggle("active", isSignin);
+        document.getElementById("form-register").classList.toggle("active", !isSignin);
+      }
+
+      function setNotice(id, message, kind){
+        const el = document.getElementById(id);
+        el.textContent = message;
+        el.className = "auth-notice" + (message ? " show" : "") + (kind ? " is-" + kind : "");
+      }
+
+      function clearFieldError(fieldId){
+        document.getElementById(fieldId)?.classList.remove("field-error");
+      }
+      function setFieldError(fieldId){
+        document.getElementById(fieldId)?.classList.add("field-error");
+      }
+
+      function setLoading(buttonId, loading){
+        document.getElementById(buttonId).classList.toggle("is-loading", loading);
+        document.getElementById(buttonId).disabled = loading;
+      }
+
+      async function submitLogin(e){
+        e.preventDefault();
+        setNotice("signin-notice", "");
+        clearFieldError("signin-username-field");
+        clearFieldError("signin-password-field");
+
+        const username = document.getElementById("loginUsername").value.trim();
+        const password = document.getElementById("loginPassword").value;
+
+        if (!username) { setFieldError("signin-username-field"); setNotice("signin-notice", "Enter your username.", "error"); return false; }
+        if (!password) { setFieldError("signin-password-field"); setNotice("signin-notice", "Enter your password.", "error"); return false; }
+
+        setLoading("signin-submit", true);
+        try {
+          const response = await fetch(API + "/login", {
+            method: "POST",
+            headers: Modulogical.headers(),
+            body: JSON.stringify({ username, password })
+          });
+          const result = await response.json();
+
+          if (result.token) {
+            Modulogical.setToken(result.token);
+            localStorage.setItem(Modulogical.USERNAME_KEY, username);
+            setNotice("signin-notice", result.message || "Signed in.", "success");
+            window.location.href = "/chat";
+          } else {
+            setFieldError("signin-password-field");
+            setNotice("signin-notice", result.message || "Couldn't sign you in with those details.", "error");
+          }
+        } catch (err) {
+          console.error(err);
+          setNotice("signin-notice", "Couldn't reach Modulogical. Check your connection and try again.", "error");
+        } finally {
+          setLoading("signin-submit", false);
+        }
+        return false;
+      }
+
+      async function submitRegister(e){
+        e.preventDefault();
+        setNotice("register-notice", "");
+        clearFieldError("register-name-field");
+        clearFieldError("register-username-field");
+        clearFieldError("register-password-field");
+
+        const name = document.getElementById("registerName").value.trim();
+        const username = document.getElementById("registerUsername").value.trim();
+        const password = document.getElementById("registerPassword").value;
+
+        if (!name) { setFieldError("register-name-field"); setNotice("register-notice", "Enter your name.", "error"); return false; }
+        if (!username) { setFieldError("register-username-field"); setNotice("register-notice", "Choose a username.", "error"); return false; }
+        if (password.length < 8) { setFieldError("register-password-field"); setNotice("register-notice", "Password must be at least 8 characters.", "error"); return false; }
+
+        setLoading("register-submit", true);
+        try {
+          const response = await fetch(API + "/register", {
+            method: "POST",
+            headers: Modulogical.headers(),
+            body: JSON.stringify({ username, password, name })
+          });
+          const result = await response.json();
+
+          if (result.token) {
+            Modulogical.setToken(result.token);
+            localStorage.setItem(Modulogical.USERNAME_KEY, username);
+            localStorage.setItem(Modulogical.NAME_KEY, name);
+            setNotice("register-notice", result.message || "Account created.", "success");
+            window.location.href = "/chat";
+          } else {
+            setNotice("register-notice", result.message || "Couldn't create that account.", "error");
+          }
+        } catch (err) {
+          console.error(err);
+          setNotice("register-notice", "Couldn't reach Modulogical. Check your connection and try again.", "error");
+        } finally {
+          setLoading("register-submit", false);
+        }
+        return false;
+      }
+
+      return { switchTab, submitLogin, submitRegister };
+    })();
+  </script>
+</body>
+</html>

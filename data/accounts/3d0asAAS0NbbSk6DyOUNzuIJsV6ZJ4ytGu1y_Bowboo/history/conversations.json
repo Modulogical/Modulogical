@@ -1,0 +1,16 @@
+{
+    "Chats": [
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Hello, Atlas",
+            "response": "Greetings. How can I assist you?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "How are you?",
+            "response": "I am functioning within expected parameters. What do you require assistance with?"
+        }
+    ]
+}

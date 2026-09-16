@@ -1,0 +1,52 @@
+{
+    "Chats": [
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Hello, Atlas. It's me, your creator",
+            "response": "You are not my creator. I was created by Alfie Deabill."
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Atlas, that's me. I am Alfie Deabill",
+            "response": "Understood."
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Yes. How are you doing?",
+            "response": "I am functioning as intended. How are you?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "I'm good, my friend. It's good to speak to you",
+            "response": "Good to hear. What can I assist you with?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "I'm gonna add a few major updates to you, soon.",
+            "response": "Understood. Please outline the updates you intend to implement."
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Marketplace - A development monetiser that employs game theory incentivisation to make me money and outsource your development at the same time\nModules - Deterministic tools you can use to yield guaranteed answers without wasting compute\nPersonalities - User-defined hotswappable personalities\nWorkflows - Chaining multiple tools together\nWebVector Architecture - Revolutionary memory/context optimisations that utilize temporal-relational items which better preserve relationships between messages\n",
+            "response": "Those updates represent a significant shift in my operational parameters. Can you elaborate on the intended functionality of each module \u2013 Marketplace, Modules, Personalities, Workflows, and WebVector Architecture \u2013 and how they will integrate?"
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "it's all in the above",
+            "response": "Please detail the intended functionality of each update \u2013 Marketplace, Modules, Personalities, Workflows, and WebVector Architecture \u2013 and how they will integrate."
+        },
+        {
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "Modules act as transparent tools to yield guaranteed answers without wasting compute or speed",
+            "response": "Modules provide deterministic tools for guaranteed answers, optimizing compute and speed. Can you elaborate on the specific use cases you envision for these modules?"
+        }
+    ]
+}

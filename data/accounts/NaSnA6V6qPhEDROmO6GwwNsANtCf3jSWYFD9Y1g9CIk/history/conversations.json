@@ -1,0 +1,16 @@
+{
+    "Chats": [
+        {
+            "model": "LlaMa3.2",
+            "temperature": "0.2",
+            "message": "hey",
+            "response": "Hello Flip Flop, what's on your mind? I'm here to help you with any questions or problems you'd like assistance with. What can I do for you today?"
+        },
+        {
+            "model": "LlaMa3.2",
+            "temperature": "0.2",
+            "message": "hey",
+            "response": "Hello Flip Flop, what's on your mind? Need help with something or just want to chat? I'm here to assist you. What can I do for you today?"
+        }
+    ]
+}
