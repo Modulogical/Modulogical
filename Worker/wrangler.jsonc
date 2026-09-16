@@ -7,5 +7,12 @@
   "assets": {
     "directory": "./frontend",
     "binding": "ASSETS"
-  }
+  },
+
+  "routes": [
+    {
+      "pattern": "modulogical.com",
+      "custom_domain": true
+    }
+  ]
 }

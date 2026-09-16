@@ -293,6 +293,12 @@
             "model": "gemma3",
             "temperature": "0.2",
             "message": "Hello, Atlas"
+        },
+        {
+            "id": "fMPJcDokqcpLx-Lk-8xuc9mzwNZWOnlzWW9R-kzyia8",
+            "model": "gemma3",
+            "temperature": "0.2",
+            "message": "I'm connecting you to the website soon"
         }
     ]
 }
