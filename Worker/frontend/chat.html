@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Chat</title>
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<style>
+  html, body{ height: 100%; overflow: hidden; }
+  .workspace{
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    height: 100vh;
+  }
+
+  /* ---- sidebar --------------------------------------------------- */
+  .sidebar{
+    background: rgba(10,9,16,.55);
+    backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+  }
+  .sidebar-brand{
+    display: flex; align-items: center; gap: 9px;
+    padding: 6px 6px 18px;
+    font-weight: 650; font-size: .92rem; letter-spacing: -0.01em;
+  }
+  .new-chat-btn{
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    width: 100%; height: 38px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text-1);
+    font-size: .84rem; font-weight: 550;
+    cursor: pointer;
+    transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+    margin-bottom: 18px;
+  }
+  .new-chat-btn:hover{ border-color: var(--line-strong); background: var(--surface-3); }
+  .new-chat-btn svg{ width: 14px; height: 14px; }
+
+  .sidebar-section-label{ font-size: .7rem; color: var(--text-3); padding: 0 8px; margin-bottom: 6px; }
+  .sidebar-nav{ display: flex; flex-direction: column; gap: 2px; margin-bottom: auto; }
+  .sidebar-link{
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: var(--radius-sm);
+    font-size: .85rem;
+    color: var(--text-2);
+    transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+  }
+  .sidebar-link svg{ width: 16px; height: 16px; flex-shrink: 0; }
+  .sidebar-link:hover{ background: var(--surface-2); color: var(--text-1); }
+  .sidebar-link.active{ background: var(--surface-2); color: var(--text-1); }
+
+  .sidebar-foot{ border-top: 1px solid var(--line); padding-top: 12px; margin-top: 12px; }
+  .sidebar-account{
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px; border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: background var(--fast) var(--ease);
+  }
+  .sidebar-account:hover{ background: var(--surface-2); }
+  .sidebar-account .account-name{ font-size: .82rem; max-width: 130px; }
+  .sidebar-logout{
+    width: 100%; margin-top: 6px;
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px; border-radius: var(--radius-sm);
+    font-size: .82rem; color: var(--text-2);
+    background: transparent; border: none; cursor: pointer;
+    transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+  }
+  .sidebar-logout:hover{ background: var(--danger-wash); color: var(--danger); }
+  .sidebar-logout svg{ width: 15px; height: 15px; }
+
+  /* mobile top bar + drawer */
+  .mobile-topbar{ display: none; }
+  .sidebar-scrim{ display: none; }
+
+  /* ---- main column ------------------------------------------------ */
+  .chat-main{
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: 100vh;
+  }
+
+  .thread-scroll{
+    flex: 1;
+    overflow-y: auto;
+    padding: 28px 0 12px;
+  }
+  .thread-inner{ max-width: 760px; margin: 0 auto; padding: 0 28px; }
+
+  .thread-empty{
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 8px;
+    padding: 40px 20px;
+  }
+  .thread-empty .h2{ margin-bottom: 4px; }
+
+  .msg{ display: flex; margin-bottom: 22px; animation: fade-up var(--med) var(--ease) both; }
+  .msg-user{ justify-content: flex-end; }
+  .msg-bubble{ max-width: 78%; }
+  .msg-user .msg-bubble{
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 14px 14px 3px 14px;
+    padding: 11px 15px;
+    font-size: .92rem;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .msg-assistant{ justify-content: flex-start; }
+  .msg-assistant .msg-bubble{ max-width: 100%; }
+  .msg-meta{
+    display: flex; align-items: center; gap: 7px;
+    margin-bottom: 6px;
+    font-size: .78rem; color: var(--text-3);
+  }
+  .msg-meta .mark{
+    width: 15px; height: 15px; border-radius: 4px;
+    background: var(--holo-gradient);
+    background-size: var(--holo-gradient-size) 100%;
+    border: 1px solid var(--line-strong);
+    position: relative; flex-shrink: 0;
+    animation: holo-shift 13s ease-in-out infinite alternate;
+  }
+  .msg-text{
+    font-size: .93rem;
+    line-height: 1.65;
+    color: var(--text-1);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .msg-text .caret{
+    display: inline-block;
+    width: 7px; height: 1em;
+    background: var(--accent);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink{ 50%{ opacity: 0; } }
+
+  /* ---- composer ----------------------------------------------------- */
+  .composer-wrap{
+    border-top: 1px solid var(--line);
+    background: linear-gradient(to top, var(--bg) 60%, transparent);
+    padding: 14px 0 20px;
+  }
+  .composer{
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+  .composer-box{
+    background: var(--surface-1);
+    backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(140%);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 10px 10px 8px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+    transition: border-color var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+  }
+  .composer-box.is-focused{
+    border-color: var(--accent-line);
+    box-shadow: 0 0 0 3px var(--accent-wash);
+  }
+  #message{
+    width: 100%;
+    background: transparent;
+    border: none;
+    resize: none;
+    color: var(--text-1);
+    font-family: var(--font);
+    font-size: .93rem;
+    line-height: 1.5;
+    padding: 6px 8px 10px;
+    max-height: 200px;
+    min-height: 24px;
+  }
+  #message:focus{ outline: none; }
+  #message::placeholder{ color: var(--text-3); }
+
+  .composer-toolbar{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 4px;
+  }
+  .composer-spacer{ flex: 1; }
+
+  .control-pill{
+    display: flex; align-items: center; gap: 7px;
+    height: 32px; padding: 0 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    font-size: .78rem;
+    color: var(--text-1);
+    cursor: pointer;
+    position: relative;
+    transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+  }
+  .control-pill:hover{ border-color: var(--line-strong); }
+  .control-pill svg{ width: 12px; height: 12px; color: var(--text-3); }
+  .control-pill .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+
+  .send-btn{
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    background: var(--holo-gradient);
+    background-size: var(--holo-gradient-size) 100%;
+    color: #14121f;
+    border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: transform var(--fast) var(--ease), opacity var(--fast) var(--ease), box-shadow var(--fast) var(--ease);
+    flex-shrink: 0;
+    animation: holo-shift 8s ease-in-out infinite alternate;
+  }
+  .send-btn:hover:not(:disabled){ box-shadow: 0 4px 18px rgba(196,181,253,.35); transform: translateY(-1px); }
+  .send-btn:active:not(:disabled){ transform: scale(.94); }
+  .send-btn:disabled{ opacity: .35; cursor: not-allowed; }
+  .send-btn svg{ width: 15px; height: 15px; }
+
+  .composer-hint{ text-align: center; margin-top: 9px; }
+
+  /* ---- popovers: model + temperature ------------------------------- */
+  .popover{
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0;
+    width: 260px;
+    background: var(--surface-2);
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    padding: 6px;
+    box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    display: none;
+    z-index: 30;
+  }
+  .popover.open{ display: block; animation: fade-up 160ms var(--ease) both; }
+  .model-option{
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: background var(--fast) var(--ease);
+  }
+  .model-option:hover{ background: var(--surface-3); }
+  .model-option.selected{ background: var(--accent-wash); }
+  .model-option .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
+  .model-option.selected .dot{ background: var(--accent); }
+  .model-option .name{ font-size: .84rem; font-weight: 560; color: var(--text-1); }
+  .model-option .desc{ font-size: .74rem; color: var(--text-2); }
+
+  .temp-popover{ width: 220px; padding: 14px 14px 10px; }
+  .temp-popover-row{ display: flex; justify-content: space-between; font-size: .78rem; color: var(--text-2); margin-bottom: 8px; }
+  .temp-popover-row b{ color: var(--text-1); }
+  input[type="range"]{
+    -webkit-appearance: none;
+    width: 100%; height: 4px;
+    border-radius: 2px;
+    background: var(--surface-3);
+    margin: 6px 0 4px;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--holo-gradient);
+    background-size: var(--holo-gradient-size) 100%;
+    cursor: pointer;
+    border: 2px solid #0a0c16;
+  }
+  input[type="range"]::-moz-range-thumb{
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--holo-gradient);
+    background-size: var(--holo-gradient-size) 100%;
+    border: 2px solid #0a0c16; cursor: pointer;
+  }
+  .temp-scale{ display: flex; justify-content: space-between; font-size: .68rem; color: var(--text-3); }
+
+  @media (max-width: 860px){
+    .workspace{ grid-template-columns: 1fr; }
+    .sidebar{
+      position: fixed; top: 0; left: 0; bottom: 0;
+      width: 250px; z-index: 60;
+      transform: translateX(-100%);
+      transition: transform var(--med) var(--ease);
+      padding-top: 14px;
+    }
+    .sidebar.open{ transform: translateX(0); }
+    .sidebar-scrim{
+      display: none;
+      position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 55;
+    }
+    .sidebar-scrim.show{ display: block; }
+    .mobile-topbar{
+      display: flex; align-items: center; gap: 10px;
+      height: 54px; padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+    }
+    .mobile-topbar button{
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      border: 1px solid var(--line); background: var(--surface-1);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mobile-topbar button svg{ width: 16px; height: 16px; }
+    .thread-inner{ padding: 0 16px; }
+    .composer{ padding: 0 14px; }
+    .msg-bubble{ max-width: 88%; }
+  }
+</style>
+</head>
+<body>
+<div class="workspace">
+  <div class="sidebar-scrim" data-scrim></div>
+
+  <aside class="sidebar" data-nav-drawer>
+    <div class="sidebar-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      MODULOGICAL
+    </div>
+
+    <button class="new-chat-btn" id="new-chat-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      New chat
+    </button>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" data-nav="chat" href="/chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Chat
+      </a>
+      <a class="sidebar-link" data-nav="modules" href="/modules">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        Modules
+      </a>
+      <a class="sidebar-link" data-nav="settings" href="/settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.4.6.8 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/></svg>
+        Settings
+      </a>
+    </nav>
+
+    <div class="sidebar-foot">
+      <a class="sidebar-account" href="/settings">
+        <span class="account-avatar" id="nav-avatar">?</span>
+        <span class="account-name" id="nav-name">Account</span>
+      </a>
+      <button class="sidebar-logout" data-logout>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        Log out
+      </button>
+    </div>
+  </aside>
+
+  <div class="chat-main">
+    <div class="mobile-topbar">
+      <button data-nav-toggle aria-label="Open navigation" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="brand" style="font-size:.88rem;"><span class="brand-mark"></span>MODULOGICAL</div>
+    </div>
+
+    <div class="thread-scroll" id="thread-scroll">
+      <div class="thread-inner" id="thread-inner">
+        <div class="thread-empty" id="thread-empty">
+          <h2 class="h2">Ask Modulogical anything</h2>
+          <p class="small" style="max-width:360px;">Auto mode picks the right model for what you ask. You can choose one yourself from the composer below.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="composer-wrap">
+      <div class="composer">
+        <div class="composer-box" id="composer-box">
+          <textarea id="message" placeholder="Message Modulogical…" rows="1" aria-label="Message Modulogical"></textarea>
+          <div class="composer-toolbar">
+            <div style="position:relative;">
+              <button class="control-pill" id="model-pill" aria-haspopup="true" aria-expanded="false">
+                <span class="dot"></span>
+                <span id="model-pill-label">Auto</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
+              <div class="popover" id="model-popover" role="listbox"></div>
+            </div>
+
+            <div style="position:relative;">
+              <button class="control-pill" id="temp-pill" aria-haspopup="true" aria-expanded="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13M9 8h6"/><circle cx="12" cy="18" r="3"/></svg>
+                <span id="temp-pill-label">0.2</span>
+              </button>
+              <div class="popover temp-popover" id="temp-popover">
+                <div class="temp-popover-row"><span>Temperature</span><b id="temp-value">0.2</b></div>
+                <input type="range" id="temperature" min="0" max="1" step="0.01" value="0.2">
+                <div class="temp-scale"><span>Precise</span><span>Creative</span></div>
+              </div>
+            </div>
+
+            <span class="composer-spacer"></span>
+            <button class="send-btn" id="send-btn" aria-label="Send message" disabled>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="composer-hint">
+          <span class="tiny" id="model-actual-hint">Auto — automatically selecting the best model</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
+(async function initChat(){
+  const token = await Modulogical.requireAuth();
+  Modulogical.initNav("chat");
+
+  const displayName = localStorage.getItem(Modulogical.NAME_KEY) || localStorage.getItem(Modulogical.USERNAME_KEY) || "Account";
+  document.getElementById("nav-name").textContent = displayName;
+  document.getElementById("nav-avatar").textContent = Modulogical.initials(displayName);
+
+  // ---- mobile drawer ---------------------------------------------------
+  const sidebar = document.querySelector(".sidebar");
+  const scrim = document.querySelector("[data-scrim]");
+  const toggle = document.querySelector("[data-nav-toggle]");
+  function closeDrawer(){ sidebar.classList.remove("open"); scrim.classList.remove("show"); toggle?.setAttribute("aria-expanded","false"); }
+  function openDrawer(){ sidebar.classList.add("open"); scrim.classList.add("show"); toggle?.setAttribute("aria-expanded","true"); }
+  toggle?.addEventListener("click", () => sidebar.classList.contains("open") ? closeDrawer() : openDrawer());
+  scrim?.addEventListener("click", closeDrawer);
+
+  // ---- elements ----------------------------------------------------
+  const threadInner = document.getElementById("thread-inner");
+  const threadScroll = document.getElementById("thread-scroll");
+  const threadEmpty = document.getElementById("thread-empty");
+  const messageEl = document.getElementById("message");
+  const sendBtn = document.getElementById("send-btn");
+  const composerBox = document.getElementById("composer-box");
+
+  function scrollToBottom(){ threadScroll.scrollTop = threadScroll.scrollHeight; }
+
+  function hideEmptyState(){ if (threadEmpty) threadEmpty.style.display = "none"; }
+
+  function addUserMessage(text){
+    hideEmptyState();
+    const wrap = document.createElement("div");
+    wrap.className = "msg msg-user";
+    wrap.innerHTML = `<div class="msg-bubble"></div>`;
+    wrap.querySelector(".msg-bubble").textContent = text;
+    threadInner.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function addAssistantMessage(){
+    hideEmptyState();
+    const wrap = document.createElement("div");
+    wrap.className = "msg msg-assistant";
+    wrap.innerHTML = `
+      <div class="msg-bubble">
+        <div class="msg-meta"><span class="mark"></span><span>Modulogical</span><span class="model-tag"></span></div>
+        <div class="msg-text"><span class="caret"></span></div>
+      </div>`;
+    threadInner.appendChild(wrap);
+    scrollToBottom();
+    return {
+      textEl: wrap.querySelector(".msg-text"),
+      tagEl: wrap.querySelector(".model-tag"),
+    };
+  }
+
+  function addStaticAssistantMessage(text){
+    hideEmptyState();
+    const wrap = document.createElement("div");
+    wrap.className = "msg msg-assistant";
+    wrap.innerHTML = `
+      <div class="msg-bubble">
+        <div class="msg-meta"><span class="mark"></span><span>Modulogical</span></div>
+        <div class="msg-text"></div>
+      </div>`;
+    wrap.querySelector(".msg-text").textContent = text;
+    threadInner.appendChild(wrap);
+  }
+
+  // ---- load prior context -------------------------------------------
+  async function loadContext(){
+    try {
+      const res = await fetch(Modulogical.API + "/context?token=" + encodeURIComponent(token), {
+        headers: Modulogical.headers(false)
+      });
+      const result = await res.json();
+      if (!result.valid) { Modulogical.clearSession(); Modulogical.goToEntry(); return; }
+
+      if (result.messages && result.messages.length > 0) {
+        for (const m of result.messages) {
+          const role = (m.role || "").toLowerCase();
+          if (role.includes("you") || role.includes("user")) {
+            addUserMessage(m.content);
+          } else {
+            addStaticAssistantMessage(m.content);
+          }
+        }
+        scrollToBottom();
+      }
+    } catch (e) {
+      console.error("Could not load context:", e);
+    }
+  }
+  loadContext();
+
+  // ---- new chat (visual reset only — no backend "clear" endpoint exists) --
+  document.getElementById("new-chat-btn").addEventListener("click", () => {
+    threadInner.querySelectorAll(".msg").forEach(el => el.remove());
+    if (threadEmpty) threadEmpty.style.display = "flex";
+    messageEl.value = "";
+    messageEl.style.height = "auto";
+    updateSendState();
+    messageEl.focus();
+  });
+
+  // ---- composer growth + focus ---------------------------------------
+  function updateSendState(){ sendBtn.disabled = messageEl.value.trim().length === 0; }
+  messageEl.addEventListener("input", () => {
+    messageEl.style.height = "auto";
+    messageEl.style.height = Math.min(messageEl.scrollHeight, 200) + "px";
+    updateSendState();
+  });
+  messageEl.addEventListener("focus", () => composerBox.classList.add("is-focused"));
+  messageEl.addEventListener("blur", () => composerBox.classList.remove("is-focused"));
+  messageEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) chat();
+    }
+  });
+  sendBtn.addEventListener("click", chat);
+
+  // ---- temperature -----------------------------------------------------
+  const slider = document.getElementById("temperature");
+  const tempValue = document.getElementById("temp-value");
+  const tempPillLabel = document.getElementById("temp-pill-label");
+  slider.addEventListener("input", function(){
+    tempValue.textContent = this.value;
+    tempPillLabel.textContent = this.value;
+  });
+
+  // ---- model popover -----------------------------------------------------
+  const modelPill = document.getElementById("model-pill");
+  const modelPopover = document.getElementById("model-popover");
+  const modelPillLabel = document.getElementById("model-pill-label");
+  const modelActualHint = document.getElementById("model-actual-hint");
+
+  function renderModelPopover(){
+    const current = Modulogical.getModelKey();
+    modelPopover.innerHTML = Modulogical.MODELS.map(m => `
+      <div class="model-option${m.key === current ? " selected" : ""}" data-key="${m.key}" role="option">
+        <span class="dot"></span>
+        <div>
+          <div class="name">${m.label}</div>
+          <div class="desc">${m.blurb}</div>
+        </div>
+      </div>
+    `).join("");
+    modelPopover.querySelectorAll(".model-option").forEach(opt => {
+      opt.addEventListener("click", () => {
+        Modulogical.setModelKey(opt.getAttribute("data-key"));
+        applySelectedModel();
+        closePopovers();
+      });
+    });
+  }
+
+  function applySelectedModel(){
+    const model = Modulogical.modelByKey(Modulogical.getModelKey()) || Modulogical.modelByKey("auto");
+    modelPillLabel.textContent = model.label;
+    modelActualHint.textContent = model.key === "auto"
+      ? "Auto — automatically selecting the best model"
+      : model.label + " — " + model.description;
+  }
+
+  const tempPill = document.getElementById("temp-pill");
+  const tempPopover = document.getElementById("temp-popover");
+
+  function closePopovers(){
+    modelPopover.classList.remove("open");
+    tempPopover.classList.remove("open");
+    modelPill.setAttribute("aria-expanded", "false");
+    tempPill.setAttribute("aria-expanded", "false");
+  }
+  modelPill.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = !modelPopover.classList.contains("open");
+    closePopovers();
+    if (willOpen) { renderModelPopover(); modelPopover.classList.add("open"); modelPill.setAttribute("aria-expanded","true"); }
+  });
+  tempPill.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = !tempPopover.classList.contains("open");
+    closePopovers();
+    if (willOpen) { tempPopover.classList.add("open"); tempPill.setAttribute("aria-expanded","true"); }
+  });
+  document.addEventListener("click", closePopovers);
+
+  applySelectedModel();
+
+  // ---- chat / streaming -----------------------------------------------
+  async function chat(){
+    const message = messageEl.value;
+    if (!message.trim()) return;
+
+    messageEl.value = "";
+    messageEl.style.height = "auto";
+    updateSendState();
+
+    addUserMessage(message);
+    const { textEl, tagEl } = addAssistantMessage();
+
+    const modelKey = Modulogical.getModelKey();
+    const model = (Modulogical.modelByKey(modelKey) || Modulogical.modelByKey("auto")).id;
+
+    let response;
+    try {
+      response = await fetch(Modulogical.API + "/chat", {
+        method: "POST",
+        headers: Modulogical.headers(),
+        body: JSON.stringify({
+          token: token,
+          message: message,
+          model: model,
+          temperature: document.getElementById("temperature").value
+        })
+      });
+    } catch (err) {
+      console.error(err);
+      textEl.innerHTML = "";
+      textEl.textContent = "Couldn't reach Modulogical. Check your connection and try again.";
+      return;
+    }
+
+    const usedModelId = response.headers.get("X-Atlas-Model");
+    if (usedModelId) {
+      const used = Modulogical.modelById(usedModelId);
+      tagEl.textContent = used ? "· " + used.label : "";
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let output = "";
+
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      output += decoder.decode(value, { stream: true });
+      textEl.innerHTML = "";
+      textEl.append(document.createTextNode(output));
+      const caret = document.createElement("span");
+      caret.className = "caret";
+      textEl.appendChild(caret);
+      scrollToBottom();
+    }
+
+    output += decoder.decode();
+    textEl.textContent = output;
+    scrollToBottom();
+  }
+})();
+</script>
+</body>
+</html>
