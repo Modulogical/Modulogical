@@ -35,7 +35,7 @@ Models = {
 # Point this at the actual inference service.
 # For the eventual Cloudflare layout this can be the Worker-inference URL.
 INFERENCE_URL = os.getenv(
-    "ATLAS_INFERENCE_URL",
+    "https://inference.modulogical.com",
     "http://localhost:8001/generate",
 )
 
