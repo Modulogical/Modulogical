@@ -17,7 +17,7 @@ const Modulogical = (() => {
   // every page reads from this single constant.
   const API = window.location.protocol === "file:"
     ? "http://localhost:81"
-    : "https://backend.modulogical.com";
+    : "https://modulogical.com";
 
   const TOKEN_KEY = "atlas_token";
   const MODEL_KEY = "model";
