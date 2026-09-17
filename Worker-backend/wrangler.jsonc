@@ -4,6 +4,6 @@
   "main": "src/index.js",
   "compatibility_date": "2026-09-17",
   "vars": {
-    "BACKEND_ORIGIN": "https://REPLACE-WITH-YOUR-BACKEND-TUNNEL"
+    "BACKEND_ORIGIN": "https://unlaced-spruce-husked.ngrok_free.dev"
   }
 }

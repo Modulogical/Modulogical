@@ -1,9 +1,9 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "modulogical-inference",
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "modulogical-atlas-inference",
   "main": "src/index.js",
-  "compatibility_date": "2026-09-17",
+  "compatibility_date": "2026-09-16",
   "vars": {
-    "INFERENCE_ORIGIN": "https://unlaced-spruce-husked.ngrok-free.dev"
+    "INFERENCE_ORIGIN": "https://unlaced-spruce-husked.ngrok_free.dev"
   }
 }
