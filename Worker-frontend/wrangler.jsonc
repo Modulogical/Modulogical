@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "modulogical-frontend",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-17",
+  "assets": {
+    "directory": "./frontend",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      "binding": "BACKEND",
+      "service": "modulogical-backend"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "modulogical.com",
+      "custom_domain": true
+    }
+  ]
+}

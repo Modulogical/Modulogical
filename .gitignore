@@ -1,8 +1,0 @@
-__pycache/
-
-data/accounts/
-data/account_config
-data/logs
-
-frontend_personal/
-frontend_old/

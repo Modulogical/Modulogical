@@ -14,6 +14,7 @@ from module_registry import MODULE_DATABASE
 from pathlib import Path
 import requests
 import time
+import os
 #hi
 ATLAS_DIR = Path(__file__).resolve().parent.parent
 
