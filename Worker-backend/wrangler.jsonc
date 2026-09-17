@@ -1,9 +1,16 @@
 {
-  "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "modulogical-backend",
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "modulogical-atlas-backend",
   "main": "src/index.js",
-  "compatibility_date": "2026-09-17",
+  "compatibility_date": "2026-09-16",
   "vars": {
-    "BACKEND_ORIGIN": "https://unlaced-spruce-husked.ngrok_free.dev"
-  }
+    "INFERENCE_URL": "https://inference.modulogical.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "modulogical-atlas",
+      "database_id": "7292361f-78cb-4322-b354-8d73d53fbff3"
+    }
+  ]
 }
