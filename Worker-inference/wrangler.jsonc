@@ -2,7 +2,7 @@
   "$schema": "../node_modules/wrangler/config-schema.json",
   "name": "modulogical-inference",
   "main": "src/index.js",
-  "compatibility_date": "2026-09-16",
+  "compatibility_date": "2026-09-18",
   "vars": {
     "INFERENCE_ORIGIN": "https://unlaced-spruce-husked.ngrok-free.dev"
   },
