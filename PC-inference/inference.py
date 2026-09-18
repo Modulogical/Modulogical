@@ -27,7 +27,7 @@ def generate(details: GenerateRequest):
     response = requests.post(
         OLLAMA_URL,
         json={
-            "model": details.model,
+            "model": "gemma3:latest",
             "prompt": details.prompt,
             "stream": details.stream,
             "options": {
