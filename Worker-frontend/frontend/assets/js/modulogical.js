@@ -29,10 +29,7 @@ const Modulogical = (() => {
   const MODELS = [
     { key: "auto",      id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Auto",      blurb: "Best model for this request",  description: "Automatically selecting the best model" },
     { key: "efficient", id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Efficient", blurb: "Fast everyday responses",       description: "Fast everyday responses" },
-    { key: "llama",     id: "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY", label: "Llama",     blurb: "General reasoning",              description: "General reasoning" },
-    { key: "phi",       id: "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc", label: "Phi",       blurb: "Lightweight reasoning",           description: "Lightweight reasoning" },
-    { key: "qwen",      id: "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE", label: "Qwen",      blurb: "Reasoning / technical tasks",     description: "Reasoning / technical tasks" },
-    { key: "mistral",   id: "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM", label: "Mistral",   blurb: "General-purpose tasks",           description: "General-purpose tasks" },
+    { key: "llama",     id: "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY", label: "Llama",     blurb: "General reasoning",              description: "General reasoning" }
   ];
 
   function modelByKey(key){ return MODELS.find(m => m.key === key); }
