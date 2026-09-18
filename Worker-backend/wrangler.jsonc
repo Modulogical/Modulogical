@@ -1,10 +1,11 @@
 {
-  "$schema": "../node_modules/wrangler/config-schema.json",
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "modulogical-backend",
-  "main": "src/index.js",
-  "compatibility_date": "2026-09-16",
+  "main": "src/main.py",
+  "compatibility_date": "2026-09-18",
+  "compatibility_flags": ["python_workers"],
   "vars": {
-    "INFERENCE_URL": "https://inference.modulogical.com"
+    "INFERENCE_URL": "https://inference.modulogical.com/generate"
   },
   "d1_databases": [
     {
