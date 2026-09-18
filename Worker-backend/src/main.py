@@ -28,11 +28,11 @@ INFERENCE_URL = os.getenv(
 pwd_hasher = PasswordHasher()
 
 Models = {
-    "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2",
-    "YCaXXcxd9q_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3",
-    "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc": "phi",
-    "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE": "qwen3.5",
-    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral",
+    "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2:latest",
+    "YCaXXcxd9q_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
+    "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc": "phi:latest",
+    "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE": "qwen3.5:latest",
+    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral:latest",
 }
 
 app = FastAPI()
