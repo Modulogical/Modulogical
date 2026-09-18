@@ -4,6 +4,19 @@
   "main": "src/index.js",
   "compatibility_date": "2026-09-16",
   "vars": {
-    "INFERENCE_ORIGIN": "https://inference.modulogical.com"
+    "INFERENCE_ORIGIN": "https://unlaced-spruce-husked.ngrok-free.dev"
+  },
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
   }
 }

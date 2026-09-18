@@ -13,5 +13,18 @@
       "database_name": "modulogical-atlas",
       "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e1a"
     }
-  ]
+  ],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "invocation_logs": true,
+      "persist": true
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 1,
+      "persist": true
+    }
+  }
 }
