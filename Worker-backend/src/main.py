@@ -9,7 +9,7 @@ from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from pyodide.ffi import to_js
 from js import Object, fetch
@@ -340,12 +340,96 @@ STICK TO YOUR PERSONALITY AND IDENTITY
 async def run_inference(prompt: str, temperature: float, model: str):
     result = await fetch_json(
         INFERENCE_URL,
-        {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": True},
+        {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": False},
     )
     response = result.get("response") or result.get("text") or result.get("output")
     if response is None:
         raise RuntimeError(f"Inference service returned no response field: {result}")
     return str(response)
+
+
+async def stream_inference(prompt: str, temperature: float, model: str):
+    """Yield text from the PC inference NDJSON stream as it arrives."""
+    payload = {
+        "prompt": prompt,
+        "model": model,
+        "temperature": float(temperature),
+        "stream": True,
+    }
+
+    options = to_js(
+        {
+            "method": "POST",
+            "headers": {"content-type": "application/json"},
+            "body": json.dumps(payload),
+        },
+        dict_converter=Object.fromEntries,
+    )
+
+    print(f"[Atlas] streaming inference request -> {INFERENCE_URL}")
+    response = await fetch(INFERENCE_URL, options)
+    print(f"[Atlas] streaming inference response <- {response.status}")
+
+    if not response.ok:
+        body = await response.text()
+        raise RuntimeError(
+            f"Inference service returned HTTP {response.status}: {body[:1000]}"
+        )
+
+    reader = response.body.getReader()
+    decoder = __import__("js").TextDecoder.new()
+    buffer = ""
+
+    try:
+        while True:
+            chunk = await reader.read()
+            if chunk.done:
+                break
+
+            buffer += str(decoder.decode(chunk.value, {"stream": True}))
+
+            while "\n" in buffer:
+                line, buffer = buffer.split("\n", 1)
+                line = line.strip()
+                if not line:
+                    continue
+
+                try:
+                    data = json.loads(line)
+                except json.JSONDecodeError:
+                    print(f"[Atlas] Ignoring invalid inference chunk: {line[:500]}")
+                    continue
+
+                piece = (
+                    data.get("response")
+                    or data.get("text")
+                    or data.get("output")
+                    or ""
+                )
+
+                if piece:
+                    yield str(piece)
+
+        # Process a final line if the upstream didn't end with a newline.
+        line = buffer.strip()
+        if line:
+            try:
+                data = json.loads(line)
+                piece = (
+                    data.get("response")
+                    or data.get("text")
+                    or data.get("output")
+                    or ""
+                )
+                if piece:
+                    yield str(piece)
+            except json.JSONDecodeError:
+                pass
+    finally:
+        try:
+            await reader.cancel()
+        except Exception:
+            pass
 
 @app.post("/chat")
 async def chat(details: ChatDetails, request: Request):
@@ -359,26 +443,52 @@ async def chat(details: ChatDetails, request: Request):
 
     try:
         prompt = await build_prompt(details.message, account, request)
-        response_text = clean_ansi(await run_inference(prompt, temperature, model))
     except Exception as exc:
-        print(f"[Atlas] CHAT ERROR: {type(exc).__name__}: {exc}")
+        print(f"[Atlas] CHAT PROMPT ERROR: {type(exc).__name__}: {exc}")
         return json_response(
-            {"error": "Inference service failed", "detail": f"{type(exc).__name__}: {exc}"},
+            {"error": "Could not prepare chat request."},
             502,
         )
 
-    await d1_run(
-        request,
-        """INSERT INTO conversations
-           (account_id, message, response, model, temperature)
-           VALUES (?, ?, ?, ?, ?)""",
-        account["id"], details.message, response_text, model, float(temperature),
-    )
+    async def generate_stream():
+        chunks = []
 
-    return Response(
-        content=response_text,
-        media_type="text/plain",
-        headers={**JSON_HEADERS, "X-Atlas-Model": model},
+        try:
+            async for piece in stream_inference(prompt, temperature, model):
+                piece = clean_ansi(piece)
+                if piece:
+                    chunks.append(piece)
+                    yield piece
+        except Exception as exc:
+            print(f"[Atlas] STREAM ERROR: {type(exc).__name__}: {exc}")
+            # Keep internal exception details out of the client response.
+            # The client receives the text already generated, if any.
+            if not chunks:
+                yield "Could not reach inference server."
+            return
+
+        response_text = "".join(chunks)
+
+        try:
+            await d1_run(
+                request,
+                """INSERT INTO conversations
+                   (account_id, message, response, model, temperature)
+                   VALUES (?, ?, ?, ?, ?)""",
+                account["id"], details.message, response_text, model, float(temperature),
+            )
+        except Exception as exc:
+            print(f"[Atlas] D1 SAVE ERROR: {type(exc).__name__}: {exc}")
+
+    return StreamingResponse(
+        generate_stream(),
+        media_type="text/plain; charset=utf-8",
+        headers={
+            **JSON_HEADERS,
+            "X-Atlas-Model": model,
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+        },
     )
 
 @app.get("/modules")
