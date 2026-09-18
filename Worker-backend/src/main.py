@@ -340,7 +340,7 @@ STICK TO YOUR PERSONALITY AND IDENTITY
 async def run_inference(prompt: str, temperature: float, model: str):
     result = await fetch_json(
         INFERENCE_URL,
-        {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": False},
+        {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": True},
     )
     response = result.get("response") or result.get("text") or result.get("output")
     if response is None:
