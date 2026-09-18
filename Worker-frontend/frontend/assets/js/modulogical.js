@@ -15,10 +15,7 @@ const Modulogical = (() => {
   // since those are the two pages a real session actually depends on.
   // If your backend actually lives at the other tunnel, change API below —
   // every page reads from this single constant.
-  const API = window.location.protocol === "file:"
-    ? "http://localhost:81"
-    : "https://backend.modulogical.com";
-
+  const API = "/api";
   const TOKEN_KEY = "atlas_token";
   const MODEL_KEY = "model";
   const MODULE_KEY = "Module";
