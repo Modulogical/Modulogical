@@ -24,10 +24,17 @@ def health():
 
 @app.post("/generate")
 def generate(details: GenerateRequest):
+    Models = {
+    "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2:latest",
+    "YCaXXcxd9q_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
+    "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc": "phi:latest",
+    "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE": "qwen3.5:latest",
+    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral:latest"
+}
     response = requests.post(
         OLLAMA_URL,
         json={
-            "model": "gemma3:latest",
+            "model": Models[details.model],
             "prompt": details.prompt,
             "stream": details.stream,
             "options": {
