@@ -4,7 +4,7 @@
   "main": "src/index.js",
   "compatibility_date": "2026-09-18",
   "vars": {
-    "INFERENCE_ORIGIN": "https://unlaced-spruce-husked.ngrok-free.dev"
+    "INFERENCE_ORIGIN": "https://inference.modulogical.com"
   },
   "observability": {
     "logs": {
