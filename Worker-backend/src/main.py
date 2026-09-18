@@ -32,7 +32,7 @@ Models = {
     "YCaXXcxd9q_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
     "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc": "phi:latest",
     "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE": "qwen3.5:latest",
-    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral:latest",
+    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral:latest"
 }
 
 app = FastAPI()
@@ -340,7 +340,7 @@ STICK TO YOUR PERSONALITY AND IDENTITY
 async def run_inference(prompt: str, temperature: float, model: str):
     result = await fetch_json(
         INFERENCE_URL,
-        {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": False},
+        {"prompt": prompt, "model": Models[model], "temperature": float(temperature), "stream": False},
     )
     response = result.get("response") or result.get("text") or result.get("output")
     if response is None:
