@@ -362,7 +362,7 @@ async def chat(details: ChatDetails, request: Request):
         response_text = clean_ansi(await run_inference(prompt, temperature, model))
     except Exception as exc:
         print(f"[Atlas] CHAT ERROR: {type(exc).__name__}: {exc}")
-        return Atlas' inference is offline
+        return json_response({"output" : "Atlas' inference is offline"})
 
     await d1_run(
         request,
