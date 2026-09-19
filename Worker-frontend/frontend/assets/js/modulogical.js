@@ -29,7 +29,9 @@ const Modulogical = (() => {
   const MODELS = [
     { key: "auto",      id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Auto",      blurb: "Best model for this request",  description: "Automatically selecting the best model" },
     { key: "efficient", id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Efficient", blurb: "Fast everyday responses",       description: "Fast everyday responses" },
-    { key: "llama",     id: "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY", label: "Llama",     blurb: "General reasoning",              description: "General reasoning" }
+    { key: "lightweight",     id: "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY", label: "Lightweight",     blurb: "General reasoning",              description: "General reasoning" },
+    { key: "advanced", id: "Af3hf8E0SbC0_o44yQnhvFtpMtjOq73wU_iKquZL2AA", label: "Advanced", blurb: "Powerful responses", description: "Advanced reasoning"},
+    { key: "powerful", id: "Ik0LpuQXHGpAsl6EtTJDzq09SyTAxBh9rdZvQ4UZkpU", label: "Powerful", blurb: "Most capable model", description: "Most capable model"}
   ];
 
   function modelByKey(key){ return MODELS.find(m => m.key === key); }

@@ -30,9 +30,8 @@ pwd_hasher = PasswordHasher()
 Models = {
     "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2:latest",
     "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
-    "U611jj6ZcghehmIrLKCoFmShaUwt--4LWBoee5d7bHc": "phi:latest",
-    "OD4TbKRobbGDtYWVPciloUYR6PPT1f4gKwTqx4jX6eE": "qwen3.5:latest",
-    "B2_9IU7LiIh0hkeiLMqXxAcKn5NcwWYTqMZe4Q9-bZM": "mistral:latest"
+    "Af3hf8E0SbC0_o44yQnhvFtpMtjOq73wU_iKquZL2AA": "gemma4:latest",
+    "Ik0LpuQXHGpAsl6EtTJDzq09SyTAxBh9rdZvQ4UZkpU": "gpt-oss:20b"
 }
 
 app = FastAPI()
@@ -333,6 +332,7 @@ RESPOND TO THE CURRENT PROMPT
 DO NOT COPY OLD RESPONSES
 DO NOT GENERATE EMOJIS
 STICK TO YOUR PERSONALITY AND IDENTITY
+DO NOT PRETEND TO KNOW SOMETHING YOU DON'T ALREADY KNOW
 """
 
 async def run_inference(prompt: str, temperature: float, model: str):
