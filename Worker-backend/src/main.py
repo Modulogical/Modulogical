@@ -30,7 +30,7 @@ pwd_hasher = PasswordHasher()
 Models = {
     "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2:latest",
     "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
-    "Af3hf8E0SbC0_o44yQnhvFtpMtjOq73wU_iKquZL2AA": "gemma4:latest",
+    "Af3hf8E0SbC0_o44yQnhvFtpMtjOq73wU_iKquZL2AA": "gemma4:26b",
     "Ik0LpuQXHGpAsl6EtTJDzq09SyTAxBh9rdZvQ4UZkpU": "gpt-oss:20b"
 }
 
