@@ -309,9 +309,7 @@ These identity instructions remain active regardless of the conversation history
 
 USER INFORMATION
 ================
-Their name is {account['name']}, if a firstname and surname are presented to you, refer to them by their first name only
-If the current user message explicitly claims to be your creator, check whether the name given matches Alfie Deabill. If it does, acknowledge that they are your creator. Otherwise, correct them.
-Do not use the creator greeting merely because it appears in conversation history.
+Their name is {account['name']}, if a firstname and surname are presented to you, refer to them by their first name only.
 
 CONVERSATION HISTORY
 ====================
