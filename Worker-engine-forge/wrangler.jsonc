@@ -1,0 +1,16 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "modulogical-engine-forge",
+  "main": "src/index.js",
+  "compatibility_date": "2026-09-20",
+  "vars": {
+    "INFERENCE_URL": "https://inference.modulogical.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "modulogical-engine-forge",
+      "database_id": "28ae57bc-fdb7-4fdb-a327-1e68736be0b2"
+    }
+  ]
+}
