@@ -1,142 +1,164 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Modulogical — Engine Forge</title><link rel="stylesheet" href="/assets/css/modulogical.css"><style>
-  .app-main{padding:40px 0 80px;}
-  .page-head{margin-bottom:28px;max-width:760px;}
-  .page-head .lede{margin-top:8px;}
-  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:24px;}
-  .search{flex:1;min-width:220px;}
-  .category-row{display:flex;gap:7px;flex-wrap:wrap;}
-  .category-btn{padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface-1);color:var(--text-2);font-size:.78rem;cursor:pointer;}
-  .category-btn:hover,.category-btn.active{background:var(--surface-2);color:var(--text-1);border-color:var(--line-strong);}
-  .empty-panel{border:1px dashed var(--line-strong);border-radius:var(--radius-lg);padding:54px 28px;text-align:center;background:var(--surface-1);}
-  .empty-panel .icon{width:42px;height:42px;margin:0 auto 14px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--accent);}
-  .empty-panel svg{width:20px;height:20px;}
-  .section-label{font-size:.72rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
-  @media(max-width:620px){.app-main{padding-top:28px;}.toolbar{align-items:stretch;}.search{min-width:100%;}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Engine Forge</title>
+<link rel="stylesheet" href="/assets/css/modulogical.css">
 <style>
-.forge-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--radius-lg);padding:28px;margin-bottom:30px}
-.forge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}
-.field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;font-size:.82rem;color:var(--text-2)}
-.field .input{width:100%;box-sizing:border-box}
-.textarea{min-height:90px;resize:vertical;font-family:inherit}
-.code-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-height:120px}
-.inference-card{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--surface-2);margin:10px 0 20px}
-.inference-card>div{display:flex;justify-content:space-between;align-items:center;gap:10px}
-.status{font-size:.78rem;color:var(--text-3)}
-.status.online{color:var(--accent)}
-.status.offline{color:var(--text-2)}
-.forge-actions{display:flex;align-items:center;gap:12px;margin-top:8px}
-@media(max-width:760px){.forge-grid{grid-template-columns:1fr}}
-</style></style></head><body><a class="skip-link" href="#main">Skip to content</a>
-<header class="appnav"><div class="shell appnav-row"><a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a><button class="nav-toggle" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button><nav class="appnav-links" data-nav-drawer>      <a class="appnav-link" data-nav="dashboard" href="/dashboard.html">Dashboard</a>
-      <a class="appnav-link" data-nav="chat" href="/chat">Chat</a>
-      <a class="appnav-link" data-nav="modules" href="/modules">Modules</a>
-      <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
-      <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
-      <a class="appnav-link" data-nav="settings" href="/settings">Settings</a></nav><div class="appnav-right"><a class="account-chip" href="/settings"><span class="account-avatar" id="nav-avatar">?</span><span class="account-name" id="nav-name">Account</span></a><button class="btn btn-ghost btn-sm" data-logout>Log out</button></div></div></header>
-<main class="app-main" id="main"><div class="shell"><div class="page-head fade-up"><h1 class="h1">Engine Forge</h1><p class="lede">Build, manage, and submit your own Modulogical items for review.</p></div><div class="toolbar fade-up"><input class="input search" id="search" type="search" placeholder="Search engine forge..." aria-label="Search Engine Forge"><div class="category-row" aria-label="Categories"><button class="category-btn active" type="button">Modules</button><button class="category-btn " type="button">Personalities</button><button class="category-btn " type="button">Workflows</button><button class="category-btn " type="button">WebVector</button></div></div><div class="section-label">Create item</div>
+.app-main{padding:40px 0 80px}.page-head{margin-bottom:28px;max-width:760px}.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:24px}.search{flex:1;min-width:220px}.category-row{display:flex;gap:7px;flex-wrap:wrap}.category-btn{padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface-1);color:var(--text-2);font-size:.78rem;cursor:pointer}.category-btn:hover,.category-btn.active{background:var(--surface-2);color:var(--text-1);border-color:var(--line-strong)}.forge-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--radius-lg);padding:28px;margin-bottom:30px}.forge-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px}.field{display:flex;flex-direction:column;gap:7px;margin-bottom:16px;font-size:.82rem;color:var(--text-2)}.field .input{width:100%;box-sizing:border-box}.textarea{min-height:90px;resize:vertical;font-family:inherit}.code-input{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-height:150px}.inference-card{border:1px solid var(--line);border-radius:var(--radius);padding:16px;background:var(--surface-2);margin:10px 0 20px}.inference-card>div{display:flex;justify-content:space-between;align-items:center;gap:10px}.status{font-size:.78rem;color:var(--text-3)}.status.online{color:var(--accent)}.status.offline{color:var(--text-2)}.forge-actions{display:flex;align-items:center;gap:12px;margin-top:8px}.hidden{display:none!important}.flow-editor{border:1px solid var(--line);border-radius:var(--radius-lg);background:var(--surface-2);overflow:hidden}.flow-toolbar{padding:12px;border-bottom:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap}.flow-canvas{position:relative;height:430px;overflow:auto;background-image:radial-gradient(var(--line) 1px,transparent 1px);background-size:18px 18px}.flow-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}.flow-node{position:absolute;width:190px;padding:12px;border:1px solid var(--line-strong);border-radius:14px;background:var(--surface-1);box-shadow:0 8px 24px rgba(0,0,0,.08);cursor:grab}.flow-node:active{cursor:grabbing}.flow-node.selected{outline:2px solid var(--accent)}.flow-node input{width:100%;box-sizing:border-box;margin-top:6px}.flow-node .node-label{font-size:.7rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em}.connection-list{padding:10px 12px;border-top:1px solid var(--line);font-size:.78rem;color:var(--text-2)}@media(max-width:760px){.forge-grid{grid-template-columns:1fr}.flow-canvas{height:520px}}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="appnav"><div class="shell appnav-row"><a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
+<button class="nav-toggle" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button>
+<nav class="appnav-links" data-nav-drawer><a class="appnav-link" data-nav="dashboard" href="/dashboard.html">Dashboard</a><a class="appnav-link" data-nav="chat" href="/chat">Chat</a><a class="appnav-link" data-nav="modules" href="/modules">Modules</a><a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a><a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a><a class="appnav-link" data-nav="settings" href="/settings">Settings</a></nav>
+<div class="appnav-right"><a class="account-chip" href="/settings"><span class="account-avatar" id="nav-avatar">?</span><span class="account-name" id="nav-name">Account</span></a><button class="btn btn-ghost btn-sm" data-logout>Log out</button></div></div></header>
+
+<main class="app-main" id="main"><div class="shell">
+<div class="page-head fade-up"><h1 class="h1">Engine Forge</h1><p class="lede">Build, test, and submit your own Modulogical items for review.</p></div>
+<div class="toolbar fade-up"><input class="input search" id="search" type="search" placeholder="Search Engine Forge..." aria-label="Search Engine Forge">
+<div class="category-row"><button class="category-btn active" data-type="module">Modules</button><button class="category-btn" data-type="personality">Personalities</button><button class="category-btn" data-type="workflow">Workflows</button><button class="category-btn" data-type="webvector">WebVector</button></div></div>
+
+<div class="section-label">Create item</div>
 <section class="forge-panel fade-up">
-  <div class="forge-grid">
-    <label class="field"><span>Item title</span><input class="input" id="item-title" placeholder="My module"></label>
-    <label class="field"><span>Item ID</span><input class="input" id="item-id" placeholder="my-module"></label>
-    <label class="field"><span>Version</span><input class="input" id="item-version" value="1.0.0"></label>
-    <label class="field"><span>Price</span><input class="input" id="item-price" placeholder="0"></label>
-  </div>
-  <label class="field"><span>Description</span><textarea class="input textarea" id="item-description" placeholder="Describe the item..."></textarea></label>
-  <label class="field"><span>Schema (JSON)</span><textarea class="input textarea code-input" id="item-schema">{}</textarea></label>
-  <label class="field"><span>Display (JSON)</span><textarea class="input textarea code-input" id="item-display">{}</textarea></label>
-  <label class="field"><span>Dependencies (JSON)</span><textarea class="input textarea code-input" id="item-dependencies">[]</textarea></label>
+<div class="forge-grid">
+<label class="field"><span>Item title</span><input class="input" id="item-title" placeholder="My module"></label>
+<label class="field"><span>Item ID</span><input class="input" id="item-id" placeholder="my-module"></label>
+<label class="field"><span>Version</span><input class="input" id="item-version" value="1.0.0"></label>
+<label class="field"><span>Price</span><input class="input" id="item-price" placeholder="0"></label>
+<label class="field"><span>Developer tier</span><input class="input" id="developer-tier" value="standard"></label>
+</div>
+<label class="field"><span>Description</span><textarea class="input textarea" id="item-description" placeholder="Describe the item..."></textarea></label>
 
-  <div class="inference-card" id="inference-card">
-    <div><strong>Inference</strong><span id="inference-status" class="status">Checking...</span></div>
-    <p id="inference-message" class="lede">Checking the inference service...</p>
-  </div>
+<div id="normal-fields">
+<label class="field"><span>Schema (JSON)</span><textarea class="input textarea code-input" id="item-schema">{}</textarea></label>
+</div>
+<div id="webvector-fields" class="hidden">
+<label class="field"><span>Information</span><textarea class="input textarea code-input" id="item-information">{}</textarea></label>
+</div>
 
-  <div class="field" id="model-input-field">
-    <span>Module input from model</span>
-    <textarea class="input textarea" id="model-input" placeholder="Generated by inference, or enter manually if inference is offline."></textarea>
-  </div>
-  <div class="field">
-    <span>Send to module</span>
-    <textarea class="input textarea" id="module-input" placeholder="Input sent to the module..."></textarea>
-  </div>
-  <div class="field">
-    <span>Module output</span>
-    <textarea class="input textarea" id="module-output" placeholder="Module output..." readonly></textarea>
-  </div>
+<label class="field"><span>Display (JSON)</span><textarea class="input textarea code-input" id="item-display">{}</textarea></label>
+<label class="field"><span>Dependencies (JSON)</span><textarea class="input textarea code-input" id="item-dependencies">[]</textarea></label>
+<label class="field"><span>Code</span><textarea class="input textarea code-input" id="item-code" placeholder="Enter the item code here..."></textarea></label>
 
-  <div class="forge-actions">
-    <button class="btn btn-primary" id="produce" type="button">Produce item</button>
-    <span id="produce-status" class="status"></span>
-  </div>
-</section></div></main><script src="/assets/js/modulogical.js"></script><script>(async function(){await Modulogical.requireAuth();Modulogical.initNav("engine-forge");const n=localStorage.getItem(Modulogical.NAME_KEY)||localStorage.getItem(Modulogical.USERNAME_KEY)||"Account";document.getElementById("nav-name").textContent=n;document.getElementById("nav-avatar").textContent=Modulogical.initials(n);document.querySelectorAll('.category-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.category-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));})();</script><script>
+<div id="workflow-editor" class="hidden">
+<div class="field"><span>Workflow flowchart</span></div>
+<div class="flow-editor">
+<div class="flow-toolbar"><button class="btn btn-ghost btn-sm" id="add-node">Add box</button><button class="btn btn-ghost btn-sm" id="connect-node">Connect selected</button><button class="btn btn-ghost btn-sm" id="clear-flow">Clear</button></div>
+<div class="flow-canvas" id="flow-canvas"><svg class="flow-svg" id="flow-svg"></svg></div>
+<div class="connection-list" id="connection-list">Select two boxes and press Connect selected.</div>
+</div>
+</div>
+
+<div class="inference-card"><div><strong>Inference</strong><span id="inference-status" class="status">Checking...</span></div><p id="inference-message" class="lede">Checking the inference service...</p></div>
+<div class="field" id="model-input-field"><span>Module input from model</span><textarea class="input textarea" id="model-input" placeholder="Generated by inference."></textarea></div>
+<div class="field"><span>Send to module</span><textarea class="input textarea" id="module-input" placeholder="Input sent to the module."></textarea></div>
+<div class="field"><span>Module output</span><textarea class="input textarea" id="module-output" placeholder="Module output..." readonly></textarea></div>
+<div class="forge-actions"><button class="btn btn-primary" id="produce" type="button">Produce item</button><span id="produce-status" class="status"></span></div>
+</section>
+</div></main>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
 (async function(){
-  await Modulogical.requireAuth();
-  Modulogical.initNav("engine-forge");
+  await Modulogical.requireAuth(); Modulogical.initNav("engine-forge");
   const n=localStorage.getItem(Modulogical.NAME_KEY)||localStorage.getItem(Modulogical.USERNAME_KEY)||"Account";
-  document.getElementById("nav-name").textContent=n;
-  document.getElementById("nav-avatar").textContent=Modulogical.initials(n);
+  document.getElementById("nav-name").textContent=n; document.getElementById("nav-avatar").textContent=Modulogical.initials(n);
 
-  const itemTypes=["module","personality","workflow","webvector"];
-  let selectedType="module";
-  let inferenceOnline=false;
+  const API="https://engine-forge.modulogical.com";
+  const types=["module","personality","workflow","webvector"];
+  let selectedType="module", inferenceOnline=false, nodes=[], edges=[], selectedNodes=[];
 
-  document.querySelectorAll(".category-btn").forEach((b,i)=>{
-    b.addEventListener("click",()=>{
-      document.querySelectorAll(".category-btn").forEach(x=>x.classList.remove("active"));
-      b.classList.add("active");
-      selectedType=itemTypes[i];
-    });
-  });
+  const $=id=>document.getElementById(id);
+  const normal=$("normal-fields"), web=$("webvector-fields"), workflow=$("workflow-editor"), modelField=$("model-input-field");
+
+  function updateType(){
+    normal.classList.toggle("hidden",selectedType==="webvector");
+    web.classList.toggle("hidden",selectedType!=="webvector");
+    workflow.classList.toggle("hidden",selectedType!=="workflow");
+    $("item-title").placeholder=selectedType==="module"?"My module":`My ${selectedType}`;
+  }
+  document.querySelectorAll(".category-btn").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".category-btn").forEach(x=>x.classList.remove("active")); b.classList.add("active");
+    selectedType=b.dataset.type; updateType();
+  }));
 
   async function checkInference(){
-    const status=document.getElementById("inference-status");
-    const message=document.getElementById("inference-message");
-    const modelField=document.getElementById("model-input-field");
     try{
       const r=await fetch("https://inference.modulogical.com/health",{cache:"no-store"});
-      if(!r.ok) throw new Error("unhealthy");
-      inferenceOnline=true;
-      status.textContent="Online"; status.className="status online";
-      message.textContent="Inference is available.";
-      modelField.style.display="";
-    }catch(e){
-      inferenceOnline=false;
-      status.textContent="Offline"; status.className="status offline";
-      message.textContent="Inference is currently offline. You can still provide module input manually.";
-      modelField.style.display="none";
+      if(!r.ok) throw 0;
+      inferenceOnline=true; $("inference-status").textContent="Online"; $("inference-status").className="status online";
+      $("inference-message").textContent="Inference is available."; modelField.classList.remove("hidden");
+    }catch{
+      inferenceOnline=false; $("inference-status").textContent="Offline"; $("inference-status").className="status offline";
+      $("inference-message").textContent="Inference is currently offline. You can provide the module input manually.";
+      modelField.classList.add("hidden");
     }
   }
   await checkInference();
 
-  document.getElementById("produce").addEventListener("click",async()=>{
-    const out=document.getElementById("produce-status");
-    out.textContent="Sending...";
-    let schema,display,deps;
-    try{schema=JSON.parse(document.getElementById("item-schema").value||"{}");}
-    catch(e){out.textContent="Schema must be valid JSON.";return;}
-    try{display=JSON.parse(document.getElementById("item-display").value||"{}");}
-    catch(e){out.textContent="Display must be valid JSON.";return;}
-    try{deps=JSON.parse(document.getElementById("item-dependencies").value||"[]");}
-    catch(e){out.textContent="Dependencies must be valid JSON.";return;}
+  function renderFlow(){
+    const canvas=$("flow-canvas"), svg=$("flow-svg");
+    canvas.querySelectorAll(".flow-node").forEach(x=>x.remove());
+    svg.innerHTML="";
+    nodes.forEach(node=>{
+      const el=document.createElement("div"); el.className="flow-node"+(selectedNodes.includes(node.id)?" selected":"");
+      el.style.left=node.x+"px"; el.style.top=node.y+"px"; el.dataset.id=node.id;
+      el.innerHTML=`<div class="node-label">Step</div><input class="input" value="${escapeHtml(node.id)}" data-k="id" placeholder="Step ID"><input class="input" value="${escapeHtml(node.item_id)}" data-k="item_id" placeholder="Item ID">`;
+      el.addEventListener("click",e=>{if(e.target.tagName==="INPUT")return; if(!selectedNodes.includes(node.id)){if(selectedNodes.length>=2)selectedNodes=[];selectedNodes.push(node.id)}else selectedNodes=selectedNodes.filter(x=>x!==node.id); renderFlow();});
+      el.addEventListener("mousedown",e=>{
+        if(e.target.tagName==="INPUT")return;
+        const sx=e.clientX-node.x, sy=e.clientY-node.y;
+        const move=ev=>{node.x=Math.max(0,ev.clientX-sx);node.y=Math.max(0,ev.clientY-sy);renderFlow();};
+        const up=()=>{window.removeEventListener("mousemove",move);window.removeEventListener("mouseup",up)};
+        window.addEventListener("mousemove",move);window.addEventListener("mouseup",up);
+      });
+      el.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",()=>{
+        node[inp.dataset.k]=inp.value; renderConnections();
+      }));
+      canvas.appendChild(el);
+    });
+    renderConnections();
+  }
+  function renderConnections(){
+    const svg=$("flow-svg"), canvas=$("flow-canvas"); svg.innerHTML="";
+    edges.forEach(e=>{
+      const a=nodes.find(n=>n.id===e.from), b=nodes.find(n=>n.id===e.to); if(!a||!b)return;
+      const x1=a.x+95,y1=a.y+45,x2=b.x+95,y2=b.y+45;
+      const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+      line.setAttribute("x1",x1);line.setAttribute("y1",y1);line.setAttribute("x2",x2);line.setAttribute("y2",y2);
+      line.setAttribute("stroke","currentColor");line.setAttribute("stroke-width","2");svg.appendChild(line);
+    });
+    $("connection-list").textContent=edges.length?edges.map(e=>`${e.from} → ${e.to}`).join("  •  "):"Select two boxes and press Connect selected.";
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));}
+  $("add-node").addEventListener("click",()=>{const id=`step-${nodes.length+1}`;nodes.push({id,item_id:"",x:30+nodes.length*30,y:30+nodes.length*30});renderFlow();});
+  $("connect-node").addEventListener("click",()=>{if(selectedNodes.length===2&&!edges.some(e=>e.from===selectedNodes[0]&&e.to===selectedNodes[1]))edges.push({from:selectedNodes[0],to:selectedNodes[1]});selectedNodes=[];renderFlow();});
+  $("clear-flow").addEventListener("click",()=>{nodes=[];edges=[];selectedNodes=[];renderFlow();});
 
+  $("produce").addEventListener("click",async()=>{
+    const out=$("produce-status"); out.textContent="Sending...";
+    const parse=(id,fallback)=>{try{return JSON.parse($(id).value||fallback)}catch{return null}};
+    const deps=parse("item-dependencies","[]"), display=parse("item-display","{}");
+    if(deps===null){out.textContent="Dependencies must be valid JSON.";return}
+    if(display===null){out.textContent="Display must be valid JSON.";return}
+    let schema={};
+    if(selectedType==="webvector"){schema=parse("item-information","{}");if(schema===null){out.textContent="Information must be valid JSON.";return}}
+    else {schema=parse("item-schema","{}");if(schema===null){out.textContent="Schema must be valid JSON.";return}}
+    if(selectedType==="workflow") schema={...schema,flow:{nodes,edges}};
     const payload={
-      item_type:selectedType,
-      title:document.getElementById("item-title").value.trim(),
-      developer_id:localStorage.getItem(Modulogical.USERNAME_KEY)||"",
-      developer_tier:"standard",
-      item_id:document.getElementById("item-id").value.trim(),
-      schema, description:document.getElementById("item-description").value,
-      display, item_version:document.getElementById("item-version").value.trim(),
-      item_price:document.getElementById("item-price").value.trim(),
-      item_dependencies:deps
+      title:$("item-title").value.trim(),developer_id:localStorage.getItem(Modulogical.USERNAME_KEY)||"",
+      developer_tier:$("developer-tier").value.trim(),item_id:$("item-id").value.trim(),schema,
+      description:$("item-description").value,display,item_version:$("item-version").value.trim(),
+      item_price:$("item-price").value.trim(),item_dependencies:deps,code:$("item-code").value
     };
     try{
-      const r=await fetch("/api/engine-forge/produce",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
-      const data=await r.json();
-      if(!r.ok) throw new Error(data.error||"Production failed");
-      out.textContent="Item sent to Forge.";
-      document.getElementById("module-output").value=data.message||"Item queued successfully.";
-    }catch(e){out.textContent=e.message;}
+      const r=await fetch(`${API}/produce/${selectedType}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+      const data=await r.json(); if(!r.ok)throw new Error(data.error||"Production failed");
+      out.textContent="Item sent to Forge."; $("module-output").value=data.message||"Item queued successfully.";
+    }catch(e){out.textContent=e.message}
   });
 })();
-</script></body></html>
+</script>
+</body></html>
