@@ -246,11 +246,6 @@ async def get_context(request: Request, token: Optional[str] = None):
         "SELECT id, message, response, model, temperature, created_at FROM conversations WHERE account_id = ? ORDER BY id ASC",
         account["id"],
     )
-    modules = await d1_all(
-        request,
-        "SELECT module_name, module_data, created_at FROM account_modules WHERE account_id = ? ORDER BY id ASC",
-        account["id"],
-    )
 
     messages = []
     for chat in conversations:
@@ -263,7 +258,6 @@ async def get_context(request: Request, token: Optional[str] = None):
         "config": config or {"model": "gemma3:latest", "personality": "", "system_instructions": ""},
         "memories": memories,
         "conversations": conversations,
-        "modules": modules,
         "messages": messages,
     })
 
