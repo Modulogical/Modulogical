@@ -1,18 +1,18 @@
 # Modulogical Engine Forge
 
-Cloudflare Python Worker for Engine Forge.
+Cloudflare Worker + D1. No Python, `.venv`, PC, or inference dependency.
 
-## Development
-```cmd
-uv run pywrangler dev
-```
+Development:
+`wrangler dev`
 
-## Deploy
-```cmd
-uv run pywrangler deploy
-```
+Deployment:
+`wrangler deploy`
 
-Engine Forge is independent of the Atlas inference PC. It uses only Cloudflare Worker + D1 for Forge operations.
+Routes:
+- GET /health
+- POST /produce/module
+- POST /produce/personality
+- POST /produce/workflow
+- POST /produce/webvector
 
-D1 database:
-`28ae57bc-fdb7-4fdb-a327-1e68736be0b2`
+Submitted code is stored as data; this Worker never executes it.
