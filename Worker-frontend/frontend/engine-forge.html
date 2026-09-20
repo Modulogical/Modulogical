@@ -1,0 +1,22 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>Modulogical — Engine Forge</title><link rel="stylesheet" href="/assets/css/modulogical.css"><style>
+  .app-main{padding:40px 0 80px;}
+  .page-head{margin-bottom:28px;max-width:760px;}
+  .page-head .lede{margin-top:8px;}
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:24px;}
+  .search{flex:1;min-width:220px;}
+  .category-row{display:flex;gap:7px;flex-wrap:wrap;}
+  .category-btn{padding:7px 11px;border:1px solid var(--line);border-radius:999px;background:var(--surface-1);color:var(--text-2);font-size:.78rem;cursor:pointer;}
+  .category-btn:hover,.category-btn.active{background:var(--surface-2);color:var(--text-1);border-color:var(--line-strong);}
+  .empty-panel{border:1px dashed var(--line-strong);border-radius:var(--radius-lg);padding:54px 28px;text-align:center;background:var(--surface-1);}
+  .empty-panel .icon{width:42px;height:42px;margin:0 auto 14px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);color:var(--accent);}
+  .empty-panel svg{width:20px;height:20px;}
+  .section-label{font-size:.72rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px;}
+  @media(max-width:620px){.app-main{padding-top:28px;}.toolbar{align-items:stretch;}.search{min-width:100%;}}
+</style></head><body><a class="skip-link" href="#main">Skip to content</a>
+<header class="appnav"><div class="shell appnav-row"><a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a><button class="nav-toggle" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg></button><nav class="appnav-links" data-nav-drawer>      <a class="appnav-link" data-nav="dashboard" href="/dashboard.html">Dashboard</a>
+      <a class="appnav-link" data-nav="chat" href="/chat">Chat</a>
+      <a class="appnav-link" data-nav="modules" href="/modules">Modules</a>
+      <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
+      <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
+      <a class="appnav-link" data-nav="settings" href="/settings">Settings</a></nav><div class="appnav-right"><a class="account-chip" href="/settings"><span class="account-avatar" id="nav-avatar">?</span><span class="account-name" id="nav-name">Account</span></a><button class="btn btn-ghost btn-sm" data-logout>Log out</button></div></div></header>
+<main class="app-main" id="main"><div class="shell"><div class="page-head fade-up"><h1 class="h1">Engine Forge</h1><p class="lede">Build, manage, and submit your own Modulogical items for review.</p></div><div class="toolbar fade-up"><input class="input search" id="search" type="search" placeholder="Search engine forge..." aria-label="Search Engine Forge"><div class="category-row" aria-label="Categories"><button class="category-btn active" type="button">Modules</button><button class="category-btn " type="button">Personalities</button><button class="category-btn " type="button">Workflows</button><button class="category-btn " type="button">WebVector</button></div></div><div class="section-label">Browse</div><section class="empty-panel fade-up"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9L4 17v3h3l4.8-4.8a4.5 4.5 0 0 0 5.9-5.9l-2.4 2.4-2.1-2.1z"/></svg></div><h2 class="h2">Your Forge workspace</h2><p class="lede">The Forge structure is ready. Item construction, editors, and submission controls can be added to the specification later.</p></section></div></main><script src="/assets/js/modulogical.js"></script><script>(async function(){await Modulogical.requireAuth();Modulogical.initNav("engine-forge");const n=localStorage.getItem(Modulogical.NAME_KEY)||localStorage.getItem(Modulogical.USERNAME_KEY)||"Account";document.getElementById("nav-name").textContent=n;document.getElementById("nav-avatar").textContent=Modulogical.initials(n);document.querySelectorAll('.category-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.category-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));})();</script></body></html>
