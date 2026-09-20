@@ -1,44 +1,42 @@
-# Modulogical Engine Forge — Cloudflare Worker
+# Modulogical Engine Forge
 
-This version is deliberately Cloudflare-only for Forge operations.
+Cloudflare Python Worker for submitting Module, Personality, Workflow, and WebVector items to the Engine Forge D1 queue.
 
 ## Runtime
-- Cloudflare Worker
+- Cloudflare Workers Python runtime
+- FastAPI + ASGI
 - Cloudflare D1
-- No Python runtime required
-- No local PC required
-- No dependency on the inference server for Forge health or production
+- Cloudflare Python dependencies bundled in `.venv` using the same working structure as the Modulogical backend
+- No dependency on the inference PC
 
 ## Routes
-- GET `/health`
-- POST `/produce/module`
-- POST `/produce/personality`
-- POST `/produce/workflow`
-- POST `/produce/webvector`
+- `GET /health`
+- `GET /`
+- `POST /produce/module`
+- `POST /produce/personality`
+- `POST /produce/workflow`
+- `POST /produce/webvector`
 
-## Important architecture
+## Architecture
 
-Engine Forge stores submissions in Cloudflare D1. The `*_code` fields are
-stored as data; this Worker does not execute submitted code.
+Engine Forge operations run entirely on Cloudflare. The inference PC is not contacted by this Worker and is not required for `/health` or `/produce/*`.
 
-The inference PC is only needed by Atlas when a model actually needs to
-execute/use a module. It is intentionally not contacted by Engine Forge.
+The submitted code is stored as data in D1. This Worker does not execute submitted code.
 
 ## Deployment
 
-`wrangler.jsonc` already points at the Forge D1 database:
+From this directory:
+
+```text
+wrangler deploy
+```
+
+The Worker uses Engine Forge D1:
 
 `28ae57bc-fdb7-4fdb-a327-1e68736be0b2`
 
-If the existing queue tables were created without code columns, run
-`existing-db-code-columns.sql` once before deploying this version.
+If existing queue tables do not have their `*_code` columns, run `existing-db-code-columns.sql` against the remote D1 database once. For a new database, use `engine-forge-schema.sql`.
 
-If the database is new, use `engine-forge-schema.sql`.
+## Important
 
-## Security note
-
-The current API preserves the existing `developer_id` request field. For a
-production marketplace, the Worker should eventually derive the developer
-identity from authenticated credentials rather than trusting a client-supplied
-developer_id. That can be added without introducing a dependency on the
-inference PC.
+The `.venv` directory is intentionally included because this project follows the same Cloudflare Python Worker packaging structure as the working Modulogical backend. Do not remove it before deployment.
