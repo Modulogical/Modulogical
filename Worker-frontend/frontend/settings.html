@@ -228,7 +228,7 @@
       const value = document.getElementById("changeusername").value.trim();
       if (!value) { showNotice("username-notice", "Enter a new username first.", "pending"); return; }
       let response;
-      try {response = await fetch(Modulogical.API + "/settings/ChangeUsername" {
+      response = await fetch(Modulogical.API + "/settings/ChangeUsername" {
         method: "PATCH",
         headers: Modulogical.headers(),
         body: JSON.stringify({
@@ -236,12 +236,8 @@
           username: value
         })
       });
-      const result = response.json();
-    } catch(err) {
-      console.error(err);
-      textEl.innerHTML = "";
-      textEl.textContent = "Couldn't reach Modulogical. Check your connection and try again.";
-      return;
+      result = response.JSON();
+
     }
 
     function changePassword(){
