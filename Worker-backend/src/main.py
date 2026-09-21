@@ -154,6 +154,10 @@ class ModuleDetails(BaseModel):
     Module: str
     token: Optional[str] = None
 
+class UsernameChange(BaseModel):
+    username: str
+    token: Optional[str] = None
+
 class LogoutDetails(BaseModel):
     token: Optional[str] = None
 
@@ -224,6 +228,31 @@ async def logout(details: LogoutDetails, request: Request):
     if token:
         await d1_run(request, "DELETE FROM sessions WHERE token_hash = ?", token_hash(token))
     return json_response({"message": "Session Removed"})
+
+@app.patch("/settings/ChangeUsername")
+async def settings_changeusername(details : UsernameChange, request : Request):
+    token = token_from(request, details.token)
+    if token:
+        account = authenticate(request, token)
+        account_id = account["id"]
+        if not account:
+            return json_response({"Username-notice" : "Could not find account"})
+        await d1_run(
+            request,
+            "UPDATE account SET username = ? WHERE account_id = ?",
+            details.username,
+            account_id
+        )
+        return json_response({"Username-notice" : "Username changed successfully!"})
+
+    
+
+
+
+
+
+
+
 
 @app.get("/context")
 async def get_context(request: Request, token: Optional[str] = None):

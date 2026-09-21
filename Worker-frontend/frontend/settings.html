@@ -224,9 +224,24 @@
     // These aren't backed by a confirmed account-update endpoint yet, so the
     // UI is honest about that rather than pretending the change was saved.
     function changeUsername(){
+      const token = await Modulogical.requireAuth();
       const value = document.getElementById("changeusername").value.trim();
       if (!value) { showNotice("username-notice", "Enter a new username first.", "pending"); return; }
-      showNotice("username-notice", "Username changes aren't connected to an account endpoint yet.", "pending");
+      let response;
+      try {response = await fetch(Modulogical.API + "/settings/ChangeUsername" {
+        method: "PATCH",
+        headers: Modulogical.headers(),
+        body: JSON.stringify({
+          token: token,
+          username: value
+        })
+      });
+      const result = response.json();
+    } catch(err) {
+      console.error(err);
+      textEl.innerHTML = "";
+      textEl.textContent = "Couldn't reach Modulogical. Check your connection and try again.";
+      return;
     }
 
     function changePassword(){
