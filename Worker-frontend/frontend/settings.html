@@ -223,7 +223,7 @@
 
     // These aren't backed by a confirmed account-update endpoint yet, so the
     // UI is honest about that rather than pretending the change was saved.
-    function changeUsername(){
+    async function changeUsername(){
       const token = await Modulogical.requireAuth();
       const value = document.getElementById("changeusername").value.trim();
       if (!value) { showNotice("username-notice", "Enter a new username first.", "pending"); return; }
@@ -237,7 +237,6 @@
         })
       });
       result = response.JSON();
-
     }
 
     function changePassword(){
