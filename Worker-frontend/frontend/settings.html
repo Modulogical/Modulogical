@@ -223,11 +223,60 @@
 
     // These aren't backed by a confirmed account-update endpoint yet, so the
     // UI is honest about that rather than pretending the change was saved.
-    function changeUsername(){
-      const value = document.getElementById("changeusername").value.trim();
-      if (!value) { showNotice("username-notice", "Enter a new username first.", "pending"); return; }
-      showNotice("username-notice", "Username changes aren't connected to an account endpoint yet.", "pending");
+    async function changeUsername() {
+  const value = document.getElementById("changeusername").value.trim();
+  if (!value) {
+    showNotice(
+      "username-notice",
+      "Enter a new username first.",
+      "pending"
+    );
+    return;
+  }
+  const token = localStorage.getItem("token");
+  if (!token) {
+    showNotice(
+      "username-notice",
+      "You are not logged in.",
+      "error"
+    );
+    return;
+  }
+  try {
+    const response = await fetch("/api/settings/ChangeUsername", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: value,
+        token: token
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showNotice(
+        "username-notice",
+        data["Username-notice"] || "Could not change username.",
+        "error"
+      );
+      return;
     }
+    showNotice(
+      "username-notice",
+      data["Username-notice"] || "Username changed successfully!",
+      "success"
+    );
+    document.getElementById("changeusername").value = "";
+  } catch (error) {
+    console.error("Username change failed:", error);
+    showNotice(
+      "username-notice",
+      "Could not connect to the server.",
+      "error"
+    );
+  }
+}
 
     function changePassword(){
       const pw = document.getElementById("changepassword").value;
