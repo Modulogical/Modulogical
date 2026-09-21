@@ -243,7 +243,7 @@
     return;
   }
   try {
-    const response = await fetch("/api/settings/ChangeUsername", {
+    const response = await fetch(Modulogical.API + "/settings/ChangeUsername", {
       method: "PATCH",
       headers: {
         "Content-Type": "application/json"
