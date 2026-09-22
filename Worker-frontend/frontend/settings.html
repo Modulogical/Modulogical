@@ -267,6 +267,7 @@
       data["Username-notice"] || "Username changed successfully!",
       "success"
     );
+    localStorage.setItem('username' , value)
     document.getElementById("changeusername").value = "";
   } catch (error) {
     console.error("Username change failed:", error);
