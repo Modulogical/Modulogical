@@ -230,20 +230,33 @@ async def logout(details: LogoutDetails, request: Request):
     return json_response({"message": "Session Removed"})
 
 @app.patch("/settings/ChangeUsername")
-async def settings_changeusername(details : UsernameChange, request : Request):
+async def settings_changeusername(details: UsernameChange, request: Request):
     token = token_from(request, details.token)
-    if token:
-        account = authenticate(request, token)
-        account_id = account["id"]
-        if not account:
-            return json_response({"Username-notice" : "Could not find account"})
-        await d1_run(
-            request,
-            "UPDATE account SET username = ? WHERE account_id = ?",
-            details.username,
-            account_id
-        )
-        return json_response({"Username-notice" : "Username changed successfully!"})
+    if not token:
+        return json_response({"Username-notice": "You are not logged in"}, 401)
+
+    account = await authenticate(request, token)
+    if not account:
+        return json_response({"Username-notice": "Could not find account"}, 401)
+
+    new_username = details.username.strip()
+    if not new_username:
+        return json_response({"Username-notice": "Please enter a valid username"}, 400)
+
+    existing = await d1_first(
+        request, "SELECT id FROM accounts WHERE username = ?", new_username
+    )
+    if existing and existing["id"] != account["id"]:
+        return json_response({"Username-notice": "Username Taken"}, 409)
+
+    await d1_run(
+        request,
+        "UPDATE accounts SET username = ? WHERE id = ?",
+        new_username,
+        account["id"],
+    )
+    return json_response({"Username-notice": "Username changed successfully!"})
+
 
     
 
