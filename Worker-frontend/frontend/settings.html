@@ -284,7 +284,60 @@
       const confirm = document.getElementById("confirmpassword").value;
       if (!pw || pw.length < 8) { showNotice("password-notice", "Password must be at least 8 characters.", "pending"); return; }
       if (pw !== confirm) { showNotice("password-notice", "Passwords don't match.", "pending"); return; }
-      showNotice("password-notice", "Password changes aren't connected to an account endpoint yet.", "pending");
+      const username = localStorage.getItem("atlas_username");
+      const token = localStorage.getItem("atlas_token");
+      if (!pw) {
+      showNotice(
+      "password-notice",
+      "Required fields must be full",
+      "pending"
+       );
+       return;
+       }
+      
+       if (!confirm) {
+        showNotice(
+          "password-notice",
+          "Required fields must be full",
+          "pending"
+        );
+        return;
+       }
+       try { 
+        const response = await fetch(Modulogical.API + "/settings/ChangePassword", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: username,
+        token: token,
+        pw: pw,
+        confirm: confirm
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showNotice(
+        "password-notice",
+        data["psername-notice"] || "Could not change password.",
+        "error"
+      );
+      return;
+    }
+    showNotice(
+      "password-notice",
+      data["password-notice"] || "Password changed successfully!",
+      "success"
+    );
+  } catch (error) {
+    console.error("Password change failed:", error);
+    showNotice(
+      "password-notice",
+      "Could not connect to the server.",
+      "error"
+    );
+       }
     }
 
     return { changeUsername, changePassword };
