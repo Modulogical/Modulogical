@@ -264,35 +264,40 @@ async def settings_changeusername(details: UsernameChange, request: Request):
     return json_response({"Username-notice": "Username changed successfully!"})
 
 @app.patch("/settings/ChangePassword")
-async def settings_ChangeUsername(request : Request, details : PasswordChange):
+async def settings_changepassword(request: Request, details: PasswordChange):
     token = token_from(request, details.token)
     if not token:
-            return json_response({"password-notice": "You are not logged in"}, 401)
-    
+        return json_response({"password-notice": "You are not logged in"}, 401)
+
     account = await authenticate(request, token)
     if not account:
-            return json_response({"password-notice": "Could not find account"}, 401)
-    
+        return json_response({"password-notice": "Could not find account"}, 401)
+
     new_pw = details.pw.strip()
-    if not new_username:
-            return json_response({"password-notice": "Please enter a valid username"}, 400)
     confirm = details.confirm.strip()
-    if not confirm:
-        return json_response({"password-notice": "Please enter the confirmed password"}, 400)
+
+    if len(new_pw) < 8:
+        return json_response({"password-notice": "Password must be at least 8 characters"}, 400)
     if new_pw != confirm:
-        return json_response({"password-notice" : "Entered passwords must match"}, 400)
+        return json_response({"password-notice": "Entered passwords must match"}, 400)
+
     existing = await d1_first(
-            request, "SELECT id, password_hash FROM accounts WHERE username = ?", details.username
-        )
-    if existing["password_hash"] == pwd_hasher.hash(new_pw):
-        return json_response({"password-notice" : "Password change cannot be the same as your old password"}, 400)
+        request, "SELECT password_hash FROM accounts WHERE id = ?", account["id"]
+    )
+    try:
+        same = pwd_hasher.verify(existing["password_hash"], new_pw)
+    except (VerifyMismatchError, VerificationError):
+        same = False
+    if same:
+        return json_response({"password-notice": "New password must be different from your old one"}, 400)
+
     await d1_run(
-            request,
-            "UPDATE accounts SET password_hash = ? WHERE id = ?",
-            pwd_hasher.hash(new_pw),
-            account["id"],
-        )
-    return json_response({"password-notice" : "Password changed successfully!"})
+        request,
+        "UPDATE accounts SET password_hash = ? WHERE id = ?",
+        pwd_hasher.hash(new_pw),
+        account["id"],
+    )
+    return json_response({"password-notice": "Password changed successfully!"})
     
 
 
