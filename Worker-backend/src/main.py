@@ -277,9 +277,11 @@ async def settings_changepassword(request: Request, details: PasswordChange):
     confirm = details.confirm.strip()
 
     if len(new_pw) < 8:
-        return json_response({"password-notice": "Password must be at least 8 characters"}, 400)
+        return json_response({"password-notice": "Password must be at least 8 characters",
+                              "status" : "error"}, 400)
     if new_pw != confirm:
-        return json_response({"password-notice": "Entered passwords must match"}, 400)
+        return json_response({"password-notice": "Entered passwords must match",
+                              "status" : "error"}, 400)
 
     existing = await d1_first(
         request, "SELECT password_hash FROM accounts WHERE id = ?", account["id"]
@@ -289,7 +291,8 @@ async def settings_changepassword(request: Request, details: PasswordChange):
     except (VerifyMismatchError, VerificationError):
         same = False
     if same:
-        return json_response({"password-notice": "New password must be different from your old one"}, 400)
+        return json_response({"password-notice": "New password must be different from your old one",
+                              "status" : "pending"}, 400)
 
     await d1_run(
         request,
@@ -297,7 +300,8 @@ async def settings_changepassword(request: Request, details: PasswordChange):
         pwd_hasher.hash(new_pw),
         account["id"],
     )
-    return json_response({"password-notice": "Password changed successfully!"})
+    return json_response({"password-notice": "Password changed successfully!",
+                          "status" : "success"})
     
 
 
