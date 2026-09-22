@@ -321,14 +321,14 @@
       showNotice(
         "password-notice",
         data["password-notice"] || "Could not change password.",
-        "error"
+        data["status"]
       );
       return;
     }
     showNotice(
       "password-notice",
       data["password-notice"] || "Password changed successfully!",
-      "success"
+      data["status"]
     );
   } catch (error) {
     console.error("Password change failed:", error);
