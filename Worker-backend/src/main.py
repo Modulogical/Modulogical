@@ -301,7 +301,7 @@ async def settings_changepassword(request: Request, details: PasswordChange):
         account["id"],
     )
     return json_response({"password-notice": "Password changed successfully!",
-                          "status" : "success"})
+                          "status" : "pending"})
     
 
 
