@@ -279,7 +279,7 @@
   }
 }
 
-    function changePassword(){
+    async function changePassword(){
       const pw = document.getElementById("changepassword").value;
       const confirm = document.getElementById("confirmpassword").value;
       if (!pw || pw.length < 8) { showNotice("password-notice", "Password must be at least 8 characters.", "pending"); return; }
