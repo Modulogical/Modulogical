@@ -206,14 +206,12 @@ body::after{
   color: var(--text-1); flex-shrink: 0;
 }
 .brand-mark{
-  width: 22px; height: 22px;
-  border-radius: 7px;
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
-  border: 1px solid var(--line-strong);
+  width: 26px; height: 26px;
+  background: url('/assets/img/logo-mark/logo-mark-transparent.png') center / contain no-repeat;
+  border: none;
   position: relative;
   flex-shrink: 0;
-  animation: holo-shift 10s ease-in-out infinite alternate, holo-breathe 5s ease-in-out infinite;
+  animation: holo-breathe 5s ease-in-out infinite;
 }
 @keyframes holo-breathe{
   0%, 100%{ box-shadow: 0 0 0 0 rgba(196,181,253,0); }
