@@ -13,29 +13,32 @@ from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from pyodide.ffi import to_js
 from js import Object, fetch
-from workers import asgi
+from workers import asgi 
+#imports; external libraries that the code depends on
 
-try:
+
+
+try: #load module registry
     from module_registry import MODULE_DATABASE
-except Exception:
+except Exception: #if an error occurs, do this instead
     MODULE_DATABASE = {}
 
-INFERENCE_URL = os.getenv(
+INFERENCE_URL = os.getenv( #holds the url that connects to the AI server
     "INFERENCE_URL",
     "https://inference.modulogical.com/generate",
 )
 
-pwd_hasher = PasswordHasher()
+pwd_hasher = PasswordHasher() #hashes the passwords to make them secure
 
-Models = {
+Models = { #tokens that are authenticated from the frontend and point to a specific model
     "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY": "LlaMa3.2:latest",
     "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E": "gemma3:latest",
     "Af3hf8E0SbC0_o44yQnhvFtpMtjOq73wU_iKquZL2AA": "gemma4:26b",
     "Ik0LpuQXHGpAsl6EtTJDzq09SyTAxBh9rdZvQ4UZkpU": "gpt-oss:20b"
 }
 
-app = FastAPI()
-app.add_middleware(
+app = FastAPI() #defines the app
+app.add_middleware( #adds CORS middleware 
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -47,7 +50,7 @@ app.add_middleware(
 def env_from(request: Request):
     return request.scope["env"]
 
-def token_from(request: Request, token: Optional[str] = None):
+def token_from(request: Request, token: Optional[str] = None): #grabs token from frontend
     if token:
         return token
     auth = request.headers.get("authorization", "")
@@ -55,29 +58,29 @@ def token_from(request: Request, token: Optional[str] = None):
         return auth[7:].strip() or None
     return None
 
-def token_hash(token: str) -> str:
+def token_hash(token: str) -> str: 
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
-def new_token() -> str:
+def new_token() -> str: #generates a hashed token
     return secrets.token_urlsafe(32)
 
-def new_account_id() -> str:
+def new_account_id() -> str: #generates a new account id
     return secrets.token_urlsafe(32)
 
-async def d1_first(request: Request, sql: str, *values):
+async def d1_first(request: Request, sql: str, *values): 
     env = env_from(request)
     return await env.DB.prepare(sql).bind(*values).first()
 
-async def d1_all(request: Request, sql: str, *values):
+async def d1_all(request: Request, sql: str, *values): #connects to D1 database and performs multiple operations
     env = env_from(request)
     result = await env.DB.prepare(sql).bind(*values).all()
     return result.results or []
 
-async def d1_run(request: Request, sql: str, *values):
+async def d1_run(request: Request, sql: str, *values): #connects to D1 database and performs an SQL query
     env = env_from(request)
     return await env.DB.prepare(sql).bind(*values).run()
 
-async def authenticate(request: Request, token: Optional[str] = None):
+async def authenticate(request: Request, token: Optional[str] = None): #verifies the token sent by the frontend
     actual = token_from(request, token)
     if not actual:
         return None
@@ -89,13 +92,13 @@ async def authenticate(request: Request, token: Optional[str] = None):
         token_hash(actual),
     )
 
-JSON_HEADERS = {
+JSON_HEADERS = { #configurations for frontend
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 }
 
-def json_response(data, status=200):
+def json_response(data, status=200): #sends data to frontend for display
     return Response(
         content=json.dumps(data),
         status_code=status,
