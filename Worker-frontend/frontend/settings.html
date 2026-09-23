@@ -258,14 +258,14 @@
       showNotice(
         "username-notice",
         data["Username-notice"] || "Could not change username.",
-        "error"
+        data["status"]
       );
       return;
     }
     showNotice(
       "username-notice",
       data["Username-notice"] || "Username changed successfully!",
-      "success"
+      data["status"]
     );
     localStorage.setItem('atlas_username' , value)
     document.getElementById("changeusername").value = "";
