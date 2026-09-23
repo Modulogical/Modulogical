@@ -225,6 +225,7 @@
     // UI is honest about that rather than pretending the change was saved.
     async function changeUsername() {
   const value = document.getElementById("changeusername").value.trim();
+  const old_username = localStorage.getItem("atlas_username");
   if (!value) {
     showNotice(
       "username-notice",
@@ -250,7 +251,8 @@
       },
       body: JSON.stringify({
         username: value,
-        token: token
+        token: token,
+        old_username: old_username
       })
     });
     const data = await response.json();

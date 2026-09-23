@@ -157,6 +157,7 @@ class ModuleDetails(BaseModel):
 class UsernameChange(BaseModel):
     username: str
     token: Optional[str] = None
+    old_username: str
 
 class PasswordChange(BaseModel):
     pw : str
@@ -255,6 +256,14 @@ async def settings_changeusername(details: UsernameChange, request: Request):
     existing = await d1_first(
         request, "SELECT id FROM accounts WHERE username = ?", new_username
     )
+
+    old = await d1_first(
+        request, "SELECT id, username FROM accounts where username = ?", details.old_username
+    )
+
+    if old["username"] == new_username:
+        return json_response({"username-notice" : "New username cannot be the same as the old username",
+                              "status" : "pending"}, 400)
     if existing and existing["id"] != account["id"]:
         return json_response({"username-notice": "Username Taken",
                               "status" : "pending"}, 409)
