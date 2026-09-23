@@ -263,7 +263,7 @@ async def settings_changeusername(details: UsernameChange, request: Request):
     )
     return json_response({"Username-notice": "Username changed successfully!"})
 
-@app.patch("/settings/ChangePasswordd")
+@app.patch("/settings/ChangePassword")
 async def settings_changepassword(request: Request, details: PasswordChange):
     token = token_from(request, details.token)
     if not token:
