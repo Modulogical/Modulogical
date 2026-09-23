@@ -239,21 +239,25 @@ async def logout(details: LogoutDetails, request: Request):
 async def settings_changeusername(details: UsernameChange, request: Request):
     token = token_from(request, details.token)
     if not token:
-        return json_response({"Username-notice": "You are not logged in"}, 401)
+        return json_response({"username-notice": "You are not logged in",
+                              "status" : "pending"}, 401)
 
     account = await authenticate(request, token)
     if not account:
-        return json_response({"Username-notice": "Could not find account"}, 401)
+        return json_response({"username-notice": "Could not find account",
+                              "status" : "pending"}, 401)
 
     new_username = details.username.strip()
     if not new_username:
-        return json_response({"Username-notice": "Please enter a valid username"}, 400)
+        return json_response({"username-notice": "Please enter a valid username",
+                              "status" : "pending"}, 400)
 
     existing = await d1_first(
         request, "SELECT id FROM accounts WHERE username = ?", new_username
     )
     if existing and existing["id"] != account["id"]:
-        return json_response({"Username-notice": "Username Taken"}, 409)
+        return json_response({"username-notice": "Username Taken",
+                              "status" : "pending"}, 409)
 
     await d1_run(
         request,
@@ -261,7 +265,8 @@ async def settings_changeusername(details: UsernameChange, request: Request):
         new_username,
         account["id"],
     )
-    return json_response({"Username-notice": "Username changed successfully!"})
+    return json_response({"username-notice": "Username changed successfully!",
+                          "status" : "success"})
 
 @app.patch("/settings/ChangePassword")
 async def settings_changepassword(request: Request, details: PasswordChange):
@@ -301,7 +306,7 @@ async def settings_changepassword(request: Request, details: PasswordChange):
         account["id"],
     )
     return json_response({"password-notice": "Password changed successfully!",
-                          "status" : "pending"})
+                          "status" : "success"})
 
 @app.get("/context")
 async def get_context(request: Request, token: Optional[str] = None):
