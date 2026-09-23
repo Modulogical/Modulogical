@@ -220,9 +220,6 @@
       el.textContent = message;
       el.className = "inline-notice show" + (kind ? " is-" + kind : "");
     }
-
-    // These aren't backed by a confirmed account-update endpoint yet, so the
-    // UI is honest about that rather than pretending the change was saved.
     async function changeUsername() {
   const value = document.getElementById("changeusername").value.trim();
   const old_username = localStorage.getItem("atlas_username");
