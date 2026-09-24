@@ -90,7 +90,7 @@
   --danger-wash:  rgba(255,255,255,.12);
 }
 
-[data-theme="Company Colours"] {
+[data-theme="Company-Colours"] {
   --holo-blue:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
   --holo-violet:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
   --holo-pink:    #ff2f52;   /* neon red, from the emblem's right/red facets */

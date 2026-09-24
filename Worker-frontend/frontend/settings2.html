@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-K63NP7E16W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-K63NP7E16W');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Settings</title>
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
+<style>
+  .app-main{ padding: 40px 0 80px; }
+  .settings-shell{ max-width: 640px; }
+  .page-head{ margin-bottom: 30px; }
+
+  .settings-section{ margin-bottom: 28px; }
+  .settings-section-label{ margin-bottom: 10px; }
+  .settings-section-label .h3{ margin-bottom: 3px; }
+
+  .settings-row{
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 16px 0;
+    border-top: 1px solid var(--line);
+  }
+  .settings-row:first-child{ border-top: none; }
+  .settings-row-label{ flex-shrink: 0; width: 150px; padding-top: 9px; }
+  .settings-row-label .name{ font-size: .88rem; font-weight: 560; color: var(--text-1); }
+  .settings-row-label .note{ font-size: .78rem; color: var(--text-3); margin-top: 3px; }
+  .settings-row-control{ flex: 1; min-width: 0; }
+
+  .inline-notice{
+    display: none;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: var(--radius-sm);
+    font-size: .8rem;
+    border: 1px solid var(--line);
+    background: var(--surface-2);
+    color: var(--text-2);
+  }
+  .inline-notice.show{ display: block; }
+  .inline-notice.is-pending{ border-color: rgba(224,179,85,.3); background: rgba(224,179,85,.08); color: #f0d9a8; }
+
+  .danger-row{
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px;
+    border: 1px solid rgba(239,111,111,.22);
+    background: var(--danger-wash);
+    border-radius: var(--radius-md);
+  }
+  .danger-row .name{ font-size: .88rem; font-weight: 560; color: var(--text-1); }
+  .danger-row .note{ font-size: .78rem; color: var(--text-2); margin-top: 2px; }
+
+  .theme-grid{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .theme-option{
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    padding: 10px;
+    text-align: left;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface-1);
+    cursor: pointer;
+    transition: border-color var(--fast) var(--ease),
+                background var(--fast) var(--ease),
+                transform var(--fast) var(--ease);
+  }
+  .theme-option:hover{
+    border-color: var(--line-strong);
+    background: var(--surface-2);
+  }
+  .theme-option:active{ transform: scale(.99); }
+  .theme-option.is-selected{
+    border-color: var(--accent-line);
+    background: var(--accent-wash);
+  }
+  .theme-preview{
+    display: block;
+    height: 94px;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid var(--line-strong);
+    border-radius: 9px;
+  }
+  .theme-preview-holographic{
+    background:
+      radial-gradient(circle at 18% 18%, rgba(125,211,252,.55), transparent 35%),
+      radial-gradient(circle at 82% 75%, rgba(245,184,218,.5), transparent 40%),
+      #06070a;
+  }
+  .theme-preview-greyscale{
+    background:
+      radial-gradient(circle at 18% 18%, rgba(255,255,255,.18), transparent 35%),
+      radial-gradient(circle at 82% 75%, rgba(255,255,255,.10), transparent 40%),
+      #06070a;
+  }
+  .theme-preview-top{
+    display: block;
+    height: 18px;
+    border-bottom: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+  }
+  .theme-preview-body{
+    display: flex;
+    gap: 5px;
+    padding: 12px;
+  }
+  .theme-preview-body span{
+    display: block;
+    height: 45px;
+    border-radius: 5px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.10);
+  }
+  .theme-preview-body span:nth-child(1){ width: 38%; }
+  .theme-preview-body span:nth-child(2){ width: 25%; }
+  .theme-preview-body span:nth-child(3){ width: 37%; }
+  .theme-preview-holographic .theme-preview-body span:nth-child(2){
+    background: linear-gradient(135deg, rgba(125,211,252,.28), rgba(245,184,218,.28));
+  }
+  .theme-preview-greyscale .theme-preview-body span:nth-child(2){
+    background: linear-gradient(135deg, rgba(255,255,255,.18), rgba(120,120,128,.18));
+  }
+  .theme-option-copy{ display: flex; flex-direction: column; gap: 2px; padding: 0 2px 2px; }
+  .theme-option-copy .name{ font-size: .88rem; font-weight: 560; color: var(--text-1); }
+  .theme-option-copy .note{ font-size: .76rem; color: var(--text-3); }
+  .theme-check{
+    position: absolute;
+    top: 17px;
+    right: 17px;
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--text-inverse);
+    font-size: .7rem;
+    font-weight: 800;
+    opacity: 0;
+    transform: scale(.8);
+    transition: opacity var(--fast) var(--ease), transform var(--fast) var(--ease);
+  }
+  .theme-option.is-selected .theme-check{
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  @media (max-width: 620px){
+    .theme-grid{ grid-template-columns: 1fr; }
+    .settings-row{ flex-direction: column; gap: 8px; }
+    .settings-row-label{ width: auto; padding-top: 0; }
+  }
+</style>
+</head>
+
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="appnav">
+  <div class="shell appnav-row">
+    <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
+    <button class="nav-toggle" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="appnav-links" data-nav-drawer>
+      <a class="appnav-link" data-nav="dashboard" href="/dashboard.html">Dashboard</a>
+      <a class="appnav-link" data-nav="chat" href="/chat">Chat</a>
+      <a class="appnav-link" data-nav="modules" href="/modules">Modules</a>
+      <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
+      <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
+      <a class="appnav-link" data-nav="settings" href="/settings">Settings</a>
+    </nav>
+    <div class="appnav-right">
+      <a class="account-chip" href="/settings">
+        <span class="account-avatar" id="nav-avatar">?</span>
+        <span class="account-name" id="nav-name">Account</span>
+      </a>
+      <button class="btn btn-ghost btn-sm" data-logout>Log out</button>
+    </div>
+  </div>
+</header>
+
+<main class="app-main" id="main">
+  <div class="shell settings-shell">
+    <div class="page-head fade-up">
+      <h1 class="h1">Settings</h1>
+      <p class="small">Manage your account and session.</p>
+    </div>
+
+    <!-- Account -->
+    <section class="settings-section fade-up">
+      <div class="settings-section-label">
+        <h2 class="h3">Account</h2>
+      </div>
+      <div class="panel panel-tight">
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <div class="name">Username</div>
+            <div class="note">Shown across Modulogical</div>
+          </div>
+          <div class="settings-row-control">
+            <input class="input" id="changeusername" type="text" placeholder="New username" aria-label="New username">
+            <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+              <button class="btn btn-ghost btn-sm" onclick="Settings.changeUsername()">Save</button>
+            </div>
+            <div class="inline-notice" id="username-notice"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security -->
+    <section class="settings-section fade-up">
+      <div class="settings-section-label">
+        <h2 class="h3">Security</h2>
+      </div>
+      <div class="panel panel-tight">
+        <div class="settings-row">
+          <div class="settings-row-label">
+            <div class="name">Password</div>
+            <div class="note">Change your password</div>
+          </div>
+          <div class="settings-row-control">
+            <div class="field" style="margin-bottom:10px;">
+              <input class="input" id="changepassword" type="password" placeholder="New password" autocomplete="new-password" aria-label="New password">
+            </div>
+            <div class="field" style="margin-bottom:0;">
+              <input class="input" id="confirmpassword" type="password" placeholder="Confirm new password" autocomplete="new-password" aria-label="Confirm new password">
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top:10px;">
+              <button class="btn btn-ghost btn-sm" onclick="Settings.changePassword()">Save</button>
+            </div>
+            <div class="inline-notice" id="password-notice"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Appearance -->
+    <section class="settings-section fade-up">
+      <div class="settings-section-label">
+        <h2 class="h3">Appearance</h2>
+      </div>
+      <div class="panel panel-tight">
+        <div class="theme-grid" id="theme-options">
+          <button type="button" class="theme-option" data-theme-option="holographic" aria-pressed="false">
+            <span class="theme-preview theme-preview-holographic" aria-hidden="true">
+              <span class="theme-preview-top"></span>
+              <span class="theme-preview-body">
+                <span></span><span></span><span></span>
+              </span>
+            </span>
+            <span class="theme-option-copy">
+              <span class="name">Holographic dark</span>
+              <span class="note">The default Modulogical interface</span>
+            </span>
+            <span class="theme-check" aria-hidden="true">✓</span>
+          </button>
+
+          <button type="button" class="theme-option" data-theme-option="greyscale" aria-pressed="false">
+            <span class="theme-preview theme-preview-greyscale" aria-hidden="true">
+              <span class="theme-preview-top"></span>
+              <span class="theme-preview-body">
+                <span></span><span></span><span></span>
+              </span>
+            </span>
+            <span class="theme-option-copy">
+              <span class="name">Greyscale</span>
+              <span class="note">Black, grey and white only</span>
+            </span>
+            <span class="theme-check" aria-hidden="true">✓</span>
+          </button>
+        </div>
+        <div class="inline-notice" id="theme-notice"></div>
+      </div>
+    </section>
+
+    <!-- Session -->
+    <section class="settings-section fade-up">
+      <div class="settings-section-label">
+        <h2 class="h3">Session</h2>
+      </div>
+      <div class="danger-row">
+        <div>
+          <div class="name">Log out</div>
+          <div class="note">End your session on this device</div>
+        </div>
+        <button class="btn btn-danger-ghost btn-sm" data-logout>Log out</button>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
+  (async function init(){
+    await Modulogical.requireAuth();
+    Modulogical.initNav("settings");
+    await Modulogical.loadTheme();
+    renderSelectedTheme(Modulogical.getTheme());
+
+    const displayName = localStorage.getItem(Modulogical.NAME_KEY) || localStorage.getItem(Modulogical.USERNAME_KEY) || "Account";
+    document.getElementById("nav-name").textContent = displayName;
+    document.getElementById("nav-avatar").textContent = Modulogical.initials(displayName);
+
+    const usernameInput = document.getElementById("changeusername");
+    if (usernameInput) usernameInput.placeholder = localStorage.getItem(Modulogical.USERNAME_KEY)
+      ? "Currently: " + localStorage.getItem(Modulogical.USERNAME_KEY)
+      : "New username";
+  })();
+
+  function renderSelectedTheme(theme){
+    document.querySelectorAll("[data-theme-option]").forEach(option => {
+      const selected = option.dataset.themeOption === theme;
+      option.classList.toggle("is-selected", selected);
+      option.setAttribute("aria-pressed", selected ? "true" : "false");
+    });
+  }
+
+  const themeOptions = document.querySelectorAll("[data-theme-option]");
+  themeOptions.forEach(option => {
+    option.addEventListener("click", async () => {
+      const theme = option.dataset.themeOption;
+      const token = Modulogical.getToken();
+
+      if (!Modulogical.themeByKey(theme)) return;
+      if (!token) {
+        showThemeNotice("You are not logged in.", "error");
+        return;
+      }
+
+      // Apply immediately so the interface changes without waiting for D1.
+      Modulogical.applyTheme(theme);
+      renderSelectedTheme(theme);
+
+      try {
+        const response = await fetch(Modulogical.API + "/settings/theme", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ theme, token })
+        });
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || "Could not save theme.");
+        }
+
+        showThemeNotice("Theme saved.", "success");
+      } catch (error) {
+        console.error("Theme change failed:", error);
+        showThemeNotice("Could not save theme. Your previous theme has been restored.", "error");
+        await Modulogical.loadTheme();
+        renderSelectedTheme(Modulogical.getTheme());
+      }
+    });
+  });
+
+  function showThemeNotice(message, kind){
+    const el = document.getElementById("theme-notice");
+    if (!el) return;
+    el.textContent = message;
+    el.className = "inline-notice show" + (kind ? " is-" + kind : "");
+    if (kind === "success") {
+      setTimeout(() => { el.className = "inline-notice"; }, 2200);
+    }
+  }
+
+  const Settings = (() => {
+    function showNotice(id, message, kind){
+      const el = document.getElementById(id);
+      el.textContent = message;
+      el.className = "inline-notice show" + (kind ? " is-" + kind : "");
+    }
+    async function changeUsername() {
+  const value = document.getElementById("changeusername").value.trim();
+  const old_username = localStorage.getItem("atlas_username");
+  if (!value) {
+    showNotice(
+      "username-notice",
+      "Enter a new username first.",
+      "pending"
+    );
+    return;
+  }
+  const token = localStorage.getItem("atlas_token");
+  if (!token) {
+    showNotice(
+      "username-notice",
+      "You are not logged in.",
+      "error"
+    );
+    return;
+  }
+  try {
+    const response = await fetch(Modulogical.API + "/settings/ChangeUsername", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: value,
+        token: token,
+        old_username: old_username
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showNotice(
+        "username-notice",
+        data["Username-notice"] || "Could not change username.",
+        data["status"]
+      );
+      return;
+    }
+    showNotice(
+      "username-notice",
+      data["Username-notice"] || "Username changed successfully!",
+      data["status"]
+    );
+    localStorage.setItem('atlas_username' , value)
+    document.getElementById("changeusername").value = "";
+  } catch (error) {
+    console.error("Username change failed:", error);
+    showNotice(
+      "username-notice",
+      "Could not connect to the server.",
+      "error"
+    );
+  }
+}
+
+    async function changePassword(){
+      const pw = document.getElementById("changepassword").value;
+      const confirm = document.getElementById("confirmpassword").value;
+      if (!pw || pw.length < 8) { showNotice("password-notice", "Password must be at least 8 characters.", "pending"); return; }
+      if (pw !== confirm) { showNotice("password-notice", "Passwords don't match.", "pending"); return; }
+      const username = localStorage.getItem("atlas_username");
+      const token = localStorage.getItem("atlas_token");
+      if (!pw) {
+      showNotice(
+      "password-notice",
+      "Required fields must be full",
+      "pending"
+       );
+       return;
+       }
+      
+       if (!confirm) {
+        showNotice(
+          "password-notice",
+          "Required fields must be full",
+          "pending"
+        );
+        return;
+       }
+       try { 
+        const response = await fetch(Modulogical.API + "/settings/ChangePassword", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        username: username,
+        token: token,
+        pw: pw,
+        confirm: confirm
+      })
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      showNotice(
+        "password-notice",
+        data["password-notice"] || "Could not change password.",
+        data["status"]
+      );
+      return;
+    }
+    showNotice(
+      "password-notice",
+      data["password-notice"] || "Password changed successfully!",
+      data["status"]
+    );
+  } catch (error) {
+    console.error("Password change failed:", error);
+    showNotice(
+      "password-notice",
+      "Could not connect to the server.",
+      "error"
+    );
+       }
+    }
+
+    return { changeUsername, changePassword };
+  })();
+</script>
+</body>
+</html>
