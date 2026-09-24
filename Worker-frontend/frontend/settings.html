@@ -312,6 +312,42 @@
     return "Modulogical theme";
   }
 
+  let themeRootVariables = new Map();
+  let themeVariables = new Map();
+
+  function parseThemeVariables(css){
+    const cleanCss = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    const rootVariables = new Map();
+    const themedVariables = new Map();
+
+    const blockRegex = /(:root|\[data-theme\s*=\s*["']([^"']+)["']\])\s*\{([^{}]*)\}/g;
+    let match;
+
+    while ((match = blockRegex.exec(cleanCss)) !== null) {
+      const selector = match[1];
+      const key = match[2];
+      const body = match[3];
+      const variables = new Map();
+      const variableRegex = /(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+)\s*;/g;
+      let variableMatch;
+
+      while ((variableMatch = variableRegex.exec(body)) !== null) {
+        variables.set(variableMatch[1], variableMatch[2].trim());
+      }
+
+      if (selector === ":root") {
+        for (const [property, value] of variables) {
+          rootVariables.set(property, value);
+        }
+      } else if (key) {
+        themedVariables.set(key.trim(), variables);
+      }
+    }
+
+    themeRootVariables = rootVariables;
+    themeVariables = themedVariables;
+  }
+
   async function discoverThemes(){
     const themes = [
       {
@@ -326,19 +362,26 @@
       if (!response.ok) throw new Error("Could not load theme stylesheet.");
 
       const css = await response.text();
+      parseThemeVariables(css);
+
       const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
       const regex = /\[data-theme\s*=\s*["']([^"']+)["']\]/g;
-      const seen = new Set(themes.map(theme => theme.key));
+      const seen = new Set(themes.map(theme => theme.key.toLowerCase()));
 
       let match;
       while ((match = regex.exec(cssWithoutComments)) !== null) {
         const key = match[1].trim();
-        if (!key || seen.has(key)) continue;
+        if (!key || !/^[a-zA-Z0-9_-]+$/.test(key)) continue;
 
-        // Only allow keys that the shared theme system can safely apply.
-        if (!/^[a-zA-Z0-9_-]+$/.test(key)) continue;
+        // The stylesheet contains a legacy selector named "Holographic Dark"
+        // whose values are the same default values as :root. Treat it as
+        // the built-in holographic theme rather than rendering a duplicate.
+        if (key.toLowerCase() === "holographic dark") continue;
 
-        seen.add(key);
+        const normalizedKey = key.toLowerCase();
+        if (seen.has(normalizedKey)) continue;
+
+        seen.add(normalizedKey);
         themes.push({
           key,
           label: formatThemeName(key),
@@ -419,34 +462,22 @@
   function applyThemeVariablesToPreview(preview, themeKey){
     if (!preview) return;
 
-    // Resolve the theme in an isolated element so the preview never inherits
-    // the user's currently active page theme. This is especially important
-    // for the default holographic theme, whose values live in :root rather
-    // than in a [data-theme="holographic"] selector.
-    const probe = document.createElement("span");
-    probe.style.position = "absolute";
-    probe.style.width = "0";
-    probe.style.height = "0";
-    probe.style.pointerEvents = "none";
-    probe.style.visibility = "hidden";
+    // Start with :root so the default Holographic Dark appearance is always
+    // resolved from the stylesheet itself, not from the theme currently
+    // applied to <html>.
+    const variables = new Map(themeRootVariables);
+    const overrides = themeVariables.get(themeKey);
 
-    if (themeKey !== "holographic") {
-      probe.setAttribute("data-theme", themeKey);
-    }
-
-    document.body.appendChild(probe);
-    const computed = getComputedStyle(probe);
-
-    for (let i = 0; i < computed.length; i++) {
-      const property = computed[i];
-      if (property.startsWith("--")) {
-        const value = computed.getPropertyValue(property).trim();
-        if (value) preview.style.setProperty(property, value);
+    if (overrides) {
+      for (const [property, value] of overrides) {
+        variables.set(property, value);
       }
     }
 
-    probe.remove();
-}
+    for (const [property, value] of variables) {
+      preview.style.setProperty(property, value);
+    }
+  }
 
   function escapeHtml(value){
     return String(value).replace(/[&<>"']/g, char => ({
