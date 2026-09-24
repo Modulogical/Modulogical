@@ -25,7 +25,7 @@
   --text-inverse:  #0a0a10;
 
   /* ---- holographic accent system --------------------------------------- */
-  --holo-blue:    #7dd3fc;
+--holo-blue:    #7dd3fc;
   --holo-violet:  #c4b5fd;
   --holo-pink:    #f5b8da;
   --holo-teal:    #67e8f9;
@@ -43,7 +43,7 @@
   --success:       #7be3ae;
   --success-wash:  rgba(123,227,174,.1);
   --danger:        #f2879a;
-  --danger-wash:   rgba(242,135,154,.1);
+  --danger-wash:   rgba(242,135,154,.1);  
 
   /* ---- type ------------------------------------------------------------*/
   --font: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
@@ -65,6 +65,28 @@
 /* Theme: greyscale — black / grey / white only                            */
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
+[data-theme="Holographic Dark"] {
+  --holo-blue:    #7dd3fc;
+  --holo-violet:  #c4b5fd;
+  --holo-pink:    #f5b8da;
+  --holo-teal:    #67e8f9;
+  --holo-indigo:  #a5b4fc;
+
+  --accent:        #b9aaff;      /* representative solid, for small dots/carets */
+  --accent-dim:    #786fb0;
+  --accent-wash:   rgba(185,170,255,.1);
+  --accent-line:   rgba(185,170,255,.35);
+
+  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
+  --holo-gradient-size: 260%;
+
+  /* ---- signal colors -----------------------------------------------------*/
+  --success:       #7be3ae;
+  --success-wash:  rgba(123,227,174,.1);
+  --danger:        #f2879a;
+  --danger-wash:   rgba(242,135,154,.1);
+}
+
 [data-theme="greyscale"]{
   --holo-blue:    #cfcfd6;
   --holo-violet:  #9a9aa3;
