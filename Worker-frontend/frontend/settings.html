@@ -359,10 +359,8 @@
     option.dataset.themeOption = theme.key;
     option.setAttribute("aria-pressed", "false");
 
-    // The preview gets the theme's own data-theme attribute, so the existing
-    // CSS variables render the preview using that theme's actual colours.
     option.innerHTML = `
-      <span class="theme-preview" data-theme="${escapeHtml(theme.key)}" aria-hidden="true">
+      <span class="theme-preview" aria-hidden="true">
         <span class="theme-preview-top"></span>
         <span class="theme-preview-body">
           <span></span><span></span><span></span>
@@ -374,6 +372,9 @@
       </span>
       <span class="theme-check" aria-hidden="true">✓</span>
     `;
+
+    const preview = option.querySelector(".theme-preview");
+    applyThemeVariablesToPreview(preview, theme.key);
 
     option.addEventListener("click", async () => {
       const selectedTheme = option.dataset.themeOption;
@@ -387,8 +388,6 @@
       }
 
       const previousTheme = Modulogical.getTheme();
-
-      // Apply immediately so the interface changes without waiting for D1.
       Modulogical.applyTheme(selectedTheme);
       renderSelectedTheme(selectedTheme);
 
@@ -408,8 +407,6 @@
         showThemeNotice("Theme saved.", "success");
       } catch (error) {
         console.error("Theme change failed:", error);
-
-        // Restore the theme that was active before the failed request.
         Modulogical.applyTheme(previousTheme);
         renderSelectedTheme(previousTheme);
         showThemeNotice("Could not save theme. Your previous theme has been restored.", "error");
@@ -418,6 +415,38 @@
 
     return option;
   }
+
+  function applyThemeVariablesToPreview(preview, themeKey){
+    if (!preview) return;
+
+    // Resolve the theme in an isolated element so the preview never inherits
+    // the user's currently active page theme. This is especially important
+    // for the default holographic theme, whose values live in :root rather
+    // than in a [data-theme="holographic"] selector.
+    const probe = document.createElement("span");
+    probe.style.position = "absolute";
+    probe.style.width = "0";
+    probe.style.height = "0";
+    probe.style.pointerEvents = "none";
+    probe.style.visibility = "hidden";
+
+    if (themeKey !== "holographic") {
+      probe.setAttribute("data-theme", themeKey);
+    }
+
+    document.body.appendChild(probe);
+    const computed = getComputedStyle(probe);
+
+    for (let i = 0; i < computed.length; i++) {
+      const property = computed[i];
+      if (property.startsWith("--")) {
+        const value = computed.getPropertyValue(property).trim();
+        if (value) preview.style.setProperty(property, value);
+      }
+    }
+
+    probe.remove();
+}
 
   function escapeHtml(value){
     return String(value).replace(/[&<>"']/g, char => ({
