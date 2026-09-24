@@ -28,7 +28,7 @@ INFERENCE_URL = os.getenv( #holds the url that connects to the AI server
     "https://inference.modulogical.com/generate",
 )
 
-ALLOWED_THEMES = {"holographic", "greyscale"}
+THEME_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
 DEFAULT_THEME = "holographic"
 
 pwd_hasher = PasswordHasher() #hashes the passwords to make them secure
@@ -373,7 +373,8 @@ async def get_theme(request: Request, token: Optional[str] = None):
         account["id"],
     )
 
-    theme = preference["theme"] if preference and preference.get("theme") in ALLOWED_THEMES else DEFAULT_THEME
+    stored_theme = preference["theme"] if preference else None
+    theme = stored_theme if stored_theme and THEME_KEY_PATTERN.fullmatch(stored_theme) else DEFAULT_THEME
     return json_response({"theme": theme})
 
 
@@ -387,9 +388,9 @@ async def set_theme(request: Request, details: ThemeDetails):
         return json_response({"message": "You are not logged in."}, 401)
 
     theme = details.theme
-    if theme not in ALLOWED_THEMES:
+    if not isinstance(theme, str) or not THEME_KEY_PATTERN.fullmatch(theme):
         return json_response(
-            {"message": "Invalid theme.", "allowed_themes": sorted(ALLOWED_THEMES)},
+            {"message": "Invalid theme key."},
             400,
         )
 
