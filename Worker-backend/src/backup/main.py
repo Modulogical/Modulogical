@@ -28,9 +28,6 @@ INFERENCE_URL = os.getenv( #holds the url that connects to the AI server
     "https://inference.modulogical.com/generate",
 )
 
-ALLOWED_THEMES = {"holographic", "greyscale"}
-DEFAULT_THEME = "holographic"
-
 pwd_hasher = PasswordHasher() #hashes the passwords to make them secure
 
 Models = { #tokens that are authenticated from the frontend and point to a specific model
@@ -82,20 +79,6 @@ async def d1_all(request: Request, sql: str, *values): #connects to D1 database 
 async def d1_run(request: Request, sql: str, *values): #connects to D1 database and performs an SQL query
     env = env_from(request)
     return await env.DB.prepare(sql).bind(*values).run()
-
-async def ensure_account_preferences(request: Request):
-    """Create the small per-account preferences table if this deployment has not
-    created it yet. This keeps theme preferences separate from core account data
-    and makes the endpoint safe for existing accounts.
-    """
-    await d1_run(
-        request,
-        """CREATE TABLE IF NOT EXISTS account_preferences (
-               account_id TEXT PRIMARY KEY,
-               theme TEXT NOT NULL DEFAULT 'holographic',
-               FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
-           )""",
-    )
 
 async def authenticate(request: Request, token: Optional[str] = None): #verifies the token sent by the frontend
     actual = token_from(request, token)
@@ -191,10 +174,6 @@ class PasswordChange(BaseModel):
 class LogoutDetails(BaseModel):
     token: Optional[str] = None
 
-class ThemeDetails(BaseModel):
-    theme: str
-    token: Optional[str] = None
-
 # ----- Endpoints ----- #
 # Called by the browser /api; verifies and performs the action
 # Methods:
@@ -229,13 +208,6 @@ async def register(details: RegisterDetails, request: Request):
            (account_id, model, personality, system_instructions)
            VALUES (?, 'gemma3:latest', '', '')""",
         account_id,
-    )
-    await ensure_account_preferences(request)
-    await d1_run(
-        request,
-        "INSERT OR IGNORE INTO account_preferences (account_id, theme) VALUES (?, ?)",
-        account_id,
-        DEFAULT_THEME,
     )
 
     token = new_token()
@@ -360,52 +332,6 @@ async def settings_changepassword(request: Request, details: PasswordChange):
     return json_response({"password-notice": "Password changed successfully!",
                           "status" : "success"})
 
-@app.get("/settings/theme")
-async def get_theme(request: Request, token: Optional[str] = None):
-    account = await authenticate(request, token)
-    if not account:
-        return json_response({"message": "You are not logged in."}, 401)
-
-    await ensure_account_preferences(request)
-    preference = await d1_first(
-        request,
-        "SELECT theme FROM account_preferences WHERE account_id = ?",
-        account["id"],
-    )
-
-    theme = preference["theme"] if preference and preference.get("theme") in ALLOWED_THEMES else DEFAULT_THEME
-    return json_response({"theme": theme})
-
-
-@app.patch("/settings/theme")
-async def set_theme(request: Request, details: ThemeDetails):
-    # Authenticate the session token; never trust an account ID from the browser
-    # when deciding whose preference should be changed.
-    token = token_from(request, details.token)
-    account = await authenticate(request, token)
-    if not account:
-        return json_response({"message": "You are not logged in."}, 401)
-
-    theme = details.theme
-    if theme not in ALLOWED_THEMES:
-        return json_response(
-            {"message": "Invalid theme.", "allowed_themes": sorted(ALLOWED_THEMES)},
-            400,
-        )
-
-    await ensure_account_preferences(request)
-    await d1_run(
-        request,
-        """INSERT INTO account_preferences (account_id, theme)
-           VALUES (?, ?)
-           ON CONFLICT(account_id) DO UPDATE SET theme = excluded.theme""",
-        account["id"],
-        theme,
-    )
-
-    return json_response({"theme": theme, "message": "Theme saved successfully."})
-
-
 @app.get("/context")
 async def get_context(request: Request, token: Optional[str] = None):
     account = await authenticate(request, token)
@@ -415,12 +341,6 @@ async def get_context(request: Request, token: Optional[str] = None):
     config = await d1_first(
         request,
         "SELECT model, personality, system_instructions FROM account_config WHERE account_id = ?",
-        account["id"],
-    )
-    await ensure_account_preferences(request)
-    preference = await d1_first(
-        request,
-        "SELECT theme FROM account_preferences WHERE account_id = ?",
         account["id"],
     )
     memories = await d1_all(
@@ -443,7 +363,6 @@ async def get_context(request: Request, token: Optional[str] = None):
         "valid": True,
         "account": account,
         "config": config or {"model": "gemma3:latest", "personality": "", "system_instructions": ""},
-        "theme": (preference or {}).get("theme", DEFAULT_THEME),
         "memories": memories,
         "conversations": conversations,
         "messages": messages,
