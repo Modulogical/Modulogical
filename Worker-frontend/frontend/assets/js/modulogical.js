@@ -21,6 +21,53 @@ const Modulogical = (() => {
   const MODULE_KEY = "Module";
   const NAME_KEY = "atlas_name";
   const USERNAME_KEY = "atlas_username";
+  const THEME_KEY = "modulogical_theme";
+  const DEFAULT_THEME = "holographic";
+
+  // Theme names are deliberately whitelisted here and again on the backend.
+  // The local value is only a fast UI hint; the authenticated backend remains
+  // the source of truth for the persisted account preference.
+  const THEMES = [
+    { key: "holographic", label: "Holographic dark" },
+    { key: "greyscale", label: "Greyscale" },
+  ];
+
+  function themeByKey(key){
+    return THEMES.find(theme => theme.key === key);
+  }
+
+  function getTheme(){
+    const stored = localStorage.getItem(THEME_KEY);
+    return themeByKey(stored) ? stored : DEFAULT_THEME;
+  }
+
+  function applyTheme(theme){
+    const selected = themeByKey(theme) ? theme : DEFAULT_THEME;
+    document.documentElement.dataset.theme = selected === DEFAULT_THEME ? "" : selected;
+    localStorage.setItem(THEME_KEY, selected);
+    return selected;
+  }
+
+  async function loadTheme(){
+    // Apply the last known value immediately to avoid a flash on navigation.
+    applyTheme(getTheme());
+
+    const token = getToken();
+    if (!token) return getTheme();
+
+    try {
+      const response = await fetch(API + "/settings/theme?token=" + encodeURIComponent(token), {
+        headers: headers(false)
+      });
+      if (!response.ok) return getTheme();
+
+      const data = await response.json();
+      if (data.theme) return applyTheme(data.theme);
+    } catch (error) {
+      console.error("Theme load failed:", error);
+    }
+    return getTheme();
+  }
 
   // Model registry — IDs are exactly what the backend already expects.
   // "auto" has no backend ID: it is sent as the literal string "auto" so the
@@ -45,6 +92,7 @@ const Modulogical = (() => {
     localStorage.removeItem(MODULE_KEY);
     localStorage.removeItem(NAME_KEY);
     localStorage.removeItem(USERNAME_KEY);
+    localStorage.removeItem(THEME_KEY);
   }
 
   function getModelKey(){ return localStorage.getItem(MODEL_KEY) || "auto"; }
@@ -136,11 +184,16 @@ const Modulogical = (() => {
     return (parts[0]?.[0] || "").toUpperCase() + (parts[1]?.[0] || "").toUpperCase() || parts[0]?.[0]?.toUpperCase() || "?";
   }
 
+  // Every authenticated page includes this shared file, so themes persist
+  // across navigation without requiring each page to implement theme loading.
+  applyTheme(getTheme());
+  if (getToken()) loadTheme();
+
   return {
-    API, TOKEN_KEY, MODEL_KEY, MODULE_KEY, NAME_KEY, USERNAME_KEY,
+    API, TOKEN_KEY, MODEL_KEY, MODULE_KEY, NAME_KEY, USERNAME_KEY, THEME_KEY, DEFAULT_THEME, THEMES,
     MODELS, modelByKey, modelById,
     getToken, setToken, clearSession,
-    getModelKey, setModelKey,
+    getModelKey, setModelKey, themeByKey, getTheme, applyTheme, loadTheme,
     headers, requireAuth, logout, goToEntry,
     toast, initNav, initials,
   };
