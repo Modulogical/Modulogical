@@ -90,6 +90,28 @@
   --danger-wash:  rgba(255,255,255,.12);
 }
 
+[data-theme="Company Colours"] {
+  --holo-blue:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
+  --holo-violet:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
+  --holo-pink:    #ff2f52;   /* neon red, from the emblem's right/red facets */
+  --holo-teal:    #22e6ff;   /* bright cyan highlight */
+  --holo-indigo:  #3d5aff;
+
+  --accent:        #22b2ff;      /* representative solid, for small dots/carets — leads with blue so it reads distinctly from the danger/error red below */
+  --accent-dim:    #1478ad;
+  --accent-wash:   rgba(34,178,255,.1);
+  --accent-line:   rgba(34,178,255,.35);
+
+  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
+  --holo-gradient-size: 260%;
+
+  /* ---- signal colors -----------------------------------------------------*/
+  --success:       #7be3ae;
+  --success-wash:  rgba(123,227,174,.1);
+  --danger:        #ff8a5b;   /* shifted to orange-red rather than pink-red, so error states stay visually distinct from the brand's own neon red */
+  --danger-wash:   rgba(255,138,91,.1);
+}
+
 /* ---------------------------------------------------------------------- */
 /* Reset                                                                    */
 /* ---------------------------------------------------------------------- */

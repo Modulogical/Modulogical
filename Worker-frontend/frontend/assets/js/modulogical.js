@@ -24,16 +24,16 @@ const Modulogical = (() => {
   const THEME_KEY = "modulogical_theme";
   const DEFAULT_THEME = "holographic";
 
-  // Theme names are deliberately whitelisted here and again on the backend.
-  // The local value is only a fast UI hint; the authenticated backend remains
-  // the source of truth for the persisted account preference.
+  // Theme definitions live in the shared CSS. The frontend accepts a theme key
+  // when it is a safe CSS identifier; settings.html discovers the actual theme
+  // selectors from that stylesheet and renders them automatically.
   const THEMES = [
     { key: "holographic", label: "Holographic dark" },
-    { key: "greyscale", label: "Greyscale" },
   ];
 
   function themeByKey(key){
-    return THEMES.find(theme => theme.key === key);
+    if (THEMES.some(theme => theme.key === key)) return { key };
+    return typeof key === "string" && /^[a-z0-9_-]+$/i.test(key) ? { key } : null;
   }
 
   function getTheme(){
