@@ -287,27 +287,59 @@
       : "New username";
   })();
 
-  async function discoverThemes(){
-    const themes = [{ key: "holographic", label: "Holographic dark", note: "The default Modulogical interface" }];
+  async function discoverThemes() {
+    const themes = [
+        {
+            key: "holographic",
+            label: "Holographic dark",
+            note: "The default Modulogical interface"
+        }
+    ];
+
     try {
-      const response = await fetch("/assets/css/modulogical.css", { cache: "no-store" });
-      if (!response.ok) throw new Error("Could not load theme stylesheet.");
-      const css = await response.text();
-      const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
-      const seen = new Set(themes.map(theme => theme.key));
-      const regex = /\[data-theme\s*=\s*["']([^"']+)["']\s*\]/g;
-      let match;
-      while ((match = regex.exec(cssWithoutComments)) !== null {
-        const key = match[1].trim();
-        if (!key || seen.has(key)) continue;
-        seen.add(key);
-        themes.push({ key, label: formatThemeName(key), note: "Modulogical theme" });
-      }
+        const response = await fetch("/assets/css/modulogical.css", {
+            cache: "no-store"
+        });
+
+        if (!response.ok) {
+            throw new Error("Could not load theme stylesheet.");
+        }
+
+        const css = await response.text();
+
+        // Remove CSS comments
+        const cssWithoutComments = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+        const seen = new Set(themes.map(theme => theme.key));
+
+        // Find selectors such as:
+        // [data-theme="greyscale"]
+        // [data-theme='midnight']
+        const regex = /\[data-theme\s*=\s*["']([^"']+)["']\]/g;
+
+        let match;
+
+        while ((match = regex.exec(cssWithoutComments)) !== null) {
+            const key = match[1].trim();
+
+            if (!key || seen.has(key)) {
+                continue;
+            }
+
+            seen.add(key);
+
+            themes.push({
+                key,
+                label: formatThemeName(key),
+                note: "Modulogical theme"
+            });
+        }
     } catch (error) {
-      console.error("Theme discovery failed:", error);
+        console.error("Theme discovery failed:", error);
     }
+
     return themes;
-  }
+}
 
   function formatThemeName(key){
     return key.replace(/[-_]+/g, " ").replace(/\b\w/g, char => char.toUpperCase());
