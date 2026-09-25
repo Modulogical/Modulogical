@@ -6,38 +6,72 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,380..800;1,14..32,380..800&display=swap');
 
 :root{
-  /* ---- surfaces -------------------------------------------------------- */
-  --bg:            #06070a;
-  --surface-1:     rgba(255,255,255,.035);
-  --surface-2:     rgba(255,255,255,.05);
-  --surface-3:     rgba(255,255,255,.075);
-  --surface-raised:rgba(255,255,255,.045);
+  /* =====================================================================
+     THEME TOKENS
+     ===================================================================== */
 
-  /* ---- borders ----------------------------------------------------------*/
-  --line:          rgba(255,255,255,.09);
-  --line-strong:   rgba(255,255,255,.16);
-  --line-accent:   rgba(196,181,253,.4);
+  /* ---- general UI ------------------------------------------------------- */
+  --bg:             #06070a;
+  --surface-1:      rgba(255,255,255,.035);
+  --surface-2:      rgba(255,255,255,.05);
+  --surface-3:      rgba(255,255,255,.075);
+  --surface-raised: rgba(255,255,255,.045);
 
-  /* ---- text ---------------------------------------------------------- */
-  --text-1:        #f3f1f8;
-  --text-2:        #a3a2b3;
-  --text-3:        #6d6c7c;
-  --text-inverse:  #0a0a10;
+  --line:           rgba(255,255,255,.09);
+  --line-strong:    rgba(255,255,255,.16);
+  --line-accent:    rgba(196,181,253,.4);
+
+  /* ---- text: shared defaults ------------------------------------------- */
+  --text-1:         #f3f1f8;
+  --text-2:         #a3a2b3;
+  --text-3:         #6d6c7c;
+  --text-inverse:   #0a0a10;
+
+  /* ---- text: per UI ---------------------------------------------------- */
+  --text-nav:       var(--text-1);
+  --text-dashboard: var(--text-1);
+  --text-chat:      var(--text-1);
+  --text-settings:  var(--text-1);
+  --text-muted:     var(--text-3);
+
+  /* ---- dashboard / topbar --------------------------------------------- */
+  /* The dashboard and persistent topbar intentionally share one base colour. */
+  --dashboard-bg:   #06070a;
+  --dashboard-glow-1: var(--left-glow-primary);
+  --dashboard-glow-2: var(--left-glow-secondary);
+  --dashboard-glow-3: var(--right-glow-primary);
+  --dashboard-glow-4: var(--right-glow-secondary);
+
+  /* ---- buttons --------------------------------------------------------- */
+  --button-primary-bg:   var(--text-1);
+  --button-primary-text: var(--text-inverse);
+  --button-primary-hover: #d9d8d2;
+
+  --button-accent-text:  #14121f;
+  --button-ghost-bg:     var(--surface-1);
+  --button-ghost-text:   var(--text-1);
 
   /* ---- holographic accent system --------------------------------------- */
---holo-blue:    #7dd3fc;
-  --holo-violet:  #c4b5fd;
-  --holo-pink:    #f5b8da;
-  --holo-teal:    #67e8f9;
-  --holo-indigo:  #a5b4fc;
+--left-glow-secondary:    #7dd3fc;
+  --left-glow-primary:  #c4b5fd;
+  --right-glow-primary:    #f5b8da;
+  --right-glow-secondary:    #67e8f9;
+  --accent:  #a5b4fc;
 
   --accent:        #b9aaff;      /* representative solid, for small dots/carets */
   --accent-dim:    #786fb0;
   --accent-wash:   rgba(185,170,255,.1);
   --accent-line:   rgba(185,170,255,.35);
 
-  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
-  --holo-gradient-size: 260%;
+  /* Reusable brand/accent gradient (buttons, gradient text, etc.) */
+  --accent-gradient: linear-gradient(
+    115deg,
+    var(--left-glow-secondary) 0%,
+    var(--left-glow-primary) 32%,
+    var(--right-glow-primary) 64%,
+    var(--right-glow-secondary) 100%
+  );
+  --accent-gradient-size: 260%;
 
   /* ---- signal colors -----------------------------------------------------*/
   --success:       #7be3ae;
@@ -66,19 +100,30 @@
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
 [data-theme="Holographic Dark"] {
-  --holo-blue:    #7dd3fc;
-  --holo-violet:  #c4b5fd;
-  --holo-pink:    #f5b8da;
-  --holo-teal:    #67e8f9;
-  --holo-indigo:  #a5b4fc;
+  --dashboard-bg: #06070a;
+  --dashboard-glow-1: var(--left-glow-primary);
+  --dashboard-glow-2: var(--left-glow-secondary);
+  --dashboard-glow-3: var(--right-glow-primary);
+  --dashboard-glow-4: var(--right-glow-secondary);
+
+  --button-primary-bg: var(--text-1);
+  --button-primary-text: var(--text-inverse);
+  --button-primary-hover: #d9d8d2;
+  --button-accent-text: #14121f;
+
+  --left-glow-secondary:    #7dd3fc;
+  --left-glow-primary:  #c4b5fd;
+  --right-glow-primary:    #f5b8da;
+  --right-glow-secondary:    #67e8f9;
+  --accent:  #a5b4fc;
 
   --accent:        #b9aaff;      /* representative solid, for small dots/carets */
   --accent-dim:    #786fb0;
   --accent-wash:   rgba(185,170,255,.1);
   --accent-line:   rgba(185,170,255,.35);
 
-  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
-  --holo-gradient-size: 260%;
+  --accent-gradient: linear-gradient(115deg, var(--left-glow-secondary) 0%, var(--left-glow-primary) 32%, var(--right-glow-primary) 64%, var(--right-glow-secondary) 100%);
+  --accent-gradient-size: 260%;
 
   /* ---- signal colors -----------------------------------------------------*/
   --success:       #7be3ae;
@@ -88,11 +133,22 @@
 }
 
 [data-theme="greyscale"]{
-  --holo-blue:    #cfcfd6;
-  --holo-violet:  #9a9aa3;
-  --holo-pink:    #e8e8ec;
-  --holo-teal:    #b5b5bd;
-  --holo-indigo:  #7d7d86;
+  --dashboard-bg: #06070a;
+  --dashboard-glow-1: var(--left-glow-primary);
+  --dashboard-glow-2: var(--left-glow-secondary);
+  --dashboard-glow-3: var(--right-glow-primary);
+  --dashboard-glow-4: var(--right-glow-secondary);
+
+  --button-primary-bg: var(--text-1);
+  --button-primary-text: var(--text-inverse);
+  --button-primary-hover: #f0f0f0;
+  --button-accent-text: #0a0a0a;
+
+  --left-glow-secondary:    #cfcfd6;
+  --left-glow-primary:  #9a9aa3;
+  --right-glow-primary:    #e8e8ec;
+  --right-glow-secondary:    #b5b5bd;
+  --accent:  #7d7d86;
 
   --accent:       #d6d6db;
   --accent-dim:   #8b8b93;
@@ -100,7 +156,7 @@
   --accent-line:  rgba(255,255,255,.28);
   --line-accent:  rgba(255,255,255,.3);
 
-  --holo-gradient: linear-gradient(115deg, #e8e8ec 0%, #b5b5bd 32%, #8b8b93 64%, #d6d6db 100%);
+  --accent-gradient: linear-gradient(115deg, #e8e8ec 0%, #b5b5bd 32%, #8b8b93 64%, #d6d6db 100%);
 
   /* NOTE: success/danger are both near-white greys here, distinguished only
      by brightness rather than hue — worth deciding whether every theme
@@ -113,19 +169,30 @@
 }
 
 [data-theme="Company-Colours"] {
-  --holo-blue:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
-  --holo-violet:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
-  --holo-pink:    #ff2f52;   /* neon red, from the emblem's right/red facets */
-  --holo-teal:    #22e6ff;   /* bright cyan highlight */
-  --holo-indigo:  #3d5aff;
+  --dashboard-bg: #06070a;
+  --dashboard-glow-1: var(--left-glow-primary);
+  --dashboard-glow-2: var(--left-glow-secondary);
+  --dashboard-glow-3: var(--right-glow-primary);
+  --dashboard-glow-4: var(--right-glow-secondary);
+
+  --button-primary-bg: var(--text-1);
+  --button-primary-text: var(--text-inverse);
+  --button-primary-hover: #d9d8d2;
+  --button-accent-text: #14121f;
+
+  --left-glow-secondary:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
+  --left-glow-primary:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
+  --right-glow-primary:    #ff2f52;   /* neon red, from the emblem's right/red facets */
+  --right-glow-secondary:    #22e6ff;   /* bright cyan highlight */
+  --accent:  #3d5aff;
 
   --accent:        #22b2ff;      /* representative solid, for small dots/carets — leads with blue so it reads distinctly from the danger/error red below */
   --accent-dim:    #1478ad;
   --accent-wash:   rgba(34,178,255,.1);
   --accent-line:   rgba(34,178,255,.35);
 
-  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
-  --holo-gradient-size: 260%;
+  --accent-gradient: linear-gradient(115deg, var(--left-glow-secondary) 0%, var(--left-glow-primary) 32%, var(--right-glow-primary) 64%, var(--right-glow-secondary) 100%);
+  --accent-gradient-size: 260%;
 
   /* ---- signal colors -----------------------------------------------------*/
   --success:       #7be3ae;
@@ -135,11 +202,22 @@
 }
 
 [data-theme="Hacker-Green"] {
-  --holo-blue:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
-  --holo-violet:  #090c0a;   /* blue-leaning transition tone, replaces violet */
-  --holo-pink:    #06070a;  /* neon red, from the emblem's right/red facets */
-  --holo-teal:    #06070a;   /* bright cyan highlight */
-  --holo-indigo:  #0de631;
+  --dashboard-bg: #001b09;
+  --dashboard-glow-1: #003d15;
+  --dashboard-glow-2: #00250d;
+  --dashboard-glow-3: #006b20;
+  --dashboard-glow-4: #003b12;
+
+  --button-primary-bg: #00ff41;
+  --button-primary-text: #001a08;
+  --button-primary-hover: #39ff14;
+  --button-accent-text: #001a08;
+
+  --left-glow-secondary:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
+  --left-glow-primary:  #090c0a;   /* blue-leaning transition tone, replaces violet */
+  --right-glow-primary:    #06070a;  /* neon red, from the emblem's right/red facets */
+  --right-glow-secondary:    #06070a;   /* bright cyan highlight */
+  --accent:  #0de631;
 
   --font: "Courier New", monospace;
   --text-1: #00ff41;  /* primary/main text */
@@ -152,8 +230,8 @@
   --accent-wash:   rgba(30, 255, 0, 0.493);
   --accent-line:   rgba(4, 255, 46, 0.596);
 
-  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
-  --holo-gradient-size: 260%;
+  --accent-gradient: linear-gradient(115deg, var(--left-glow-secondary) 0%, var(--left-glow-primary) 32%, var(--right-glow-primary) 64%, var(--right-glow-secondary) 100%);
+  --accent-gradient-size: 260%;
 
   /* ---- signal colors -----------------------------------------------------*/
   --success:       #7be3ae;
@@ -191,7 +269,7 @@ img,svg{ display: block; max-width: 100%; }
 ::selection{ background: var(--accent-wash); color: var(--text-1); }
 
 :focus-visible{
-  outline: 2px solid var(--holo-violet);
+  outline: 2px solid var(--left-glow-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -223,8 +301,8 @@ body::before{
   height: 60vw;
   max-width: 780px;
   max-height: 780px;
-  background: radial-gradient(circle at 30% 30%, var(--holo-violet), transparent 68%),
-              radial-gradient(circle at 70% 70%, var(--holo-blue), transparent 70%);
+  background: radial-gradient(circle at 30% 30%, var(--left-glow-primary), transparent 68%),
+              radial-gradient(circle at 70% 70%, var(--left-glow-secondary), transparent 70%);
   animation: aurora-drift-a 34s ease-in-out infinite alternate;
 }
 body::after{
@@ -234,8 +312,8 @@ body::after{
   height: 55vw;
   max-width: 720px;
   max-height: 720px;
-  background: radial-gradient(circle at 40% 40%, var(--holo-pink), transparent 66%),
-              radial-gradient(circle at 65% 60%, var(--holo-teal), transparent 72%);
+  background: radial-gradient(circle at 40% 40%, var(--right-glow-primary), transparent 66%),
+              radial-gradient(circle at 65% 60%, var(--right-glow-secondary), transparent 72%);
   animation: aurora-drift-b 40s ease-in-out infinite alternate;
 }
 @keyframes aurora-drift-a{
@@ -270,8 +348,8 @@ body::after{
 
 /* Holographic gradient text — used sparingly, on the brand moment only */
 .holo-text{
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
+  background: var(--accent-gradient);
+  background-size: var(--accent-gradient-size) 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -295,7 +373,7 @@ body::after{
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(6,7,10,.6);
+  background: var(--dashboard-bg);
   backdrop-filter: blur(var(--blur-glass)) saturate(150%);
   -webkit-backdrop-filter: blur(var(--blur-glass)) saturate(150%);
   border-bottom: 1px solid var(--line);
@@ -343,8 +421,8 @@ body::after{
 .account-avatar{
   width: 24px; height: 24px;
   border-radius: 50%;
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
+  background: var(--accent-gradient);
+  background-size: var(--accent-gradient-size) 100%;
   animation: holo-shift 12s ease-in-out infinite alternate;
   display: flex; align-items: center; justify-content: center;
   font-size: .68rem; font-weight: 700; color: #14121f;
@@ -378,14 +456,14 @@ body::after{
 .btn:active{ transform: scale(.98); }
 .btn:disabled{ opacity: .45; cursor: not-allowed; transform: none; }
 
-.btn-primary{ background: var(--text-1); color: var(--text-inverse); }
-.btn-primary:hover:not(:disabled){ background: #d9d8d2; }
+.btn-primary{ background: var(--button-primary-bg); color: var(--button-primary-text); }
+.btn-primary:hover:not(:disabled){ background: var(--button-primary-hover); }
 
 .btn-accent{
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
+  background: var(--accent-gradient);
+  background-size: var(--accent-gradient-size) 100%;
   background-position: 0% 50%;
-  color: #14121f;
+  color: var(--button-accent-text);
   animation: holo-shift 9s ease-in-out infinite alternate;
 }
 .btn-accent:hover:not(:disabled){ box-shadow: 0 6px 24px var(--accent-line); transform: translateY(-1px); }
