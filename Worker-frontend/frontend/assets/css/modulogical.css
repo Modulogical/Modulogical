@@ -99,7 +99,7 @@
 /* Theme: greyscale — black / grey / white only                            */
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
-[data-theme="Holographic Dark"] {
+[data-theme="Holographic-Dark"] {
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
@@ -132,7 +132,7 @@
   --danger-wash:   rgba(242,135,154,.1);
 }
 
-[data-theme="greyscale"]{
+[data-theme="Greyscale"]{
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
@@ -202,7 +202,7 @@
 }
 
 [data-theme="Hacker-Green"] {
-  --dashboard-bg: #001b09;
+  --dashboard-bg: #06070a;
   --dashboard-glow-1: #003d15;
   --dashboard-glow-2: #00250d;
   --dashboard-glow-3: #006b20;

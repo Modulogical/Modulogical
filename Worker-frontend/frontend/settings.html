@@ -93,48 +93,128 @@
     border-color: var(--accent-line);
     background: var(--accent-wash);
   }
+  /* Each card is a tiny, self-contained version of the real chat UI.
+     Its custom properties are populated directly from modulogical.css by JS. */
   .theme-preview{
     display: block;
-    height: 94px;
+    height: 142px;
     overflow: hidden;
     position: relative;
     border: 1px solid var(--line-strong);
     border-radius: 9px;
+    background: var(--dashboard-bg, var(--bg));
+    color: var(--text-chat, var(--text-1));
+    font-family: var(--font);
   }
-  .theme-preview{
-    background:
-      radial-gradient(circle at 18% 18%, color-mix(in srgb, var(--holo-blue) 55%, transparent), transparent 35%),
-      radial-gradient(circle at 82% 75%, color-mix(in srgb, var(--holo-pink) 50%, transparent), transparent 40%),
-      var(--bg);
-  }
-  .theme-preview-top{
-    display: block;
-    height: 18px;
-    border-bottom: 1px solid rgba(255,255,255,.12);
-    background: rgba(255,255,255,.05);
-  }
-  .theme-preview-body{
+
+  .theme-preview-app{
     display: flex;
+    width: 100%;
+    height: 100%;
+    background:
+      radial-gradient(circle at 18% 15%, var(--left-glow-primary, transparent), transparent 42%),
+      radial-gradient(circle at 82% 82%, var(--right-glow-primary, transparent), transparent 45%),
+      var(--dashboard-bg, var(--bg));
+  }
+
+  .theme-preview-sidebar{
+    flex: 0 0 25%;
+    min-width: 0;
+    padding: 8px 6px;
+    border-right: 1px solid var(--line);
+    background: var(--surface-1);
+  }
+
+  .theme-preview-logo{
+    height: 7px;
+    width: 58%;
+    margin: 1px 3px 10px;
+    border-radius: 3px;
+    background: var(--accent-gradient, var(--accent));
+    opacity: .9;
+  }
+
+  .theme-preview-nav{
+    display: flex;
+    flex-direction: column;
     gap: 5px;
-    padding: 12px;
   }
-  .theme-preview-body span{
+
+  .theme-preview-nav span{
     display: block;
-    height: 45px;
-    border-radius: 5px;
-    background: rgba(255,255,255,.07);
-    border: 1px solid rgba(255,255,255,.10);
+    height: 5px;
+    width: 76%;
+    border-radius: 3px;
+    background: var(--text-3);
+    opacity: .75;
   }
-  .theme-preview-body span:nth-child(1){ width: 38%; }
-  .theme-preview-body span:nth-child(2){ width: 25%; }
-  .theme-preview-body span:nth-child(3){ width: 37%; }
-  .theme-preview-body span{
+
+  .theme-preview-nav span:first-child{
+    width: 88%;
+    background: var(--accent);
+  }
+
+  .theme-preview-chat{
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+  }
+
+  .theme-preview-chatbar{
+    height: 7px;
+    width: 38%;
+    margin: 1px 0 9px;
+    border-radius: 3px;
+    background: var(--text-2);
+    opacity: .8;
+  }
+
+  .theme-preview-message{
+    align-self: flex-start;
+    max-width: 72%;
+    padding: 7px 8px;
+    border: 1px solid var(--line);
+    border-radius: 7px 7px 7px 2px;
     background: var(--surface-2);
-    border-color: var(--line);
+    color: var(--text-chat, var(--text-1));
+    font-family: var(--font);
+    font-size: 7px;
+    line-height: 1.25;
+    white-space: nowrap;
+    box-shadow: 0 3px 12px rgba(0,0,0,.12);
   }
-  .theme-preview-body span:nth-child(2){
-    background: var(--holo-gradient);
-    opacity: .32;
+
+  .theme-preview-input{
+    margin-top: auto;
+    height: 18px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 4px 3px 6px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface-1);
+  }
+
+  .theme-preview-input-text{
+    min-width: 0;
+    flex: 1;
+    color: var(--text-3);
+    font-size: 6px;
+    white-space: nowrap;
+  }
+
+  .theme-preview-send{
+    flex: 0 0 auto;
+    height: 12px;
+    padding: 0 6px;
+    border: 0;
+    border-radius: 4px;
+    background: var(--button-primary-bg, var(--accent));
+    color: var(--button-primary-text, var(--text-inverse));
+    font: 700 5px var(--font);
   }
   .theme-option-copy{ display: flex; flex-direction: column; gap: 2px; padding: 0 2px 2px; }
   .theme-option-copy .name{ font-size: .88rem; font-weight: 560; color: var(--text-1); }
@@ -404,9 +484,21 @@
 
     option.innerHTML = `
       <span class="theme-preview" aria-hidden="true">
-        <span class="theme-preview-top"></span>
-        <span class="theme-preview-body">
-          <span></span><span></span><span></span>
+        <span class="theme-preview-app">
+          <span class="theme-preview-sidebar">
+            <span class="theme-preview-logo"></span>
+            <span class="theme-preview-nav">
+              <span></span><span></span><span></span><span></span>
+            </span>
+          </span>
+          <span class="theme-preview-chat">
+            <span class="theme-preview-chatbar"></span>
+            <span class="theme-preview-message">Hello, Atlas</span>
+            <span class="theme-preview-input">
+              <span class="theme-preview-input-text">Message Atlas...</span>
+              <span class="theme-preview-send">Send</span>
+            </span>
+          </span>
         </span>
       </span>
       <span class="theme-option-copy">
@@ -474,8 +566,26 @@
       }
     }
 
+    // Copy the complete token set from :root + this theme onto the preview.
+    // The preview therefore renders from the same CSS design tokens as the
+    // actual interface, including gradients where those tokens are available.
     for (const [property, value] of variables) {
       preview.style.setProperty(property, value);
+    }
+
+    // A few preview-only fallbacks make the miniature UI work with both the
+    // current semantic tokens and older theme definitions.
+    const fallbackTokens = {
+      "--dashboard-bg": "var(--bg)",
+      "--text-chat": "var(--text-1)",
+      "--button-primary-bg": "var(--accent)",
+      "--button-primary-text": "var(--text-inverse)"
+    };
+
+    for (const [property, value] of Object.entries(fallbackTokens)) {
+      if (!preview.style.getPropertyValue(property)) {
+        preview.style.setProperty(property, value);
+      }
     }
   }
 
