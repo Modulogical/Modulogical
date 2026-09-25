@@ -43,12 +43,60 @@
   --dashboard-glow-4: var(--right-glow-secondary);
 
   /* ---- buttons --------------------------------------------------------- */
-  /* Single semantic colour source for every button across the frontend. */
-  --button-color:       var(--text-1);
-  --button-text:        var(--text-inverse);
-  --button-hover:       #d9d8d2;
-  --button-border:      var(--button-color);
-  --button-shadow:      rgba(0,0,0,.18);
+  /* ---- semantic button roles -------------------------------------------- */
+  /* Generic product actions (non-page-specific CTAs) */
+  --button-default-bg: var(--accent);
+  --button-default-text: var(--text-inverse);
+  --button-default-hover: var(--accent-dim);
+  --button-default-accent-text: var(--text-inverse);
+  --button-default-ghost-bg: var(--surface-1);
+  --button-default-ghost-text: var(--text-1);
+
+  /* Chat send/action */
+  --button-chat-bg:           var(--accent);
+  --button-chat-text:         var(--text-inverse);
+  --button-chat-hover:        var(--accent-dim);
+  --button-chat-border:       transparent;
+  --button-chat-hover-border: transparent;
+
+  /* Chat model/temperature controls */
+  --button-chat-preference-bg:           var(--surface-2);
+  --button-chat-preference-text:         var(--text-1);
+  --button-chat-preference-hover:        var(--surface-3);
+  --button-chat-preference-border:       var(--line);
+  --button-chat-preference-hover-border: var(--line-strong);
+
+  /* Sidebar controls/navigation */
+  --button-sidebar-bg:           var(--surface-2);
+  --button-sidebar-text:         var(--text-2);
+  --button-sidebar-hover:        var(--surface-3);
+  --button-sidebar-hover-text:   var(--text-1);
+  --button-sidebar-border:       var(--line);
+  --button-sidebar-hover-border: var(--line-strong);
+
+  /* Persistent topbar controls */
+  --button-topbar-bg:           var(--surface-1);
+  --button-topbar-text:         var(--text-2);
+  --button-topbar-hover:        var(--surface-2);
+  --button-topbar-hover-text:   var(--text-1);
+  --button-topbar-border:       var(--line);
+  --button-topbar-hover-border: var(--line-strong);
+
+  /* Settings-page controls */
+  --button-settings-bg:           var(--surface-1);
+  --button-settings-text:         var(--text-1);
+  --button-settings-hover:        var(--surface-2);
+  --button-settings-hover-text:   var(--text-1);
+  --button-settings-border:       var(--line);
+  --button-settings-hover-border: var(--line-strong);
+
+  --button-default-bg:   var(--accent);
+  --button-default-text: var(--text-inverse);
+  --button-default-hover: var(--accent-dim);
+
+  --button-default-accent-text:  var(--text-inverse);
+  --button-default-ghost-bg:     var(--surface-1);
+  --button-default-ghost-text:   var(--text-1);
 
   /* ---- holographic accent system --------------------------------------- */
 --left-glow-secondary:    #7dd3fc;
@@ -99,15 +147,51 @@
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
 [data-theme="Holographic dark"] {
+  /* semantic button roles */
+  --button-chat-bg: #b9aaff;
+  --button-chat-text: #14121f;
+  --button-chat-hover: #c4b5fd;
+  --button-chat-border: transparent;
+  --button-chat-hover-border: transparent;
+
+  --button-chat-preference-bg: #171522;
+  --button-chat-preference-text: #f4f2ff;
+  --button-chat-preference-hover: #211d30;
+  --button-chat-preference-border: var(--line);
+  --button-chat-preference-hover-border: var(--line-strong);
+
+  --button-sidebar-bg: #171522;
+  --button-sidebar-text: #c8c2d9;
+  --button-sidebar-hover: #211d30;
+  --button-sidebar-hover-text: #f4f2ff;
+  --button-sidebar-border: var(--line);
+  --button-sidebar-hover-border: var(--line-strong);
+
+  --button-topbar-bg: #111018;
+  --button-topbar-text: #c8c2d9;
+  --button-topbar-hover: #1c1926;
+  --button-topbar-hover-text: #f4f2ff;
+  --button-topbar-border: var(--line);
+  --button-topbar-hover-border: var(--line-strong);
+
+  --button-settings-bg: #171522;
+  --button-settings-text: #f4f2ff;
+  --button-settings-hover: #211d30;
+  --button-settings-hover-text: #f4f2ff;
+  --button-settings-border: var(--line);
+  --button-settings-hover-border: var(--line-strong);
+
+
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-color: #f3f1f8;
-  --button-text: #0a0a10;
-  --button-hover: #d9d8d2;
+  --button-default-bg: var(--text-1);
+  --button-default-text: var(--text-inverse);
+  --button-default-hover: #d9d8d2;
+  --button-default-accent-text: #14121f;
 
   --left-glow-secondary:    #7dd3fc;
   --left-glow-primary:  #c4b5fd;
@@ -131,15 +215,51 @@
 }
 
 [data-theme="Greyscale"]{
+  /* semantic button roles */
+  --button-chat-bg: #d6d6db;
+  --button-chat-text: #0a0a0a;
+  --button-chat-hover: #eeeeF2;
+  --button-chat-border: transparent;
+  --button-chat-hover-border: transparent;
+
+  --button-chat-preference-bg: #181818;
+  --button-chat-preference-text: #eeeeee;
+  --button-chat-preference-hover: #262626;
+  --button-chat-preference-border: var(--line);
+  --button-chat-preference-hover-border: var(--line-strong);
+
+  --button-sidebar-bg: #181818;
+  --button-sidebar-text: #bcbcbc;
+  --button-sidebar-hover: #262626;
+  --button-sidebar-hover-text: #ffffff;
+  --button-sidebar-border: var(--line);
+  --button-sidebar-hover-border: var(--line-strong);
+
+  --button-topbar-bg: #111111;
+  --button-topbar-text: #bcbcbc;
+  --button-topbar-hover: #202020;
+  --button-topbar-hover-text: #ffffff;
+  --button-topbar-border: var(--line);
+  --button-topbar-hover-border: var(--line-strong);
+
+  --button-settings-bg: #181818;
+  --button-settings-text: #eeeeee;
+  --button-settings-hover: #262626;
+  --button-settings-hover-text: #eeeeee;
+  --button-settings-border: var(--line);
+  --button-settings-hover-border: var(--line-strong);
+
+
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-color: #e8e8ec;
-  --button-text: #0a0a0a;
-  --button-hover: #ffffff;
+  --button-default-bg: var(--text-1);
+  --button-default-text: var(--text-inverse);
+  --button-default-hover: #f0f0f0;
+  --button-default-accent-text: #0a0a0a;
 
   --left-glow-secondary:    #cfcfd6;
   --left-glow-primary:  #9a9aa3;
@@ -166,15 +286,51 @@
 }
 
 [data-theme="Company-Colours"] {
+  /* semantic button roles */
+  --button-chat-bg: #22b2ff;
+  --button-chat-text: #07131c;
+  --button-chat-hover: #4b6bff;
+  --button-chat-border: transparent;
+  --button-chat-hover-border: transparent;
+
+  --button-chat-preference-bg: #151823;
+  --button-chat-preference-text: #f2f5ff;
+  --button-chat-preference-hover: #20263a;
+  --button-chat-preference-border: var(--line);
+  --button-chat-preference-hover-border: var(--line-strong);
+
+  --button-sidebar-bg: #151823;
+  --button-sidebar-text: #b8c4dc;
+  --button-sidebar-hover: #20263a;
+  --button-sidebar-hover-text: #f2f5ff;
+  --button-sidebar-border: var(--line);
+  --button-sidebar-hover-border: var(--line-strong);
+
+  --button-topbar-bg: #10131d;
+  --button-topbar-text: #b8c4dc;
+  --button-topbar-hover: #1d2231;
+  --button-topbar-hover-text: #f2f5ff;
+  --button-topbar-border: var(--line);
+  --button-topbar-hover-border: var(--line-strong);
+
+  --button-settings-bg: #151823;
+  --button-settings-text: #f2f5ff;
+  --button-settings-hover: #20263a;
+  --button-settings-hover-text: #f2f5ff;
+  --button-settings-border: var(--line);
+  --button-settings-hover-border: var(--line-strong);
+
+
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-color: #22b2ff;
-  --button-text: #071018;
-  --button-hover: #45c1ff;
+  --button-default-bg: var(--text-1);
+  --button-default-text: var(--text-inverse);
+  --button-default-hover: #d9d8d2;
+  --button-default-accent-text: #14121f;
 
   --left-glow-secondary:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
@@ -198,15 +354,51 @@
 }
 
 [data-theme="Hacker-Green"] {
+  /* semantic button roles */
+  --button-chat-bg: #00ff41;
+  --button-chat-text: #001a08;
+  --button-chat-hover: #39ff14;
+  --button-chat-border: transparent;
+  --button-chat-hover-border: transparent;
+
+  --button-chat-preference-bg: #07140b;
+  --button-chat-preference-text: #00ff41;
+  --button-chat-preference-hover: #0b2112;
+  --button-chat-preference-border: var(--line);
+  --button-chat-preference-hover-border: var(--line-strong);
+
+  --button-sidebar-bg: #07140b;
+  --button-sidebar-text: #00cc33;
+  --button-sidebar-hover: #0b2112;
+  --button-sidebar-hover-text: #00ff41;
+  --button-sidebar-border: var(--line);
+  --button-sidebar-hover-border: var(--line-strong);
+
+  --button-topbar-bg: #050b07;
+  --button-topbar-text: #00cc33;
+  --button-topbar-hover: #0a170d;
+  --button-topbar-hover-text: #00ff41;
+  --button-topbar-border: var(--line);
+  --button-topbar-hover-border: var(--line-strong);
+
+  --button-settings-bg: #07140b;
+  --button-settings-text: #00ff41;
+  --button-settings-hover: #0b2112;
+  --button-settings-hover-text: #00ff41;
+  --button-settings-border: var(--line);
+  --button-settings-hover-border: var(--line-strong);
+
+
   --dashboard-bg: #06070a;
   --dashboard-glow-1: #003d15;
   --dashboard-glow-2: #00250d;
   --dashboard-glow-3: #006b20;
   --dashboard-glow-4: #003b12;
 
-  --button-color: #00ff41;
-  --button-text: #001a08;
-  --button-hover: #39ff14;
+  --button-default-bg: #00ff41;
+  --button-default-text: #001a08;
+  --button-default-hover: #39ff14;
+  --button-default-accent-text: #001a08;
 
   --left-glow-secondary:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #090c0a;   /* blue-leaning transition tone, replaces violet */
@@ -257,7 +449,7 @@ body{
 h1,h2,h3,h4,p,figure{ margin: 0; }
 ul{ margin: 0; padding: 0; list-style: none; }
 a{ color: inherit; text-decoration: none; }
-button{ font-family: inherit; color: var(--button-text); background: var(--button-color); }
+button{ font-family: inherit; color: inherit; }
 input, textarea, select{ font-family: inherit; color: inherit; }
 img,svg{ display: block; max-width: 100%; }
 
@@ -396,23 +588,24 @@ body::after{
   padding: 7px 13px;
   border-radius: var(--radius-sm);
   font-size: .875rem;
-  color: var(--text-2);
+  color: var(--button-topbar-text);
+  background: var(--button-topbar-bg);
   transition: color var(--fast) var(--ease), background var(--fast) var(--ease);
 }
-.appnav-link:hover{ color: var(--text-1); background: var(--surface-2); }
-.appnav-link.active{ color: var(--text-1); background: var(--surface-2); }
+.appnav-link:hover{ color: var(--button-topbar-hover-text); background: var(--button-topbar-hover); }
+.appnav-link.active{ color: var(--button-topbar-hover-text); background: var(--button-topbar-hover); }
 .appnav-right{ display: flex; align-items: center; gap: 10px; margin-left: auto; }
 
 .account-chip{
   display: flex; align-items: center; gap: 8px;
   padding: 6px 10px 6px 6px;
   border-radius: 999px;
-  border: 1px solid var(--line);
-  background: var(--surface-1);
+  border: 1px solid var(--button-topbar-border);
+  background: var(--button-topbar-bg);
   cursor: pointer;
   transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
 }
-.account-chip:hover{ border-color: var(--line-strong); background: var(--surface-2); }
+.account-chip:hover{ border-color: var(--button-topbar-hover-border); background: var(--button-topbar-hover); }
 .account-avatar{
   width: 24px; height: 24px;
   border-radius: 50%;
@@ -429,11 +622,76 @@ body::after{
   display: none;
   width: 34px; height: 34px;
   border-radius: var(--radius-sm);
-  border: 1px solid var(--line);
-  background: var(--surface-1);
+  border: 1px solid var(--button-topbar-border);
+  background: var(--button-topbar-bg);
+  color: var(--button-topbar-text);
   align-items: center; justify-content: center;
 }
+.nav-toggle:hover{ background: var(--button-topbar-hover); color: var(--button-topbar-hover-text); border-color: var(--button-topbar-hover-border); }
 .nav-toggle svg{ width: 16px; height: 16px; }
+
+/* ---------------------------------------------------------------------- */
+/* Semantic button roles                                                    */
+/* ---------------------------------------------------------------------- */
+
+/* Chat send/action */
+.chat-button{
+  background: var(--button-chat-bg);
+  color: var(--button-chat-text);
+  border-color: var(--button-chat-border);
+}
+.chat-button:hover:not(:disabled){
+  background: var(--button-chat-hover);
+  border-color: var(--button-chat-hover-border);
+}
+
+/* Chat model/temperature controls */
+.chat-preference-button{
+  background: var(--button-chat-preference-bg);
+  color: var(--button-chat-preference-text);
+  border-color: var(--button-chat-preference-border);
+}
+.chat-preference-button:hover{
+  background: var(--button-chat-preference-hover);
+  border-color: var(--button-chat-preference-hover-border);
+}
+
+/* Sidebar */
+.sidebar-button{
+  background: var(--button-sidebar-bg);
+  color: var(--button-sidebar-text);
+  border-color: var(--button-sidebar-border);
+}
+.sidebar-button:hover,
+.sidebar-button.active{
+  background: var(--button-sidebar-hover);
+  color: var(--button-sidebar-hover-text);
+  border-color: var(--button-sidebar-hover-border);
+}
+
+/* Topbar */
+.topbar-button{
+  background: var(--button-topbar-bg);
+  color: var(--button-topbar-text);
+  border-color: var(--button-topbar-border);
+}
+.topbar-button:hover{
+  background: var(--button-topbar-hover);
+  color: var(--button-topbar-hover-text);
+  border-color: var(--button-topbar-hover-border);
+}
+
+/* Settings */
+.settings-button{
+  background: var(--button-settings-bg);
+  color: var(--button-settings-text);
+  border-color: var(--button-settings-border);
+}
+.settings-button:hover:not(:disabled){
+  background: var(--button-settings-hover);
+  color: var(--button-settings-hover-text);
+  border-color: var(--button-settings-hover-border);
+}
 
 /* ---------------------------------------------------------------------- */
 /* Buttons                                                                  */
@@ -451,23 +709,31 @@ body::after{
 .btn:active{ transform: scale(.98); }
 .btn:disabled{ opacity: .45; cursor: not-allowed; transform: none; }
 
-.btn-primary,
-.btn-accent,
-.btn-ghost,
+.btn-primary{ background: var(--button-default-bg); color: var(--button-default-text); }
+.btn-primary:hover:not(:disabled){ background: var(--button-default-hover); }
+
+.btn-accent{
+  background: var(--button-default-bg);
+  background-size: var(--accent-gradient-size) 100%;
+  background-position: 0% 50%;
+  color: var(--button-default-accent-text);
+  animation: holo-shift 9s ease-in-out infinite alternate;
+}
+.btn-accent:hover:not(:disabled){ box-shadow: 0 6px 24px var(--accent-line); transform: translateY(-1px); }
+
+.btn-ghost{
+  background: var(--surface-1);
+  border-color: var(--line);
+  color: var(--text-1);
+}
+.btn-ghost:hover:not(:disabled){ background: var(--surface-2); border-color: var(--line-strong); }
+
 .btn-danger-ghost{
-  background: var(--button-color);
-  color: var(--button-text);
-  border-color: var(--button-border);
+  background: transparent;
+  border-color: rgba(242,135,154,.28);
+  color: var(--danger);
 }
-.btn-primary:hover:not(:disabled),
-.btn-accent:hover:not(:disabled),
-.btn-ghost:hover:not(:disabled),
-.btn-danger-ghost:hover:not(:disabled){
-  background: var(--button-hover);
-  border-color: var(--button-hover);
-  box-shadow: 0 6px 24px var(--button-shadow);
-  transform: translateY(-1px);
-}
+.btn-danger-ghost:hover:not(:disabled){ background: var(--danger-wash); border-color: rgba(242,135,154,.45); }
 
 .btn-sm{ height: 34px; padding: 0 13px; font-size: .8rem; border-radius: var(--radius-sm); }
 .btn-icon{ width: 40px; padding: 0; flex-shrink: 0; }
@@ -590,3 +856,61 @@ body::after{
 @keyframes fade-in{ from{ opacity: 0; } to{ opacity: 1; } }
 .fade-up{ animation: fade-up var(--slow) var(--ease) both; }
 .fade-in{ animation: fade-in var(--slow) var(--ease) both; }
+
+
+/* ---------------------------------------------------------------------- */
+/* Final semantic role overrides                                            */
+/* ---------------------------------------------------------------------- */
+.chat-button{
+  background: var(--button-chat-bg) !important;
+  color: var(--button-chat-text) !important;
+  border-color: var(--button-chat-border) !important;
+}
+.chat-button:hover:not(:disabled){
+  background: var(--button-chat-hover) !important;
+  border-color: var(--button-chat-hover-border) !important;
+}
+
+.chat-preference-button{
+  background: var(--button-chat-preference-bg) !important;
+  color: var(--button-chat-preference-text) !important;
+  border-color: var(--button-chat-preference-border) !important;
+}
+.chat-preference-button:hover{
+  background: var(--button-chat-preference-hover) !important;
+  border-color: var(--button-chat-preference-hover-border) !important;
+}
+
+.sidebar-button{
+  background: var(--button-sidebar-bg);
+  color: var(--button-sidebar-text);
+  border-color: var(--button-sidebar-border);
+}
+.sidebar-button:hover,
+.sidebar-button.active{
+  background: var(--button-sidebar-hover);
+  color: var(--button-sidebar-hover-text);
+  border-color: var(--button-sidebar-hover-border);
+}
+
+.topbar-button{
+  background: var(--button-topbar-bg) !important;
+  color: var(--button-topbar-text) !important;
+  border-color: var(--button-topbar-border) !important;
+}
+.topbar-button:hover{
+  background: var(--button-topbar-hover) !important;
+  color: var(--button-topbar-hover-text) !important;
+  border-color: var(--button-topbar-hover-border) !important;
+}
+
+.settings-shell .settings-button{
+  background: var(--button-settings-bg) !important;
+  color: var(--button-settings-text) !important;
+  border-color: var(--button-settings-border) !important;
+}
+.settings-shell .settings-button:hover:not(:disabled){
+  background: var(--button-settings-hover) !important;
+  color: var(--button-settings-hover-text) !important;
+  border-color: var(--button-settings-hover-border) !important;
+}
