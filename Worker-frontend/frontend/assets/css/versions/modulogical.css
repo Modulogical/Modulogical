@@ -25,18 +25,18 @@
   --text-inverse:  #0a0a10;
 
   /* ---- holographic accent system --------------------------------------- */
-  --holo-blue:    #7dd3fc;
-  --holo-violet:  #c4b5fd;
-  --holo-pink:    #f5b8da;
-  --holo-teal:    #67e8f9;
-  --holo-indigo:  #a5b4fc;
+  --left-glow-secondary:    #7dd3fc;
+  --left-glow-primary:  #c4b5fd;
+  --right-glow-primary:    #f5b8da;
+  --right-glow-secondary:    #67e8f9;
+  --accent:  #a5b4fc;
 
   --accent:        #b9aaff;      /* representative solid, for small dots/carets */
   --accent-dim:    #786fb0;
   --accent-wash:   rgba(185,170,255,.1);
   --accent-line:   rgba(185,170,255,.35);
 
-  --holo-gradient: linear-gradient(115deg, var(--holo-blue) 0%, var(--holo-violet) 32%, var(--holo-pink) 64%, var(--holo-teal) 100%);
+  --holo-gradient: linear-gradient(115deg, var(--left-glow-secondary) 0%, var(--left-glow-primary) 32%, var(--right-glow-primary) 64%, var(--right-glow-secondary) 100%);
   --holo-gradient-size: 260%;
 
   /* ---- signal colors -----------------------------------------------------*/
@@ -83,14 +83,14 @@ body{
 h1,h2,h3,h4,p,figure{ margin: 0; }
 ul{ margin: 0; padding: 0; list-style: none; }
 a{ color: inherit; text-decoration: none; }
-button{ font-family: inherit; color: inherit; }
+button{ font-family: inherit; color: var(--button-text); background: var(--button-color); }
 input, textarea, select{ font-family: inherit; color: inherit; }
 img,svg{ display: block; max-width: 100%; }
 
 ::selection{ background: var(--accent-wash); color: var(--text-1); }
 
 :focus-visible{
-  outline: 2px solid var(--holo-violet);
+  outline: 2px solid var(--left-glow-primary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
 }
@@ -122,8 +122,8 @@ body::before{
   height: 60vw;
   max-width: 780px;
   max-height: 780px;
-  background: radial-gradient(circle at 30% 30%, var(--holo-violet), transparent 68%),
-              radial-gradient(circle at 70% 70%, var(--holo-blue), transparent 70%);
+  background: radial-gradient(circle at 30% 30%, var(--left-glow-primary), transparent 68%),
+              radial-gradient(circle at 70% 70%, var(--left-glow-secondary), transparent 70%);
   animation: aurora-drift-a 34s ease-in-out infinite alternate;
 }
 body::after{
@@ -133,8 +133,8 @@ body::after{
   height: 55vw;
   max-width: 720px;
   max-height: 720px;
-  background: radial-gradient(circle at 40% 40%, var(--holo-pink), transparent 66%),
-              radial-gradient(circle at 65% 60%, var(--holo-teal), transparent 72%);
+  background: radial-gradient(circle at 40% 40%, var(--right-glow-primary), transparent 66%),
+              radial-gradient(circle at 65% 60%, var(--right-glow-secondary), transparent 72%);
   animation: aurora-drift-b 40s ease-in-out infinite alternate;
 }
 @keyframes aurora-drift-a{
@@ -169,8 +169,8 @@ body::after{
 
 /* Holographic gradient text — used sparingly, on the brand moment only */
 .holo-text{
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
+  background: var(--button-color);
+  background-size: var(--accent-gradient-size) 100%;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -242,8 +242,8 @@ body::after{
 .account-avatar{
   width: 24px; height: 24px;
   border-radius: 50%;
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
+  background: var(--button-color);
+  background-size: var(--accent-gradient-size) 100%;
   animation: holo-shift 12s ease-in-out infinite alternate;
   display: flex; align-items: center; justify-content: center;
   font-size: .68rem; font-weight: 700; color: #14121f;
@@ -277,31 +277,23 @@ body::after{
 .btn:active{ transform: scale(.98); }
 .btn:disabled{ opacity: .45; cursor: not-allowed; transform: none; }
 
-.btn-primary{ background: var(--text-1); color: var(--text-inverse); }
-.btn-primary:hover:not(:disabled){ background: #d9d8d2; }
-
-.btn-accent{
-  background: var(--holo-gradient);
-  background-size: var(--holo-gradient-size) 100%;
-  background-position: 0% 50%;
-  color: #14121f;
-  animation: holo-shift 9s ease-in-out infinite alternate;
-}
-.btn-accent:hover:not(:disabled){ box-shadow: 0 6px 24px rgba(196,181,253,.28); transform: translateY(-1px); }
-
-.btn-ghost{
-  background: var(--surface-1);
-  border-color: var(--line);
-  color: var(--text-1);
-}
-.btn-ghost:hover:not(:disabled){ background: var(--surface-2); border-color: var(--line-strong); }
-
+.btn-primary,
+.btn-accent,
+.btn-ghost,
 .btn-danger-ghost{
-  background: transparent;
-  border-color: rgba(242,135,154,.28);
-  color: var(--danger);
+  background: var(--button-color);
+  color: var(--button-text);
+  border-color: var(--button-border);
 }
-.btn-danger-ghost:hover:not(:disabled){ background: var(--danger-wash); border-color: rgba(242,135,154,.45); }
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled),
+.btn-danger-ghost:hover:not(:disabled){
+  background: var(--button-hover);
+  border-color: var(--button-hover);
+  box-shadow: 0 6px 24px var(--button-shadow);
+  transform: translateY(-1px);
+}
 
 .btn-sm{ height: 34px; padding: 0 13px; font-size: .8rem; border-radius: var(--radius-sm); }
 .btn-icon{ width: 40px; padding: 0; flex-shrink: 0; }
