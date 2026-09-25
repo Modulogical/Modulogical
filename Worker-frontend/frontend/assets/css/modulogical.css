@@ -406,7 +406,7 @@
   --right-glow-secondary:    #06070a;   /* bright cyan highlight */
   --accent:  #0de631;
 
-  --font: "Courier New", monospace;
+  --font: "Consolas", monospace;
   --text-1: #00ff41;  /* primary/main text */
   --text-2: #00cc33;  /* secondary text */
   --text-3: #008f24;  /* muted/subtle text */
