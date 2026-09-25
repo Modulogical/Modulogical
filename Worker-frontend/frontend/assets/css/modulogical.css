@@ -137,7 +137,7 @@
 [data-theme="Hacker-Green"] {
   --holo-blue:    #00ff0d;   /* primary electric blue, from the emblem's left/blue facets */
   --holo-violet:  #00df38;   /* blue-leaning transition tone, replaces violet */
-  --holo-pink:    #4bff81;   /* neon red, from the emblem's right/red facets */
+  --holo-pink:    #00ff0d;   /* neon red, from the emblem's right/red facets */
   --holo-teal:    #12d600;   /* bright cyan highlight */
   --holo-indigo:  #0de631;
 
