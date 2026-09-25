@@ -99,7 +99,7 @@
 /* Theme: greyscale — black / grey / white only                            */
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
-[data-theme="Holographic-Dark"] {
+[data-theme="Holographic dark"] {
   --dashboard-bg: #06070a;
   --dashboard-glow-1: var(--left-glow-primary);
   --dashboard-glow-2: var(--left-glow-secondary);
