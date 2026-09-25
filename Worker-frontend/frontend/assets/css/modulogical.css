@@ -135,11 +135,16 @@
 }
 
 [data-theme="Hacker-Green"] {
-  --holo-blue:    #00ff0d;   /* primary electric blue, from the emblem's left/blue facets */
+  --holo-blue:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
   --holo-violet:  #00df38;   /* blue-leaning transition tone, replaces violet */
-  --holo-pink:    #00ff0d;   /* neon red, from the emblem's right/red facets */
+  --holo-pink:    #06070a;  /* neon red, from the emblem's right/red facets */
   --holo-teal:    #12d600;   /* bright cyan highlight */
   --holo-indigo:  #0de631;
+
+  --font: "Courier New", monospace;
+  --text-1: #00ff41;  /* primary/main text */
+  --text-2: #00cc33;  /* secondary text */
+  --text-3: #008f24;  /* muted/subtle text */
 
   --accent:        #22ff3f;      /* representative solid, for small dots/carets — leads with blue so it reads distinctly from the danger/error red below */
   --accent-dim:    #14ad21;
