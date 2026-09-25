@@ -141,8 +141,8 @@
   }
   .msg-meta .mark{
     width: 15px; height: 15px; border-radius: 4px;
-    background: var(--holo-gradient);
-    background-size: var(--holo-gradient-size) 100%;
+    background: var(--accent-gradient);
+    background-size: var(--accent-gradient-size) 100%;
     border: 1px solid var(--line-strong);
     position: relative; flex-shrink: 0;
     animation: holo-shift 13s ease-in-out infinite alternate;
@@ -232,9 +232,10 @@
   .send-btn{
     width: 34px; height: 34px;
     border-radius: 50%;
-    background: var(--holo-gradient);
-    background-size: var(--holo-gradient-size) 100%;
-    color: #14121f;
+    background: var(--accent-gradient);
+    background-size: var(--accent-gradient-size) 100%;
+    background-position: 0% 50%;
+    color: var(--button-accent-text);
     border: none;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
@@ -242,7 +243,7 @@
     flex-shrink: 0;
     animation: holo-shift 8s ease-in-out infinite alternate;
   }
-  .send-btn:hover:not(:disabled){ box-shadow: 0 4px 18px rgba(196,181,253,.35); transform: translateY(-1px); }
+  .send-btn:hover:not(:disabled){ box-shadow: 0 4px 18px var(--accent-line); transform: translateY(-1px); }
   .send-btn:active:not(:disabled){ transform: scale(.94); }
   .send-btn:disabled{ opacity: .35; cursor: not-allowed; }
   .send-btn svg{ width: 15px; height: 15px; }
@@ -292,15 +293,15 @@
     -webkit-appearance: none;
     width: 14px; height: 14px;
     border-radius: 50%;
-    background: var(--holo-gradient);
-    background-size: var(--holo-gradient-size) 100%;
+    background: var(--accent-gradient);
+    background-size: var(--accent-gradient-size) 100%;
     cursor: pointer;
     border: 2px solid #0a0c16;
   }
   input[type="range"]::-moz-range-thumb{
     width: 14px; height: 14px; border-radius: 50%;
-    background: var(--holo-gradient);
-    background-size: var(--holo-gradient-size) 100%;
+    background: var(--accent-gradient);
+    background-size: var(--accent-gradient-size) 100%;
     border: 2px solid #0a0c16; cursor: pointer;
   }
   .temp-scale{ display: flex; justify-content: space-between; font-size: .68rem; color: var(--text-3); }
