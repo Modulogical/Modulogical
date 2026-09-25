@@ -212,8 +212,8 @@
     padding: 0 6px;
     border: 0;
     border-radius: 4px;
-    background: var(--button-color, var(--accent));
-    color: var(--button-text, var(--text-inverse));
+    background: var(--button-chat-bg, var(--accent));
+    color: var(--button-chat-text, var(--text-inverse));
     font: 700 5px var(--font);
   }
   .theme-option-copy{ display: flex; flex-direction: column; gap: 2px; padding: 0 2px 2px; }
@@ -255,7 +255,7 @@
 <header class="appnav">
   <div class="shell appnav-row">
     <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
-    <button class="nav-toggle" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false">
+    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
     <nav class="appnav-links" data-nav-drawer>
@@ -271,7 +271,7 @@
         <span class="account-avatar" id="nav-avatar">?</span>
         <span class="account-name" id="nav-name">Account</span>
       </a>
-      <button class="btn btn-ghost btn-sm" data-logout>Log out</button>
+      <button class="btn btn-ghost btn-sm topbar-button" data-logout>Log out</button>
     </div>
   </div>
 </header>
@@ -297,7 +297,7 @@
           <div class="settings-row-control">
             <input class="input" id="changeusername" type="text" placeholder="New username" aria-label="New username">
             <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-              <button class="btn btn-ghost btn-sm" onclick="Settings.changeUsername()">Save</button>
+              <button class="btn btn-ghost btn-sm settings-button" onclick="Settings.changeUsername()">Save</button>
             </div>
             <div class="inline-notice" id="username-notice"></div>
           </div>
@@ -324,7 +324,7 @@
               <input class="input" id="confirmpassword" type="password" placeholder="Confirm new password" autocomplete="new-password" aria-label="Confirm new password">
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top:10px;">
-              <button class="btn btn-ghost btn-sm" onclick="Settings.changePassword()">Save</button>
+              <button class="btn btn-ghost btn-sm settings-button" onclick="Settings.changePassword()">Save</button>
             </div>
             <div class="inline-notice" id="password-notice"></div>
           </div>
@@ -353,7 +353,7 @@
           <div class="name">Log out</div>
           <div class="note">End your session on this device</div>
         </div>
-        <button class="btn btn-danger-ghost btn-sm" data-logout>Log out</button>
+        <button class="btn btn-danger-ghost btn-sm settings-button" data-logout>Log out</button>
       </div>
     </section>
   </div>
@@ -578,8 +578,8 @@
     const fallbackTokens = {
       "--dashboard-bg": "var(--bg)",
       "--text-chat": "var(--text-1)",
-      "--button-color": "var(--accent)",
-      "--button-text": "var(--text-inverse)"
+      "--button-chat-bg": "var(--accent)",
+      "--button-chat-text": "var(--text-inverse)"
     };
 
     for (const [property, value] of Object.entries(fallbackTokens)) {
