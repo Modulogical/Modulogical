@@ -45,14 +45,14 @@
     width: 100%; height: 38px;
     border-radius: var(--radius-sm);
     border: 1px solid var(--line);
-    background: var(--surface-2);
-    color: var(--text-1);
+    background: var(--button-color);
+    color: var(--button-text);
     font-size: .84rem; font-weight: 550;
     cursor: pointer;
     transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
     margin-bottom: 18px;
   }
-  .new-chat-btn:hover{ border-color: var(--line-strong); background: var(--surface-3); }
+  .new-chat-btn:hover{ border-color: var(--button-hover); background: var(--button-hover); }
   .new-chat-btn svg{ width: 14px; height: 14px; }
 
   .sidebar-section-label{ font-size: .7rem; color: var(--text-3); padding: 0 8px; margin-bottom: 6px; }
@@ -82,11 +82,11 @@
     width: 100%; margin-top: 6px;
     display: flex; align-items: center; gap: 9px;
     padding: 8px; border-radius: var(--radius-sm);
-    font-size: .82rem; color: var(--text-2);
-    background: transparent; border: none; cursor: pointer;
+    font-size: .82rem; color: var(--button-text);
+    background: var(--button-color); border: 1px solid var(--button-border); cursor: pointer;
     transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
   }
-  .sidebar-logout:hover{ background: var(--danger-wash); color: var(--danger); }
+  .sidebar-logout:hover{ background: var(--button-hover); color: var(--button-text); border-color: var(--button-hover); }
   .sidebar-logout svg{ width: 15px; height: 15px; }
 
   /* mobile top bar + drawer */
@@ -217,25 +217,23 @@
     display: flex; align-items: center; gap: 7px;
     height: 32px; padding: 0 11px;
     border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--surface-2);
+    border: 1px solid var(--button-border);
+    background: var(--button-color);
     font-size: .78rem;
-    color: var(--text-1);
+    color: var(--button-text);
     cursor: pointer;
     position: relative;
     transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
   }
-  .control-pill:hover{ border-color: var(--line-strong); }
+  .control-pill:hover{ border-color: var(--button-hover); background: var(--button-hover); }
   .control-pill svg{ width: 12px; height: 12px; color: var(--text-3); }
   .control-pill .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
 
   .send-btn{
     width: 34px; height: 34px;
     border-radius: 50%;
-    background: var(--accent-gradient);
-    background-size: var(--accent-gradient-size) 100%;
-    background-position: 0% 50%;
-    color: var(--button-accent-text);
+    background: var(--button-color);
+        color: var(--button-text);
     border: none;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
@@ -243,7 +241,7 @@
     flex-shrink: 0;
     animation: holo-shift 8s ease-in-out infinite alternate;
   }
-  .send-btn:hover:not(:disabled){ box-shadow: 0 4px 18px var(--accent-line); transform: translateY(-1px); }
+  .send-btn:hover:not(:disabled){ box-shadow: 0 4px 18px var(--button-shadow); background: var(--button-hover); transform: translateY(-1px); }
   .send-btn:active:not(:disabled){ transform: scale(.94); }
   .send-btn:disabled{ opacity: .35; cursor: not-allowed; }
   .send-btn svg{ width: 15px; height: 15px; }
@@ -329,7 +327,7 @@
     }
     .mobile-topbar button{
       width: 34px; height: 34px; border-radius: var(--radius-sm);
-      border: 1px solid var(--line); background: var(--surface-1);
+      border: 1px solid var(--button-border); background: var(--button-color);
       display: flex; align-items: center; justify-content: center;
     }
     .mobile-topbar button svg{ width: 16px; height: 16px; }

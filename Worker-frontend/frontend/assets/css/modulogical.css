@@ -43,13 +43,12 @@
   --dashboard-glow-4: var(--right-glow-secondary);
 
   /* ---- buttons --------------------------------------------------------- */
-  --button-primary-bg:   var(--text-1);
-  --button-primary-text: var(--text-inverse);
-  --button-primary-hover: #d9d8d2;
-
-  --button-accent-text:  #14121f;
-  --button-ghost-bg:     var(--surface-1);
-  --button-ghost-text:   var(--text-1);
+  /* Single semantic colour source for every button across the frontend. */
+  --button-color:       var(--text-1);
+  --button-text:        var(--text-inverse);
+  --button-hover:       #d9d8d2;
+  --button-border:      var(--button-color);
+  --button-shadow:      rgba(0,0,0,.18);
 
   /* ---- holographic accent system --------------------------------------- */
 --left-glow-secondary:    #7dd3fc;
@@ -106,10 +105,9 @@
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-primary-bg: var(--text-1);
-  --button-primary-text: var(--text-inverse);
-  --button-primary-hover: #d9d8d2;
-  --button-accent-text: #14121f;
+  --button-color: #f3f1f8;
+  --button-text: #0a0a10;
+  --button-hover: #d9d8d2;
 
   --left-glow-secondary:    #7dd3fc;
   --left-glow-primary:  #c4b5fd;
@@ -139,10 +137,9 @@
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-primary-bg: var(--text-1);
-  --button-primary-text: var(--text-inverse);
-  --button-primary-hover: #f0f0f0;
-  --button-accent-text: #0a0a0a;
+  --button-color: #e8e8ec;
+  --button-text: #0a0a0a;
+  --button-hover: #ffffff;
 
   --left-glow-secondary:    #cfcfd6;
   --left-glow-primary:  #9a9aa3;
@@ -175,10 +172,9 @@
   --dashboard-glow-3: var(--right-glow-primary);
   --dashboard-glow-4: var(--right-glow-secondary);
 
-  --button-primary-bg: var(--text-1);
-  --button-primary-text: var(--text-inverse);
-  --button-primary-hover: #d9d8d2;
-  --button-accent-text: #14121f;
+  --button-color: #22b2ff;
+  --button-text: #071018;
+  --button-hover: #45c1ff;
 
   --left-glow-secondary:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
@@ -208,10 +204,9 @@
   --dashboard-glow-3: #006b20;
   --dashboard-glow-4: #003b12;
 
-  --button-primary-bg: #00ff41;
-  --button-primary-text: #001a08;
-  --button-primary-hover: #39ff14;
-  --button-accent-text: #001a08;
+  --button-color: #00ff41;
+  --button-text: #001a08;
+  --button-hover: #39ff14;
 
   --left-glow-secondary:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #090c0a;   /* blue-leaning transition tone, replaces violet */
@@ -262,7 +257,7 @@ body{
 h1,h2,h3,h4,p,figure{ margin: 0; }
 ul{ margin: 0; padding: 0; list-style: none; }
 a{ color: inherit; text-decoration: none; }
-button{ font-family: inherit; color: inherit; }
+button{ font-family: inherit; color: var(--button-text); background: var(--button-color); }
 input, textarea, select{ font-family: inherit; color: inherit; }
 img,svg{ display: block; max-width: 100%; }
 
@@ -456,31 +451,23 @@ body::after{
 .btn:active{ transform: scale(.98); }
 .btn:disabled{ opacity: .45; cursor: not-allowed; transform: none; }
 
-.btn-primary{ background: var(--button-primary-bg); color: var(--button-primary-text); }
-.btn-primary:hover:not(:disabled){ background: var(--button-primary-hover); }
-
-.btn-accent{
-  background: var(--accent-gradient);
-  background-size: var(--accent-gradient-size) 100%;
-  background-position: 0% 50%;
-  color: var(--button-accent-text);
-  animation: holo-shift 9s ease-in-out infinite alternate;
-}
-.btn-accent:hover:not(:disabled){ box-shadow: 0 6px 24px var(--accent-line); transform: translateY(-1px); }
-
-.btn-ghost{
-  background: var(--surface-1);
-  border-color: var(--line);
-  color: var(--text-1);
-}
-.btn-ghost:hover:not(:disabled){ background: var(--surface-2); border-color: var(--line-strong); }
-
+.btn-primary,
+.btn-accent,
+.btn-ghost,
 .btn-danger-ghost{
-  background: transparent;
-  border-color: rgba(242,135,154,.28);
-  color: var(--danger);
+  background: var(--button-color);
+  color: var(--button-text);
+  border-color: var(--button-border);
 }
-.btn-danger-ghost:hover:not(:disabled){ background: var(--danger-wash); border-color: rgba(242,135,154,.45); }
+.btn-primary:hover:not(:disabled),
+.btn-accent:hover:not(:disabled),
+.btn-ghost:hover:not(:disabled),
+.btn-danger-ghost:hover:not(:disabled){
+  background: var(--button-hover);
+  border-color: var(--button-hover);
+  box-shadow: 0 6px 24px var(--button-shadow);
+  transform: translateY(-1px);
+}
 
 .btn-sm{ height: 34px; padding: 0 13px; font-size: .8rem; border-radius: var(--radius-sm); }
 .btn-icon{ width: 40px; padding: 0; flex-shrink: 0; }
