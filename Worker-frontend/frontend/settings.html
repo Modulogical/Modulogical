@@ -384,7 +384,7 @@
 
     const usernameInput = document.getElementById("changeusername");
     if (usernameInput) usernameInput.placeholder = localStorage.getItem(Modulogical.USERNAME_KEY)
-      ? "Currently: " + localStorage.getItem(Modulogical.USERNAME_KEY)
+      ? localStorage.getItem(Modulogical.USERNAME_KEY)
       : "New username";
   })();
 
