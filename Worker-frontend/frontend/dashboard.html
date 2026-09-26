@@ -110,6 +110,11 @@
   @media (max-width: 860px){
     .grid-2{ grid-template-columns: 1fr; }
   }
+  @media (max-width: 620px){
+    .welcome-row{ align-items: stretch; gap: 16px; margin-bottom: 24px; }
+    .welcome-row .btn{ width: 100%; }
+    .section-head{ margin-top: 30px; }
+  }
 </style>
 </head>
 <body>
@@ -131,6 +136,13 @@
       <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
       <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
       <a class="appnav-link" data-nav="settings" href="/settings">Settings</a>
+      <div class="mobile-nav-account">
+        <a class="mobile-nav-account-link" href="/settings">
+          <span class="account-avatar" aria-hidden="true">?</span>
+          <span class="account-name">Account</span>
+        </a>
+        <button class="btn btn-ghost btn-sm topbar-button mobile-nav-logout" data-logout>Log out</button>
+      </div>
     </nav>
     <div class="appnav-right">
       <a class="account-chip" href="/settings">

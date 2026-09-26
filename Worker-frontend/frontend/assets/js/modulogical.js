@@ -162,17 +162,52 @@ const Modulogical = (() => {
     document.querySelectorAll("[data-nav]").forEach(link => {
       if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
     });
+
     const toggle = document.querySelector("[data-nav-toggle]");
     const drawer = document.querySelector("[data-nav-drawer]");
+    const scrim = document.querySelector("[data-scrim]");
+
+    const displayName = localStorage.getItem(NAME_KEY) || localStorage.getItem(USERNAME_KEY) || "Account";
+    document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
+    document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
+
     if (toggle && drawer) {
-      toggle.addEventListener("click", () => {
-        const open = drawer.classList.toggle("open");
-        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+      const closeDrawer = () => {
+        drawer.classList.remove("open");
+        toggle.setAttribute("aria-expanded", "false");
+        scrim?.classList.remove("show");
+      };
+      const openDrawer = () => {
+        drawer.classList.add("open");
+        toggle.setAttribute("aria-expanded", "true");
+        scrim?.classList.add("show");
+      };
+
+      toggle.addEventListener("click", (event) => {
+        event.stopPropagation();
+        drawer.classList.contains("open") ? closeDrawer() : openDrawer();
       });
+
       drawer.querySelectorAll("a, button").forEach(el => {
-        el.addEventListener("click", () => drawer.classList.remove("open"));
+        el.addEventListener("click", () => closeDrawer());
+      });
+
+      scrim?.addEventListener("click", closeDrawer);
+
+      document.addEventListener("click", (event) => {
+        if (!drawer.classList.contains("open")) return;
+        if (!drawer.contains(event.target) && !toggle.contains(event.target)) closeDrawer();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closeDrawer();
+      });
+
+      window.addEventListener("resize", () => {
+        if (window.innerWidth > 760) closeDrawer();
       });
     }
+
     document.querySelectorAll("[data-logout]").forEach(btn => {
       btn.addEventListener("click", (e) => { e.preventDefault(); logout(); });
     });
