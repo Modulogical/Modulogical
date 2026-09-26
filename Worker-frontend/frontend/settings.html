@@ -245,6 +245,9 @@
     .theme-grid{ grid-template-columns: 1fr; }
     .settings-row{ flex-direction: column; gap: 8px; }
     .settings-row-label{ width: auto; padding-top: 0; }
+    .settings-row-control .input{ width: 100%; box-sizing: border-box; }
+    .danger-row{ flex-direction: column; align-items: stretch; gap: 12px; }
+    .danger-row .btn{ width: 100%; }
   }
 </style>
 </head>
@@ -265,6 +268,13 @@
       <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
       <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
       <a class="appnav-link" data-nav="settings" href="/settings">Settings</a>
+      <div class="mobile-nav-account">
+        <a class="mobile-nav-account-link" href="/settings">
+          <span class="account-avatar" aria-hidden="true">?</span>
+          <span class="account-name">Account</span>
+        </a>
+        <button class="btn btn-ghost btn-sm topbar-button mobile-nav-logout" data-logout>Log out</button>
+      </div>
     </nav>
     <div class="appnav-right">
       <a class="account-chip" href="/settings">

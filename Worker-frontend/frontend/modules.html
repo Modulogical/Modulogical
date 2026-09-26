@@ -72,7 +72,11 @@
   .runner-head .module-card-icon{ width: 32px; height: 32px; }
 
   .runner-grid{ display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-  @media (max-width: 720px){ .runner-grid{ grid-template-columns: 1fr; } }
+  @media (max-width: 720px){
+    .runner-grid{ grid-template-columns: 1fr; }
+    .module-card{ padding: 18px; }
+    .runner{ padding: 18px; }
+  }
 
   .runner-output{
     background: var(--surface-2);
@@ -106,6 +110,13 @@
       <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
       <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
       <a class="appnav-link" data-nav="settings" href="/settings">Settings</a>
+      <div class="mobile-nav-account">
+        <a class="mobile-nav-account-link" href="/settings">
+          <span class="account-avatar" aria-hidden="true">?</span>
+          <span class="account-name">Account</span>
+        </a>
+        <button class="btn btn-ghost btn-sm topbar-button mobile-nav-logout" data-logout>Log out</button>
+      </div>
     </nav>
     <div class="appnav-right">
       <a class="account-chip" href="/settings">
