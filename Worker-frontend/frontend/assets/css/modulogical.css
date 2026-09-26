@@ -1022,3 +1022,12 @@ body::after{
   color: var(--button-settings-hover-text) !important;
   border-color: var(--button-settings-hover-border) !important;
 }
+
+/* Prevent mobile browsers from auto-zooming focused text-entry controls. */
+@media (max-width: 860px){
+  input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select{
+    font-size: 16px;
+  }
+}
