@@ -668,7 +668,7 @@ body::after{
 }
 .brand-mark{
   width: 26px; height: 26px;
-  background: url('/assets/img/logo-mark/company-colours.png') center / contain no-repeat;
+  background: var(--logo-mark) center / contain no-repeat;
   border: none;
   position: relative;
   flex-shrink: 0;
