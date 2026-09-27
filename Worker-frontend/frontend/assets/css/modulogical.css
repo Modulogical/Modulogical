@@ -148,6 +148,8 @@
 /* ---------------------------------------------------------------------- */
 [data-theme="Holographic dark"] {
   /* semantic button roles */
+  --logo-mark: url('/assets/img/logo-mark/holographic-dark.png');
+
   --button-chat-bg: #b9aaff;
   --button-chat-text: #14121f;
   --button-chat-hover: #c4b5fd;
@@ -216,6 +218,8 @@
 
 [data-theme="Greyscale"]{
   /* semantic button roles */
+  --logo-mark: url('/assets/img/logo-mark/greyscale.png');
+
   --button-chat-bg: #d6d6db;
   --button-chat-text: #0a0a0a;
   --button-chat-hover: #eeeeF2;
@@ -287,6 +291,8 @@
 
 [data-theme="Company-Colours"] {
   /* semantic button roles */
+  --logo-mark: url('/assets/img/logo-mark/company-colours.png');
+
   --button-chat-bg: #22b2ff;
   --button-chat-text: #07131c;
   --button-chat-hover: #4b6bff;
@@ -355,6 +361,8 @@
 
 [data-theme="Hacker-Terminal"] {
   /* semantic button roles */
+  --logo-mark: url('/assets/img/logo-mark/hacker-terminal.png');
+
   --button-chat-bg: #00ff41;
   --button-chat-text: #001a08;
   --button-chat-hover: #39ff14;
@@ -660,7 +668,7 @@ body::after{
 }
 .brand-mark{
   width: 26px; height: 26px;
-  background: url('/assets/img/logo-mark/logo-mark-transparent.png') center / contain no-repeat;
+  background: url('/assets/img/logo-mark/company-colours.png') center / contain no-repeat;
   border: none;
   position: relative;
   flex-shrink: 0;
