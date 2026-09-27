@@ -169,6 +169,19 @@ const Modulogical = (() => {
   function renderSharedDesktopSidebar(sidebar, activePage, displayName){
     if (!sidebar) return;
 
+    // The desktop sidebar is the persistent application shell. Render it only
+    // when it has not been mounted yet; subsequent page views only update state.
+    if (sidebar.querySelector(".sidebar-brand")) {
+      sidebar.querySelectorAll("[data-nav]").forEach(link => {
+        link.classList.toggle("active", link.getAttribute("data-nav") === activePage);
+      });
+      const nameEl = sidebar.querySelector("#nav-name");
+      const avatarEl = sidebar.querySelector("#nav-avatar");
+      if (nameEl) nameEl.textContent = displayName;
+      if (avatarEl) avatarEl.textContent = initials(displayName);
+      return;
+    }
+
     const items = SHARED_NAV.map(item => `
       <a class="sidebar-link sidebar-button${item.key === activePage ? " active" : ""}" data-nav="${item.key}" href="${item.href}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${item.icon}</svg>
@@ -236,6 +249,165 @@ const Modulogical = (() => {
     });
   }
 
+  // ---- Persistent desktop navigation ---------------------------------
+  let persistentNavigationInstalled = false;
+  let persistentNavigationBusy = false;
+
+  function isDesktopNavigation(){
+    return window.matchMedia("(min-width: 761px)").matches;
+  }
+
+  function pageStyleElements(){
+    return Array.from(document.head.querySelectorAll("style[data-page-style]"));
+  }
+
+  function markInitialPageStyles(){
+    document.head.querySelectorAll(":scope > style").forEach(style => {
+      if (!style.dataset.pageStyle) style.dataset.pageStyle = "true";
+    });
+  }
+
+  function replacePageStyles(doc){
+    pageStyleElements().forEach(style => style.remove());
+    doc.head.querySelectorAll("style").forEach(source => {
+      const style = document.createElement("style");
+      style.dataset.pageStyle = "true";
+      style.textContent = source.textContent;
+      document.head.appendChild(style);
+    });
+  }
+
+  function pageRootFromDocument(doc){
+    return doc.querySelector("[data-page-root]") ||
+      doc.querySelector(".shared-app-main") ||
+      doc.querySelector(".chat-main");
+  }
+
+  async function executePageScripts(doc){
+    const scripts = Array.from(doc.body.querySelectorAll("script"));
+    for (const source of scripts) {
+      const src = source.getAttribute("src");
+
+      // The shared application layer is already running and must never be
+      // loaded again while the persistent shell remains mounted.
+      if (src && /\/assets\/js\/modulogical\.js(?:[?#]|$)/.test(src)) continue;
+
+      if (src) {
+        await new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.onload = resolve;
+          script.onerror = reject;
+          document.body.appendChild(script);
+        });
+      } else if (source.textContent.trim()) {
+        const result = Function(source.textContent)();
+        if (result && typeof result.then === "function") await result;
+      }
+    }
+  }
+
+  function updatePersistentNavState(activePage){
+    const sidebar = document.querySelector("[data-shared-sidebar]");
+    if (!sidebar) return;
+    sidebar.querySelectorAll("[data-nav]").forEach(link => {
+      link.classList.toggle("active", link.getAttribute("data-nav") === activePage);
+    });
+  }
+
+  function activePageFromUrl(url){
+    const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "");
+    if (path === "/dashboard" || path === "/dashboard.html" || path === "") return "dashboard";
+    if (path === "/chat" || path === "/chat.html") return "chat";
+    if (path === "/marketplace" || path === "/marketplace.html") return "marketplace";
+    if (path === "/engine-forge" || path === "/engine-forge.html") return "engine-forge";
+    if (path === "/settings" || path === "/settings.html") return "settings";
+    return null;
+  }
+
+  async function navigatePersistent(url, push = true){
+    if (!isDesktopNavigation() || persistentNavigationBusy) return false;
+
+    const target = new URL(url, window.location.href);
+    if (target.origin !== window.location.origin) return false;
+
+    const currentRoot = document.querySelector("[data-page-root]");
+    if (!currentRoot) return false;
+
+    persistentNavigationBusy = true;
+    try {
+      const response = await fetch(target.href, {
+        headers: { "X-Modulogical-Navigation": "persistent-shell" }
+      });
+      if (!response.ok) throw new Error(`Navigation failed (${response.status})`);
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const targetRoot = pageRootFromDocument(doc);
+      if (!targetRoot) throw new Error("Target page has no application content root.");
+
+      // Keep the current document, global CSS and shared sidebar alive.
+      replacePageStyles(doc);
+      currentRoot.innerHTML = targetRoot.innerHTML;
+
+      if (doc.title) document.title = doc.title;
+      const activePage = activePageFromUrl(target.href);
+      if (activePage) updatePersistentNavState(activePage);
+
+      if (push) history.pushState({ modulogical: true }, "", target.href);
+
+      window.scrollTo(0, 0);
+      await executePageScripts(doc);
+      return true;
+    } catch (error) {
+      console.error("Persistent navigation failed:", error);
+      // Falling back to normal navigation keeps the application usable if a
+      // target cannot be fetched or initialised as a view.
+      if (push) window.location.href = target.href;
+      return false;
+    } finally {
+      persistentNavigationBusy = false;
+    }
+  }
+
+  function installPersistentNavigation(){
+    if (persistentNavigationInstalled) return;
+    persistentNavigationInstalled = true;
+    markInitialPageStyles();
+
+    document.addEventListener("click", event => {
+      if (!isDesktopNavigation()) return;
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const link = event.target.closest("a[data-nav]");
+      if (!link || !link.closest("[data-shared-sidebar]")) return;
+
+      const href = link.href;
+      if (!href) return;
+      const target = new URL(href, window.location.href);
+      if (target.origin !== window.location.origin) return;
+
+      event.preventDefault();
+      navigatePersistent(target.href, true);
+    });
+
+    window.addEventListener("popstate", () => {
+      if (isDesktopNavigation()) navigatePersistent(window.location.href, false);
+    });
+
+    window.addEventListener("resize", () => {
+      // If a user crosses the responsive breakpoint, use a full page load so
+      // the appropriate mobile/desktop navigation shell is reconstructed.
+      const wasDesktop = document.documentElement.dataset.modDesktop === "true";
+      const isDesktop = isDesktopNavigation();
+      document.documentElement.dataset.modDesktop = String(isDesktop);
+      if (wasDesktop !== isDesktop) window.location.reload();
+    });
+
+    document.documentElement.dataset.modDesktop = String(isDesktopNavigation());
+  }
+
   // ---- Nav wiring ------------------------------------------------------
   function initNav(activePage){
     document.querySelectorAll("[data-nav]").forEach(link => {
@@ -252,6 +424,7 @@ const Modulogical = (() => {
     // persistent sidebar on larger devices and dropdown drawer on small devices.
     renderSharedDesktopSidebar(document.querySelector("[data-shared-sidebar]"), activePage, displayName);
     renderSharedMobileNav(drawer, activePage, displayName);
+    installPersistentNavigation();
     document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
     document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
 
