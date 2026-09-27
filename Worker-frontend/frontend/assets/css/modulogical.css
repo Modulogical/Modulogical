@@ -353,7 +353,7 @@
   --danger-wash:   rgba(255,138,91,.1);
 }
 
-[data-theme="Hacker-Green"] {
+[data-theme="Hacker-Terminal"] {
   /* semantic button roles */
   --button-chat-bg: #00ff41;
   --button-chat-text: #001a08;
