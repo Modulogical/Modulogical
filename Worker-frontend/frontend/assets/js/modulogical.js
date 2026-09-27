@@ -193,9 +193,10 @@ const Modulogical = (() => {
         <span class="brand-mark" aria-hidden="true"></span>
         MODULOGICAL
       </div>
-      <button class="new-chat-btn sidebar-button" id="new-chat-btn" type="button" href="/chat">
+      <button class="new-chat-btn sidebar-button" id="new-chat-btn" type="button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         <span>New chat</span>
+        <a href="/chat">
       </button>
       <nav class="sidebar-nav" aria-label="Main navigation">${items}</nav>
       <div class="sidebar-foot">
