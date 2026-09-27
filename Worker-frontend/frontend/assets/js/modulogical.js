@@ -292,6 +292,137 @@ const Modulogical = (() => {
     });
   }
 
+  // ---- Client-side navigation / persistent app shell ------------------
+  // The global stylesheet, theme, sidebar, and mobile navigation belong to
+  // the application shell and are loaded once on the initial document.
+  // Internal page navigation replaces only [data-page-root].
+  let navigationBound = false;
+  let navigationRequest = null;
+
+  function routeKeyFromPath(pathname){
+    const path = pathname.replace(/\/+$/, "") || "/";
+    if (path === "/dashboard" || path === "/dashboard.html") return "dashboard";
+    if (path === "/chat" || path === "/chat.html") return "chat";
+    if (path === "/marketplace" || path === "/marketplace.html") return "marketplace";
+    if (path === "/engine-forge" || path === "/engine-forge.html") return "engine-forge";
+    if (path === "/settings" || path === "/settings.html") return "settings";
+    return null;
+  }
+
+  function isInternalAppRoute(url){
+    return url.origin === window.location.origin && !!routeKeyFromPath(url.pathname);
+  }
+
+  function closeMobileNavigation(){
+    const drawer = document.querySelector("[data-nav-drawer]");
+    const toggle = document.querySelector("[data-nav-toggle]");
+    const scrim = document.querySelector("[data-scrim]");
+    drawer?.classList.remove("open");
+    toggle?.setAttribute("aria-expanded", "false");
+    scrim?.classList.remove("show");
+  }
+
+  function setPageStyle(cssText){
+    document.querySelectorAll("style[data-page-style]").forEach(style => style.remove());
+    if (!cssText) return;
+    const style = document.createElement("style");
+    style.setAttribute("data-page-style", "");
+    style.textContent = cssText;
+    document.head.appendChild(style);
+  }
+
+  async function executePageScript(scriptText){
+    if (!scriptText) return;
+    // Page scripts are the scripts from our own authenticated frontend pages;
+    // they are deliberately executed after the new page DOM is mounted.
+    const run = new Function(scriptText);
+    await run();
+  }
+
+  async function navigate(url, {replace = false, popstate = false} = {}){
+    if (navigationRequest) return navigationRequest;
+
+    const target = new URL(url, window.location.href);
+    if (!isInternalAppRoute(target)) {
+      window.location.href = target.href;
+      return;
+    }
+
+    const root = document.querySelector("[data-page-root]");
+    if (!root) {
+      window.location.href = target.href;
+      return;
+    }
+
+    navigationRequest = (async () => {
+      const response = await fetch(target.href, {
+        headers: { "X-Modulogical-Navigation": "client" },
+        credentials: "same-origin"
+      });
+      if (!response.ok) throw new Error(`Navigation failed: ${response.status}`);
+
+      const html = await response.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      const nextRoot = doc.querySelector("[data-page-root]");
+      if (!nextRoot) throw new Error("Destination page has no app root.");
+
+      const nextStyle = doc.querySelector("style[data-page-style]");
+      const nextScript = doc.querySelector("script[data-page-script]");
+
+      // Global <link rel="stylesheet" href="/assets/css/modulogical.css">
+      // is intentionally NOT copied from the destination document.
+      root.innerHTML = nextRoot.innerHTML;
+      setPageStyle(nextStyle ? nextStyle.textContent : "");
+
+      if (doc.title) document.title = doc.title;
+
+      if (!popstate) {
+        const state = { modulogical: true, path: target.pathname };
+        if (replace) history.replaceState(state, "", target.href);
+        else history.pushState(state, "", target.href);
+      }
+
+      closeMobileNavigation();
+
+      const activePage = routeKeyFromPath(target.pathname);
+      if (activePage) setActiveNav(activePage);
+      await executePageScript(nextScript ? nextScript.textContent : "");
+    })().catch(error => {
+      console.error("Client-side navigation failed:", error);
+      // Fall back to normal browser navigation rather than leaving the user
+      // on a partially changed page.
+      window.location.href = target.href;
+    }).finally(() => {
+      navigationRequest = null;
+    });
+
+    return navigationRequest;
+  }
+
+  function bindNavigation(){
+    if (navigationBound) return;
+    navigationBound = true;
+
+    document.addEventListener("click", event => {
+      const link = event.target.closest("a[href]");
+      if (!link || event.defaultPrevented) return;
+      if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+      if (link.target && link.target !== "_self") return;
+      if (link.hasAttribute("download")) return;
+
+      const url = new URL(link.href, window.location.href);
+      if (!isInternalAppRoute(url)) return;
+
+      event.preventDefault();
+      navigate(url.href);
+    });
+
+    window.addEventListener("popstate", () => {
+      const active = routeKeyFromPath(window.location.pathname);
+      if (active) navigate(window.location.href, {popstate: true});
+    });
+  }
+
   // ---- Nav wiring ------------------------------------------------------
   function initNav(activePage){
     const sidebar = document.querySelector("[data-shared-sidebar]");
