@@ -106,7 +106,7 @@
   --accent:  #a5b4fc;
 
   --logo-mark: url('/assets/img/logo-mark/holographic-dark.png');
-  
+
   --accent:        #b9aaff;      /* representative solid, for small dots/carets */
   --accent-dim:    #786fb0;
   --accent-wash:   rgba(185,170,255,.1);
@@ -148,7 +148,7 @@
 /* Theme: greyscale — black / grey / white only                            */
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
-[data-theme="Holographic dark"] {
+[data-theme="Holographic-Dark"] {
   /* semantic button roles */
   --logo-mark: url('/assets/img/logo-mark/holographic-dark.png');
 
