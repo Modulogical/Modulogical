@@ -28,7 +28,7 @@ const Modulogical = (() => {
   // when it is a safe CSS identifier; settings.html discovers the actual theme
   // selectors from that stylesheet and renders them automatically.
   const THEMES = [
-    { key: "holographic", label: "Holographic dark" },
+    { key: "Company-Colours", label: "Company-Colours" },
   ];
 
   function themeByKey(key){
@@ -42,11 +42,11 @@ const Modulogical = (() => {
   }
 
   function applyTheme(theme){
-    const selected = themeByKey(theme) ? theme : DEFAULT_THEME;
-    document.documentElement.dataset.theme = selected === DEFAULT_THEME ? "" : selected;
-    localStorage.setItem(THEME_KEY, selected);
-    return selected;
-  }
+  const selected = themeByKey(theme) ? theme : DEFAULT_THEME;
+  document.documentElement.dataset.theme = selected;
+  localStorage.setItem(THEME_KEY, selected);
+  return selected;
+}
 
   async function loadTheme(){
     // Apply the last known value immediately to avoid a flash on navigation.
