@@ -157,6 +157,50 @@ const Modulogical = (() => {
     toastTimer = setTimeout(() => { el.className = "toast"; }, 3200);
   }
 
+  // ---- Shared navigation ---------------------------------------------
+  const SHARED_NAV = [
+    { key: "dashboard", label: "Dashboard", href: "/dashboard.html", icon: '<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>' },
+    { key: "chat", label: "Chat", href: "/chat", icon: '<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>' },
+    { key: "marketplace", label: "Marketplace", href: "/marketplace", icon: '<path d="M3 9h18l-1.5 11h-15z"/><path d="M5 9l2-5h10l2 5M9 13h6"/>' },
+    { key: "engine-forge", label: "Engine Forge", href: "/engine-forge", icon: '<path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9L4 17v3h3l4.8-4.8a4.5 4.5 0 0 0 5.9-5.9l-2.4 2.4-2.1-2.1z"/>' },
+    { key: "settings", label: "Settings", href: "/settings", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.4.6.8 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/>' }
+  ];
+
+  function renderSharedMobileNav(drawer, activePage, displayName){
+    if (!drawer || !drawer.classList.contains("appnav-links")) return;
+
+    const items = SHARED_NAV.map(item => `
+      <a class="appnav-link shared-mobile-nav-link" data-nav="${item.key}" href="${item.href}">
+        <svg class="shared-mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${item.icon}</svg>
+        <span>${item.label}</span>
+      </a>`).join("");
+
+    drawer.innerHTML = `
+      <div class="shared-mobile-nav-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        MODULOGICAL
+      </div>
+      <a class="shared-mobile-new-chat sidebar-button" href="/chat">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New chat</span>
+      </a>
+      <div class="shared-mobile-nav-links">${items}</div>
+      <div class="shared-mobile-nav-account">
+        <a class="shared-mobile-nav-account-link" href="/settings">
+          <span class="account-avatar" aria-hidden="true">${initials(displayName)}</span>
+          <span class="account-name">${displayName}</span>
+        </a>
+        <button class="shared-mobile-nav-logout sidebar-button" data-logout>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Log out</span>
+        </button>
+      </div>`;
+
+    drawer.querySelectorAll("[data-nav]").forEach(link => {
+      if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
+    });
+  }
+
   // ---- Nav wiring ------------------------------------------------------
   function initNav(activePage){
     document.querySelectorAll("[data-nav]").forEach(link => {
@@ -168,6 +212,7 @@ const Modulogical = (() => {
     const scrim = document.querySelector("[data-scrim]");
 
     const displayName = localStorage.getItem(NAME_KEY) || localStorage.getItem(USERNAME_KEY) || "Account";
+    renderSharedMobileNav(drawer, activePage, displayName);
     document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
     document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
 
