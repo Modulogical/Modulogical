@@ -20,9 +20,7 @@
 <style>
   html, body{ height: 100%; overflow: hidden; }
   .workspace{
-    display: grid;
-    grid-template-columns: 240px 1fr;
-    height: 100vh;
+    min-height: 100vh;
   }
 
   /* ---- shared sidebar ------------------------------------------------ */
@@ -32,6 +30,7 @@
 
   /* ---- main column ------------------------------------------------ */
   .chat-main{
+    margin-left: 240px;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -244,7 +243,8 @@
   .temp-scale{ display: flex; justify-content: space-between; font-size: .68rem; color: var(--text-3); }
 
   @media (max-width: 760px){
-    .workspace{ grid-template-columns: 1fr; }
+    .workspace{ min-height: 100vh; }
+    .chat-main{ margin-left: 0; }
     .shared-sidebar.open{ top:66px; }
 .sidebar-scrim{
       display: none;
