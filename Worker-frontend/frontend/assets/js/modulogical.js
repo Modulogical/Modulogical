@@ -215,39 +215,35 @@ const Modulogical = (() => {
   }
 
   function renderSharedMobileNav(drawer, activePage, displayName){
-    if (!drawer || !drawer.classList.contains("appnav-links")) return;
+  if (!drawer) return;
 
-    const items = SHARED_NAV.map(item => `
-      <a class="appnav-link shared-mobile-nav-link" data-nav="${item.key}" href="${item.href}">
-        <svg class="shared-mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${item.icon}</svg>
-        <span>${item.label}</span>
-      </a>`).join("");
+  const items = SHARED_NAV.map(item => `
+    <a class="appnav-link shared-mobile-nav-link" data-nav="${item.key}" href="${item.href}">
+      <svg class="shared-mobile-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${item.icon}</svg>
+      <span>${item.label}</span>
+    </a>`).join("");
 
-    drawer.innerHTML = `
-      <div class="shared-mobile-nav-brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        MODULOGICAL
-      </div>
-      <a class="shared-mobile-new-chat sidebar-button" href="/chat">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
-        <span>New chat</span>
+  drawer.innerHTML = `
+    <a class="shared-mobile-new-chat sidebar-button" href="/chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      <span>New chat</span>
+    </a>
+    <div class="shared-mobile-nav-links">${items}</div>
+    <div class="shared-mobile-nav-account">
+      <a class="shared-mobile-nav-account-link" href="/settings">
+        <span class="account-avatar" aria-hidden="true">${initials(displayName)}</span>
+        <span class="account-name">${displayName}</span>
       </a>
-      <div class="shared-mobile-nav-links">${items}</div>
-      <div class="shared-mobile-nav-account">
-        <a class="shared-mobile-nav-account-link" href="/settings">
-          <span class="account-avatar" aria-hidden="true">${initials(displayName)}</span>
-          <span class="account-name">${displayName}</span>
-        </a>
-        <button class="shared-mobile-nav-logout sidebar-button" data-logout>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
-          <span>Log out</span>
-        </button>
-      </div>`;
+      <button class="shared-mobile-nav-logout sidebar-button" data-logout>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+        <span>Log out</span>
+      </button>
+    </div>`;
 
-    drawer.querySelectorAll("[data-nav]").forEach(link => {
-      if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
-    });
-  }
+  drawer.querySelectorAll("[data-nav]").forEach(link => {
+    if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
+  });
+}
 
   // ---- Persistent desktop navigation ---------------------------------
   let persistentNavigationInstalled = false;
@@ -422,8 +418,13 @@ const Modulogical = (() => {
 
     // One navigation definition, two responsive presentations:
     // persistent sidebar on larger devices and dropdown drawer on small devices.
-    renderSharedDesktopSidebar(document.querySelector("[data-shared-sidebar]"), activePage, displayName);
-    renderSharedMobileNav(drawer, activePage, displayName);
+    const sharedSidebar = document.querySelector("[data-shared-sidebar]");
+
+    if (isDesktopNavigation()) {
+  renderSharedDesktopSidebar(sharedSidebar, activePage, displayName);
+}   else {
+  renderSharedMobileNav(sharedSidebar, activePage, displayName);
+}
     installPersistentNavigation();
     document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
     document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
