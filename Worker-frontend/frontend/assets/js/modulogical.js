@@ -22,7 +22,7 @@ const Modulogical = (() => {
   const NAME_KEY = "atlas_name";
   const USERNAME_KEY = "atlas_username";
   const THEME_KEY = "modulogical_theme";
-  const DEFAULT_THEME = "holographic";
+  const DEFAULT_THEME = "Company-Colours";
 
   // Theme definitions live in the shared CSS. The frontend accepts a theme key
   // when it is a safe CSS identifier; settings.html discovers the actual theme
