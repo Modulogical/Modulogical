@@ -255,37 +255,18 @@
 <body>
 <a class="skip-link" href="#main">Skip to content</a>
 
-<header class="appnav">
+<header class="appnav" aria-label="Mobile navigation">
   <div class="shell appnav-row">
     <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
-    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Toggle navigation" aria-expanded="false">
+    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Open navigation" aria-expanded="false">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
-    <nav class="appnav-links" data-nav-drawer>
-      <a class="appnav-link" data-nav="dashboard" href="/dashboard.html">Dashboard</a>
-      <a class="appnav-link" data-nav="chat" href="/chat">Chat</a>
-      <a class="appnav-link" data-nav="marketplace" href="/marketplace">Marketplace</a>
-      <a class="appnav-link" data-nav="engine-forge" href="/engine-forge">Engine Forge</a>
-      <a class="appnav-link" data-nav="settings" href="/settings">Settings</a>
-      <div class="mobile-nav-account">
-        <a class="mobile-nav-account-link" href="/settings">
-          <span class="account-avatar" aria-hidden="true">?</span>
-          <span class="account-name">Account</span>
-        </a>
-        <button class="btn btn-ghost btn-sm topbar-button mobile-nav-logout" data-logout>Log out</button>
-      </div>
-    </nav>
-    <div class="appnav-right">
-      <a class="account-chip" href="/settings">
-        <span class="account-avatar" id="nav-avatar">?</span>
-        <span class="account-name" id="nav-name">Account</span>
-      </a>
-      <button class="btn btn-ghost btn-sm topbar-button" data-logout>Log out</button>
-    </div>
+    <nav class="appnav-links" data-nav-drawer aria-label="Main navigation"></nav>
   </div>
 </header>
+<aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
 
-<main class="app-main" id="main">
+<div class="shared-app-main"><main class="app-main" id="main">
   <div class="shell settings-shell">
     <div class="page-head fade-up">
       <h1 class="h1">Settings</h1>
@@ -366,7 +347,7 @@
       </div>
     </section>
   </div>
-</main>
+</main></div>
 
 <script src="/assets/js/modulogical.js"></script>
 <script>

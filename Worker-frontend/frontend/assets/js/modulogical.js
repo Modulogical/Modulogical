@@ -166,6 +166,41 @@ const Modulogical = (() => {
     { key: "settings", label: "Settings", href: "/settings", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.4.6.8 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/>' }
   ];
 
+  function renderSharedDesktopSidebar(sidebar, activePage, displayName){
+    if (!sidebar) return;
+
+    const items = SHARED_NAV.map(item => `
+      <a class="sidebar-link sidebar-button${item.key === activePage ? " active" : ""}" data-nav="${item.key}" href="${item.href}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">${item.icon}</svg>
+        <span>${item.label}</span>
+      </a>`).join("");
+
+    sidebar.innerHTML = `
+      <div class="sidebar-brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        MODULOGICAL
+      </div>
+      <button class="new-chat-btn sidebar-button" id="new-chat-btn" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+        <span>New chat</span>
+      </button>
+      <nav class="sidebar-nav" aria-label="Main navigation">${items}</nav>
+      <div class="sidebar-foot">
+        <a class="sidebar-account" href="/settings">
+          <span class="account-avatar" id="nav-avatar">${initials(displayName)}</span>
+          <span class="account-name" id="nav-name">${displayName}</span>
+        </a>
+        <button class="sidebar-logout sidebar-button" data-logout type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>
+          <span>Log out</span>
+        </button>
+      </div>`;
+
+    sidebar.querySelectorAll("[data-nav]").forEach(link => {
+      if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
+    });
+  }
+
   function renderSharedMobileNav(drawer, activePage, displayName){
     if (!drawer || !drawer.classList.contains("appnav-links")) return;
 
@@ -212,6 +247,10 @@ const Modulogical = (() => {
     const scrim = document.querySelector("[data-scrim]");
 
     const displayName = localStorage.getItem(NAME_KEY) || localStorage.getItem(USERNAME_KEY) || "Account";
+
+    // One navigation definition, two responsive presentations:
+    // persistent sidebar on larger devices and dropdown drawer on small devices.
+    renderSharedDesktopSidebar(document.querySelector("[data-shared-sidebar]"), activePage, displayName);
     renderSharedMobileNav(drawer, activePage, displayName);
     document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
     document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
