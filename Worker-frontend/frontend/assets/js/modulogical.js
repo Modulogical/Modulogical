@@ -225,10 +225,6 @@ const Modulogical = (() => {
       </a>`).join("");
 
     drawer.innerHTML = `
-      <div class="shared-mobile-nav-brand">
-        <span class="brand-mark" aria-hidden="true"></span>
-        MODULOGICAL
-      </div>
       <a class="shared-mobile-new-chat sidebar-button" href="/chat">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
         <span>New chat</span>
