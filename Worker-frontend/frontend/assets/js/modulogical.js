@@ -93,6 +93,7 @@ const Modulogical = (() => {
     localStorage.removeItem(NAME_KEY);
     localStorage.removeItem(USERNAME_KEY);
     localStorage.removeItem(THEME_KEY);
+    sessionStorage.removeItem(AUTH_CHECKED_AT_KEY);
   }
 
   function getModelKey(){ return localStorage.getItem(MODEL_KEY) || "auto"; }
@@ -107,22 +108,77 @@ const Modulogical = (() => {
   // Redirect helper — landing.html is the entry point for unauthenticated users.
   function goToEntry(){ window.location.href = "/"; }
 
-  async function requireAuth(){
-    const token = getToken();
-    if (!token) { goToEntry(); return null; }
+  // ---- Session authentication -----------------------------------------
+  // The token itself remains the API credential. Page navigation does not
+  // block on /auth/check; validation happens in the background. This keeps
+  // an already-signed-in session responsive while API endpoints remain the
+  // authoritative security boundary.
+  const AUTH_CHECKED_AT_KEY = "modulogical_auth_checked_at";
+  const AUTH_CHECK_TTL = 5 * 60 * 1000;
+  let authValidationPromise = null;
+
+  function markAuthChecked(){
+    sessionStorage.setItem(AUTH_CHECKED_AT_KEY, String(Date.now()));
+  }
+
+  function authCheckIsFresh(){
+    const checkedAt = Number(sessionStorage.getItem(AUTH_CHECKED_AT_KEY) || 0);
+    return checkedAt > 0 && (Date.now() - checkedAt) < AUTH_CHECK_TTL;
+  }
+
+  async function validateAuthToken(token){
+    if (!token) return false;
+
     try {
       const res = await fetch(API + "/auth/check?token=" + encodeURIComponent(token), {
-        headers: headers(false)
+        headers: headers(false),
+        cache: "no-store"
       });
       const result = await res.json();
-      if (!result.valid) { clearSession(); goToEntry(); return null; }
-      return token;
+
+      if (!result.valid) {
+        clearSession();
+        sessionStorage.removeItem(AUTH_CHECKED_AT_KEY);
+        goToEntry();
+        return false;
+      }
+
+      markAuthChecked();
+      return true;
     } catch (e) {
-      // Network hiccup shouldn't force a logout — let the page continue,
-      // individual requests will surface their own errors.
+      // A network failure is not proof that the session is invalid.
       console.error("Auth check failed:", e);
+      return true;
+    } finally {
+      authValidationPromise = null;
+    }
+  }
+
+  function validateAuthInBackground(token){
+    if (!token || authValidationPromise) return;
+    authValidationPromise = validateAuthToken(token);
+  }
+
+  async function requireAuth(options = {}){
+    const token = getToken();
+    if (!token) {
+      goToEntry();
+      return null;
+    }
+
+    // A recently validated session needs no network round-trip.
+    if (authCheckIsFresh()) return token;
+
+    // Normal page startup/navigation is optimistic: render immediately and
+    // validate in the background. Callers that truly need a blocking check
+    // can pass { block: true }.
+    if (!options.block) {
+      validateAuthInBackground(token);
       return token;
     }
+
+    const valid = await validateAuthToken(token);
+    return valid ? token : null;
   }
 
   async function logout(){
@@ -238,24 +294,33 @@ const Modulogical = (() => {
 
   // ---- Nav wiring ------------------------------------------------------
   function initNav(activePage){
-    document.querySelectorAll("[data-nav]").forEach(link => {
-      if (link.getAttribute("data-nav") === activePage) link.classList.add("active");
-    });
-
-    const toggle = document.querySelector("[data-nav-toggle]");
+    const sidebar = document.querySelector("[data-shared-sidebar]");
     const drawer = document.querySelector("[data-nav-drawer]");
+    const toggle = document.querySelector("[data-nav-toggle]");
     const scrim = document.querySelector("[data-scrim]");
-
     const displayName = localStorage.getItem(NAME_KEY) || localStorage.getItem(USERNAME_KEY) || "Account";
 
-    // One navigation definition, two responsive presentations:
-    // persistent sidebar on larger devices and dropdown drawer on small devices.
-    renderSharedDesktopSidebar(document.querySelector("[data-shared-sidebar]"), activePage, displayName);
-    renderSharedMobileNav(drawer, activePage, displayName);
-    document.querySelectorAll(".mobile-nav-account .account-name").forEach(el => { el.textContent = displayName; });
-    document.querySelectorAll(".mobile-nav-account .account-avatar").forEach(el => { el.textContent = initials(displayName); });
+    // The shell survives client-side navigation. Render it only once.
+    if (sidebar && !sidebar.dataset.rendered) {
+      renderSharedDesktopSidebar(sidebar, activePage, displayName);
+      sidebar.dataset.rendered = "true";
+    }
 
-    if (toggle && drawer) {
+    if (drawer && !drawer.dataset.rendered) {
+      renderSharedMobileNav(drawer, activePage, displayName);
+      drawer.dataset.rendered = "true";
+    }
+
+    setActiveNav(activePage);
+
+    const navName = document.getElementById("nav-name");
+    const navAvatar = document.getElementById("nav-avatar");
+    if (navName) navName.textContent = displayName;
+    if (navAvatar) navAvatar.textContent = initials(displayName);
+
+    if (toggle && drawer && !toggle.dataset.bound) {
+      toggle.dataset.bound = "true";
+
       const closeDrawer = () => {
         drawer.classList.remove("open");
         toggle.setAttribute("aria-expanded", "false");
@@ -267,23 +332,24 @@ const Modulogical = (() => {
         scrim?.classList.add("show");
       };
 
-      toggle.addEventListener("click", (event) => {
+      toggle.addEventListener("click", event => {
         event.stopPropagation();
         drawer.classList.contains("open") ? closeDrawer() : openDrawer();
       });
 
-      drawer.querySelectorAll("a, button").forEach(el => {
-        el.addEventListener("click", () => closeDrawer());
+      drawer.addEventListener("click", event => {
+        const link = event.target.closest("a, button");
+        if (link) closeDrawer();
       });
 
       scrim?.addEventListener("click", closeDrawer);
 
-      document.addEventListener("click", (event) => {
+      document.addEventListener("click", event => {
         if (!drawer.classList.contains("open")) return;
         if (!drawer.contains(event.target) && !toggle.contains(event.target)) closeDrawer();
       });
 
-      document.addEventListener("keydown", (event) => {
+      document.addEventListener("keydown", event => {
         if (event.key === "Escape") closeDrawer();
       });
 
@@ -293,8 +359,15 @@ const Modulogical = (() => {
     }
 
     document.querySelectorAll("[data-logout]").forEach(btn => {
-      btn.addEventListener("click", (e) => { e.preventDefault(); logout(); });
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "true";
+      btn.addEventListener("click", e => {
+        e.preventDefault();
+        logout();
+      });
     });
+
+    bindNavigation();
   }
 
   function initials(name){
