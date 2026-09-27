@@ -30,7 +30,7 @@
 
   /* ---- main column ------------------------------------------------ */
   .chat-main{
-    margin-left: 240px;
+    margin-left: 0;
     display: flex;
     flex-direction: column;
     min-width: 0;
@@ -295,7 +295,8 @@
 
   <aside class="sidebar shared-sidebar" data-shared-sidebar data-nav-drawer aria-label="Main navigation"></aside>
 
-  <div class="chat-main">
+  <div class="shared-app-main" data-page-root>
+    <div class="chat-main">
     <div class="mobile-topbar">
       <button data-nav-toggle aria-label="Open navigation" aria-expanded="false" class="topbar-button">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
@@ -349,6 +350,7 @@
         </div>
       </div>
     </div>
+      </div>
   </div>
 </div>
 
