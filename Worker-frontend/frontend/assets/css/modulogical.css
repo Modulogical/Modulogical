@@ -148,7 +148,7 @@
 /* Theme: greyscale — black / grey / white only                            */
 /* Toggle with data-theme="greyscale" on <html> or <body>                  */
 /* ---------------------------------------------------------------------- */
-[data-theme="Holographic-Dark"] {
+[data-theme="Holographic dark"] {
   /* semantic button roles */
   --logo-mark: url('/assets/img/logo-mark/holographic-dark.png');
 
