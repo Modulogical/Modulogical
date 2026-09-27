@@ -17,7 +17,7 @@
 <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
-<style data-page-style>
+<style>
   html, body{ height: 100%; overflow: hidden; }
   .workspace{
     min-height: 100vh;
@@ -243,7 +243,38 @@
   .temp-scale{ display: flex; justify-content: space-between; font-size: .68rem; color: var(--text-3); }
 
   @media (max-width: 760px){
-    .chat-main{ height: calc(100vh - 56px); }
+    .workspace{ min-height: 100vh; }
+    .chat-main{ margin-left: 0; }
+    .shared-sidebar.open{ top:66px; }
+.sidebar-scrim{
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.28);
+      z-index: 70;
+    }
+    .sidebar-scrim.show{ display: block; }
+    .mobile-topbar{
+      position: relative;
+      z-index: 90;
+      display: flex; align-items: center; gap: 10px;
+      height: 54px; padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+      flex-shrink: 0;
+    }
+    .mobile-topbar button{
+      width: 34px; height: 34px; border-radius: var(--radius-sm);
+      border: 1px solid var(--button-topbar-border);
+      background: var(--button-topbar-bg);
+      color: var(--button-topbar-text);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .mobile-topbar button:hover{
+      background: var(--button-topbar-hover);
+      color: var(--button-topbar-hover-text);
+      border-color: var(--button-topbar-hover-border);
+    }
+    .mobile-topbar button svg{ width: 16px; height: 16px; }
     .thread-inner{ padding: 0 16px; }
     .composer{ padding: 0 14px; }
     .msg-bubble{ max-width: 88%; }
@@ -259,22 +290,18 @@
 </style>
 </head>
 <body>
-<a class="skip-link" href="#main">Skip to content</a>
+<div class="workspace">
+  <div class="sidebar-scrim" data-scrim></div>
 
-<header class="appnav" aria-label="Mobile navigation">
-  <div class="shell appnav-row">
-    <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
-    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Open navigation" aria-expanded="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-    </button>
-    <nav class="appnav-links" data-nav-drawer aria-label="Main navigation"></nav>
-  </div>
-</header>
+  <aside class="sidebar shared-sidebar" data-shared-sidebar data-nav-drawer aria-label="Main navigation"></aside>
 
-<aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
-
-<div class="shared-app-main" data-page-root>
   <div class="chat-main">
+    <div class="mobile-topbar">
+      <button data-nav-toggle aria-label="Open navigation" aria-expanded="false" class="topbar-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="brand" style="font-size:.88rem;"><span class="brand-mark"></span>MODULOGICAL</div>
+    </div>
 
     <div class="thread-scroll" id="thread-scroll">
       <div class="thread-inner" id="thread-inner">
@@ -326,7 +353,7 @@
 </div>
 
 <script src="/assets/js/modulogical.js"></script>
-<script data-page-script>
+<script>
 (async function initChat(){
   const token = await Modulogical.requireAuth();
   Modulogical.initNav("chat");

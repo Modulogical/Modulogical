@@ -22,7 +22,7 @@
 <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
 <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
-<style data-page-style>
+<style>
   .app-main{ padding: 40px 0 80px; }
 
   .welcome-row{
@@ -131,7 +131,7 @@
 </header>
 <aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
 
-<div class="shared-app-main" data-page-root><main class="app-main" id="main">
+<div class="shared-app-main"><main class="app-main" id="main">
   <div class="shell">
     <div class="welcome-row fade-up">
       <div>
@@ -188,7 +188,7 @@
 </main></div>
 
 <script src="/assets/js/modulogical.js"></script>
-<script data-page-script>
+<script>
   (async function init(){
     const token = await Modulogical.requireAuth();
     Modulogical.initNav("dashboard");
