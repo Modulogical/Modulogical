@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modulogical — Themes</title>
+  <link rel="stylesheet" href="/assets/css/modulogical.css">
+  <link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+  <link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
+  <style>
+    .app-main{padding:40px 0 80px}.themes-shell{max-width:900px}.page-head{margin-bottom:30px}
+    .theme-section{margin-bottom:34px}.theme-section-label{margin-bottom:12px}.theme-section-label .h3{margin-bottom:3px}
+    .theme-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .theme-option{position:relative;display:flex;flex-direction:column;gap:11px;min-width:0;padding:10px;text-align:left;border:1px solid var(--line);border-radius:var(--radius-md);background:var(--surface-1);color:inherit;cursor:pointer;transition:border-color var(--fast) var(--ease),background var(--fast) var(--ease),transform var(--fast) var(--ease)}
+    .theme-option:hover{border-color:var(--line-strong);background:var(--surface-2)}.theme-option:active{transform:scale(.99)}
+    .theme-option.is-selected{border-color:var(--accent-line);background:var(--accent-wash)}
+    .theme-preview{display:block;height:168px;overflow:hidden;position:relative;border:1px solid var(--line-strong);border-radius:9px;background:var(--dashboard-bg,var(--bg));color:var(--text-chat,var(--text-1));font-family:var(--font)}
+    .theme-preview-app{display:flex;width:100%;height:100%;background:radial-gradient(circle at 18% 15%,var(--left-glow-primary,transparent),transparent 42%),radial-gradient(circle at 82% 82%,var(--right-glow-primary,transparent),transparent 45%),var(--dashboard-bg,var(--bg))}
+    .theme-preview-sidebar{flex:0 0 25%;min-width:0;padding:10px 8px;border-right:1px solid var(--line);background:var(--surface-1)}
+    .theme-preview-logo{height:8px;width:58%;margin:1px 3px 12px;border-radius:3px;background:var(--accent-gradient,var(--accent));opacity:.9}
+    .theme-preview-nav{display:flex;flex-direction:column;gap:6px}.theme-preview-nav span{display:block;height:5px;width:76%;border-radius:3px;background:var(--text-3);opacity:.75}.theme-preview-nav span:first-child{width:88%;background:var(--accent)}
+    .theme-preview-chat{min-width:0;flex:1;display:flex;flex-direction:column;padding:10px}
+    .theme-preview-chatbar{height:8px;width:38%;margin:1px 0 12px;border-radius:3px;background:var(--text-2);opacity:.8}
+    .theme-preview-message{align-self:flex-start;max-width:72%;padding:8px 9px;border:1px solid var(--line);border-radius:7px 7px 7px 2px;background:var(--surface-2);color:var(--text-chat,var(--text-1));font-family:var(--font);font-size:8px;line-height:1.25;white-space:nowrap;box-shadow:0 3px 12px rgba(0,0,0,.12)}
+    .theme-preview-input{margin-top:auto;height:20px;display:flex;align-items:center;gap:5px;padding:3px 4px 3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--surface-1)}
+    .theme-preview-input-text{min-width:0;flex:1;color:var(--text-3);font-size:6px;white-space:nowrap}
+    .theme-preview-send{flex:0 0 auto;height:13px;padding:0 6px;border:0;border-radius:4px;background:var(--button-chat-bg,var(--accent));color:var(--button-chat-text,var(--text-inverse));font:700 5px var(--font)}
+    .theme-option-copy{display:flex;flex-direction:column;gap:2px;padding:0 2px 2px}.theme-option-copy .name{font-size:.9rem;font-weight:560;color:var(--text-1)}.theme-option-copy .note{font-size:.76rem;color:var(--text-3)}
+    .theme-check{position:absolute;top:17px;right:17px;width:22px;height:22px;display:grid;place-items:center;border-radius:50%;background:var(--accent);color:var(--text-inverse);font-size:.7rem;font-weight:800;opacity:0;transform:scale(.8);transition:opacity var(--fast) var(--ease),transform var(--fast) var(--ease)}.theme-option.is-selected .theme-check{opacity:1;transform:scale(1)}
+    .themes-empty{padding:28px 22px;border:1px dashed var(--line-strong);border-radius:var(--radius-md);background:var(--surface-1);color:var(--text-3);text-align:center}.themes-empty .name{color:var(--text-1);font-size:.9rem;font-weight:560;margin-bottom:4px}.themes-empty .note{font-size:.78rem}
+    .inline-notice{display:none;margin-top:12px;padding:9px 12px;border-radius:var(--radius-sm);font-size:.8rem;border:1px solid var(--line);background:var(--surface-2);color:var(--text-2)}.inline-notice.show{display:block}.inline-notice.is-error{border-color:rgba(239,111,111,.28);background:rgba(239,111,111,.08);color:#f0b0b0}.inline-notice.is-success{border-color:rgba(111,205,145,.28);background:rgba(111,205,145,.08);color:#b8e9c8}
+    @media(max-width:620px){.theme-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="appnav" aria-label="Mobile navigation">
+    <div class="shell appnav-row">
+      <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
+      <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Open navigation" aria-expanded="false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <nav class="appnav-links" data-nav-drawer aria-label="Main navigation"></nav>
+    </div>
+  </header>
+  <aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
+  <div class="shared-app-main" data-page-root>
+    <main class="app-main" id="main">
+      <div class="shell themes-shell">
+        <div class="page-head fade-up">
+          <h1 class="h1">Themes</h1>
+          <p class="small">Choose how Modulogical looks and feels.</p>
+        </div>
+        <section class="theme-section fade-up">
+          <div class="theme-section-label"><h2 class="h3">Official themes</h2><p class="small">Themes created and maintained by Modulogical.</p></div>
+          <div class="theme-grid" id="official-themes"></div>
+        </section>
+        <section class="theme-section fade-up">
+          <div class="theme-section-label"><h2 class="h3">Installed themes</h2><p class="small">Themes installed from the Modulogical marketplace.</p></div>
+          <div id="installed-themes"><div class="themes-empty"><div class="name">No installed themes</div><div class="note">Marketplace themes you install will appear here.</div></div></div>
+        </section>
+        <div class="inline-notice" id="theme-notice"></div>
+      </div>
+    </main>
+  </div>
+  <script src="/assets/js/modulogical.js"></script>
+  <script>
+    (async function init(){
+      await Modulogical.requireAuth();
+      Modulogical.initNav("themes");
+      await Modulogical.loadTheme();
+      await renderOfficialThemes();
+    })();
+
+    function formatThemeName(key){
+      if(key==="holographic") return "Holographic Dark";
+      return key.replace(/[-_]+/g," ").replace(/\b\w/g,char=>char.toUpperCase());
+    }
+    function getThemeNote(key){
+      if(key==="holographic") return "The default Modulogical interface";
+      if(key==="greyscale") return "Black, grey and white only";
+      return "Modulogical theme";
+    }
+
+    let themeRootVariables=new Map(),themeVariables=new Map();
+
+    function parseThemeVariables(css){
+      const cleanCss=css.replace(/\/\*[\s\S]*?\*\//g,""),rootVariables=new Map(),themedVariables=new Map();
+      const blockRegex=/(:root|\[data-theme\s*=\s*["']([^"']+)["']\])\s*\{([^{}]*)\}/g;
+      let match;
+      while((match=blockRegex.exec(cleanCss))!==null){
+        const selector=match[1],key=match[2],body=match[3],variables=new Map();
+        const variableRegex=/(--[a-zA-Z0-9_-]+)\s*:\s*([^;]+)\s*;/g;let variableMatch;
+        while((variableMatch=variableRegex.exec(body))!==null) variables.set(variableMatch[1],variableMatch[2].trim());
+        if(selector===":root") for(const [property,value] of variables) rootVariables.set(property,value);
+        else if(key) themedVariables.set(key.trim(),variables);
+      }
+      themeRootVariables=rootVariables;themeVariables=themedVariables;
+    }
+
+    async function discoverThemes(){
+      const themes=[{key:"holographic",label:"Holographic Dark",note:"The default Modulogical interface"}];
+      try{
+        const response=await fetch("/assets/css/modulogical.css",{cache:"no-store"});
+        if(!response.ok) throw new Error("Could not load theme stylesheet.");
+        const css=await response.text();parseThemeVariables(css);
+        const cssWithoutComments=css.replace(/\/\*[\s\S]*?\*\//g,""),regex=/\[data-theme\s*=\s*["']([^"']+)["']\]/g,seen=new Set(themes.map(theme=>theme.key.toLowerCase()));
+        let match;
+        while((match=regex.exec(cssWithoutComments))!==null){
+          const key=match[1].trim();
+          if(!key||!/^[a-zA-Z0-9_-]+$/.test(key)) continue;
+          if(key.toLowerCase()==="holographic dark") continue;
+          if(seen.has(key.toLowerCase())) continue;
+          seen.add(key.toLowerCase());themes.push({key,label:formatThemeName(key),note:getThemeNote(key)});
+        }
+      }catch(error){console.error("Theme discovery failed:",error)}
+      return themes;
+    }
+
+    function createThemeOption(theme){
+      const option=document.createElement("button");option.type="button";option.className="theme-option";option.dataset.themeOption=theme.key;option.setAttribute("aria-pressed","false");
+      option.innerHTML=`
+        <span class="theme-preview" aria-hidden="true"><span class="theme-preview-app">
+          <span class="theme-preview-sidebar"><span class="theme-preview-logo"></span><span class="theme-preview-nav"><span></span><span></span><span></span><span></span></span></span>
+          <span class="theme-preview-chat"><span class="theme-preview-chatbar"></span><span class="theme-preview-message">Hello, Modulogical</span>
+            <span class="theme-preview-input"><span class="theme-preview-input-text">Message Modulogical...</span><span class="theme-preview-send">Send</span></span>
+          </span>
+        </span></span>
+        <span class="theme-option-copy"><span class="name">${escapeHtml(theme.label)}</span><span class="note">${escapeHtml(theme.note)}</span></span>
+        <span class="theme-check" aria-hidden="true">✓</span>`;
+      applyThemeVariablesToPreview(option.querySelector(".theme-preview"),theme.key);
+
+      option.addEventListener("click",async()=>{
+        const selectedTheme=option.dataset.themeOption,token=Modulogical.getToken();
+        if(!Modulogical.themeByKey(selectedTheme)) return;
+        if(!token){showThemeNotice("You are not logged in.","error");return}
+        const previousTheme=Modulogical.getTheme();Modulogical.applyTheme(selectedTheme);renderSelectedTheme(selectedTheme);
+        try{
+          const response=await fetch(Modulogical.API+"/settings/theme",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify({theme:selectedTheme,token})});
+          const data=await response.json();if(!response.ok) throw new Error(data.message||"Could not save theme.");
+          showThemeNotice("Theme saved.","success");
+        }catch(error){
+          console.error("Theme change failed:",error);Modulogical.applyTheme(previousTheme);renderSelectedTheme(previousTheme);
+          showThemeNotice("Could not save theme. Your previous theme has been restored.","error");
+        }
+      });
+      return option;
+    }
+
+    function applyThemeVariablesToPreview(preview,themeKey){
+      if(!preview)return;
+      const variables=new Map(themeRootVariables),overrides=themeVariables.get(themeKey);
+      if(overrides) for(const [property,value] of overrides) variables.set(property,value);
+      for(const [property,value] of variables) preview.style.setProperty(property,value);
+      const fallbackTokens={"--dashboard-bg":"var(--bg)","--text-chat":"var(--text-1)","--button-chat-bg":"var(--accent)","--button-chat-text":"var(--text-inverse)"};
+      for(const [property,value] of Object.entries(fallbackTokens)) if(!preview.style.getPropertyValue(property)) preview.style.setProperty(property,value);
+    }
+
+    function escapeHtml(value){return String(value).replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[char])}
+
+    async function renderOfficialThemes(){
+      const container=document.getElementById("official-themes");if(!container)return;
+      container.replaceChildren();const themes=await discoverThemes();
+      themes.forEach(theme=>container.appendChild(createThemeOption(theme)));
+      renderSelectedTheme(Modulogical.getTheme());
+    }
+
+    function renderSelectedTheme(theme){
+      document.querySelectorAll("[data-theme-option]").forEach(option=>{
+        const selected=option.dataset.themeOption===theme;
+        option.classList.toggle("is-selected",selected);option.setAttribute("aria-pressed",selected?"true":"false");
+      });
+    }
+
+    function showThemeNotice(message,kind){
+      const el=document.getElementById("theme-notice");if(!el)return;
+      el.textContent=message;el.className="inline-notice show"+(kind?" is-"+kind:"");
+      if(kind==="success") setTimeout(()=>{el.className="inline-notice"},2200);
+    }
+  </script>
+</body>
+</html>
