@@ -31,6 +31,12 @@
     .themes-empty{padding:28px 22px;border:1px dashed var(--line-strong);border-radius:var(--radius-md);background:var(--surface-1);color:var(--text-3);text-align:center}.themes-empty .name{color:var(--text-1);font-size:.9rem;font-weight:560;margin-bottom:4px}.themes-empty .note{font-size:.78rem}
     .inline-notice{display:none;margin-top:12px;padding:9px 12px;border-radius:var(--radius-sm);font-size:.8rem;border:1px solid var(--line);background:var(--surface-2);color:var(--text-2)}.inline-notice.show{display:block}.inline-notice.is-error{border-color:rgba(239,111,111,.28);background:rgba(239,111,111,.08);color:#f0b0b0}.inline-notice.is-success{border-color:rgba(111,205,145,.28);background:rgba(111,205,145,.08);color:#b8e9c8}
     @media(max-width:620px){.theme-grid{grid-template-columns:1fr}}
+    .theme-section-box{
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
   </style>
 </head>
 <body>
@@ -53,9 +59,15 @@
           <p class="small">Choose how Modulogical looks and feels.</p>
         </div>
         <section class="theme-section fade-up">
-          <div class="theme-section-label"><h2 class="h3">Official themes</h2><p class="small">Themes created and maintained by Modulogical.</p></div>
-          <div class="theme-grid" id="official-themes"></div>
-        </section>
+  <div class="theme-section-box">
+    <div class="theme-section-label">
+      <h2 class="h3">Official themes</h2>
+      <p class="small">Themes created and maintained by Modulogical.</p>
+    </div>
+
+    <div class="theme-grid" id="official-themes"></div>
+  </div>
+</section>
         <section class="theme-section fade-up">
           <div class="theme-section-label"><h2 class="h3">Installed themes</h2><p class="small">Themes installed from the Modulogical marketplace.</p></div>
           <div id="installed-themes"><div class="themes-empty"><div class="name">No installed themes</div><div class="note">Marketplace themes you install will appear here.</div></div></div>
