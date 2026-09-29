@@ -27,22 +27,44 @@ def clean_string(value: str) -> str:
 
 async def get_account(request: Request):
     """
-    Resolve the authenticated Modulogical account.
+    Resolve the authenticated Modulogical account from the Bearer token.
 
-    The Engine Forge worker expects the authenticated upstream layer to
-    provide X-Account-ID. The ID is then checked against the accounts D1
-    binding (ATLAS), so developer_id is always tied to an existing account.
+    The Personality Forge page already sends the token returned by
+    Modulogical.requireAuth() as:
+        Authorization: Bearer <token>
 
-    The current Personality Forge HTML does not yet send this header; this
-    backend is therefore ready for the authenticated request once the
-    frontend/auth layer supplies it.
+    The account/session verification endpoint is owned by the main
+    Modulogical authentication service. This Engine Forge worker does not
+    invent or duplicate that session schema.
+
+    The verified account ID must be supplied by that trusted authentication
+    layer as X-Account-ID before the request reaches this worker.
     """
+    authorization = request.headers.get("Authorization", "").strip()
+
+    if not authorization.startswith("Bearer "):
+        return None, JSONResponse(
+            status_code=401,
+            content={"error": "Authentication required."},
+        )
+
+    token = authorization[7:].strip()
+
+    if not token:
+        return None, JSONResponse(
+            status_code=401,
+            content={"error": "Authentication required."},
+        )
+
+    # The token is intentionally not treated as an account ID.
+    # A trusted upstream authentication layer must verify it and provide
+    # the resulting account ID in X-Account-ID.
     account_id = request.headers.get("X-Account-ID", "").strip()
 
     if not account_id:
         return None, JSONResponse(
             status_code=401,
-            content={"error": "Authentication required."},
+            content={"error": "Authenticated account context is missing."},
         )
 
     result = await request.app.state.env.ATLAS.prepare(
