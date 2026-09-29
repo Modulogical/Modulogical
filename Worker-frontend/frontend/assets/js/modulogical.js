@@ -378,8 +378,36 @@ const Modulogical = (() => {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      const link = event.target.closest("a[data-nav]");
-      if (!link || !link.closest("[data-shared-sidebar]")) return;
+      const link = event.target.closest("a[href]");
+if (!link) return;
+
+const href = link.getAttribute("href");
+if (!href) return;
+
+// Ignore anchors, downloads, new-tab behaviour, etc.
+if (
+  href.startsWith("#") ||
+  link.hasAttribute("download") ||
+  link.target === "_blank"
+) return;
+
+const target = new URL(link.href, window.location.href);
+
+if (target.origin !== window.location.origin) return;
+
+// Only intercept application pages.
+if (
+  !target.pathname.startsWith("/engine-forge") &&
+  target.pathname !== "/chat" &&
+  target.pathname !== "/marketplace" &&
+  target.pathname !== "/settings" &&
+  target.pathname !== "/themes" &&
+  target.pathname !== "/dashboard" &&
+  target.pathname !== "/dashboard.html"
+) return;
+
+event.preventDefault();
+navigatePersistent(target.href, true);
 
       const href = link.href;
       if (!href) return;
