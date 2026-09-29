@@ -1,5 +1,3 @@
-const ITEM_TYPES = ["module", "personality", "workflow", "webvector"];
-
 function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
@@ -14,56 +12,118 @@ function cors(response) {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  headers.set(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization, X-Account-ID"
+  );
+
   return new Response(response.body, {
     status: response.status,
     headers,
   });
 }
 
-function parseJSON(value, fallback) {
-  if (value === undefined || value === null || value === "") return fallback;
-  if (typeof value !== "string") return value;
-  try {
-    return JSON.parse(value);
-  } catch {
+function unauthorized(message = "Authentication required.") {
+  return cors(json({ error: message }, 401));
+}
+
+function getBearerToken(request) {
+  const header = request.headers.get("Authorization") || "";
+
+  if (!header.startsWith("Bearer ")) {
     return null;
+  }
+
+  const token = header.slice(7).trim();
+  return token || null;
+}
+
+/*
+ * The current Modulogical page sends the authentication token as:
+ *
+ *   Authorization: Bearer <token>
+ *
+ * The existing main authentication system is responsible for validating
+ * that token. Engine Forge must not treat the token itself as an account ID.
+ *
+ * The authenticated account ID is expected in X-Account-ID when the
+ * authentication layer forwards the request to this Worker.
+ */
+async function getAccount(request, env) {
+  const token = getBearerToken(request);
+
+  if (!token) {
+    return {
+      error: unauthorized(),
+    };
+  }
+
+  const accountId = (request.headers.get("X-Account-ID") || "").trim();
+
+  if (!accountId) {
+    return {
+      error: unauthorized("Authenticated account context is missing."),
+    };
+  }
+
+  try {
+    const account = await env.ATLAS.prepare(`
+      SELECT id, account_subscription_status
+      FROM accounts
+      WHERE id = ?
+      LIMIT 1
+    `).bind(accountId).first();
+
+    if (!account) {
+      return {
+        error: unauthorized("Invalid account."),
+      };
+    }
+
+    return {
+      account,
+    };
+  } catch (error) {
+    return {
+      error: cors(json({
+        error: "Could not verify account.",
+        detail: error instanceof Error ? error.message : String(error),
+      }, 500)),
+    };
   }
 }
 
-function typeConfig(type) {
-  return {
-    table: `${type}_queue`,
-    idColumn: `${type}_id`,
-    versionColumn: `${type}_version`,
-    priceColumn: `${type}_price`,
-    dependenciesColumn: `${type}_dependencies`,
-    codeColumn: `${type}_code`,
-  };
-}
-
-async function produce(type, request, env) {
+async function producePersonality(request, env) {
   let body;
+
   try {
     body = await request.json();
   } catch {
-    return cors(json({ error: "Request body must be valid JSON." }, 400));
+    return cors(json({
+      error: "Request body must be valid JSON.",
+    }, 400));
   }
 
-  const required = [
-    "title",
-    "developer_id",
-    "developer_tier",
-    "item_id",
-    "item_version",
-    "item_price",
-    "item_dependencies",
-    "code",
-  ];
+  const productName =
+    typeof body.product_name === "string"
+      ? body.product_name.trim()
+      : "";
 
-  const missing = required.filter(
-    (field) => body[field] === undefined || body[field] === null || body[field] === ""
-  );
+  const personalityName =
+    typeof body.personality_name === "string"
+      ? body.personality_name.trim()
+      : "";
+
+  const systemPrompt =
+    typeof body.system_prompt === "string"
+      ? body.system_prompt.trim()
+      : "";
+
+  const missing = [];
+
+  if (!productName) missing.push("product_name");
+  if (!personalityName) missing.push("personality_name");
+  if (!systemPrompt) missing.push("system_prompt");
 
   if (missing.length) {
     return cors(json({
@@ -72,102 +132,137 @@ async function produce(type, request, env) {
     }, 400));
   }
 
-  let schema = parseJSON(body.schema, {});
-  const display = parseJSON(body.display, {});
-  const dependencies = parseJSON(body.item_dependencies, []);
+  const auth = await getAccount(request, env);
 
-  if (schema === null) {
-    return cors(json({ error: "schema must contain valid JSON." }, 400));
-  }
-  if (display === null) {
-    return cors(json({ error: "display must contain valid JSON." }, 400));
-  }
-  if (dependencies === null) {
-    return cors(json({ error: "item_dependencies must contain valid JSON." }, 400));
+  if (auth.error) {
+    return auth.error;
   }
 
-  // WebVector's "Information" field is the stored schema payload.
-  if (type === "webvector") {
-    const information = parseJSON(body.information, {});
-    if (information === null) {
-      return cors(json({ error: "information must contain valid JSON." }, 400));
-    }
-    schema = information;
-  }
+  const developerId = auth.account.id;
+  const developerTier = auth.account.account_subscription_status;
 
-  // Workflow flowchart data is stored alongside the workflow schema.
-  if (type === "workflow" && body.flow !== undefined) {
-    const flow = parseJSON(body.flow, null);
-    if (flow === null) {
-      return cors(json({ error: "flow must contain valid JSON." }, 400));
-    }
-    if (typeof schema !== "object" || Array.isArray(schema) || schema === null) {
-      schema = { schema };
-    }
-    schema.flow = flow;
-  }
+  // Item IDs are generated by the Worker rather than supplied by the client.
+  const itemId = crypto.randomUUID();
 
-  const cfg = typeConfig(type);
+  /*
+   * The current Personality Forge page has no description field.
+   * The metadata schema requires a non-null description, so use an empty
+   * string until the Forge UI provides one.
+   */
+  const itemDescription = "";
 
-  const sql = `
-    INSERT INTO ${cfg.table}
-      (
-        title,
-        developer_id,
-        developer_tier,
-        ${cfg.idColumn},
-        schema,
-        description,
-        display,
-        ${cfg.versionColumn},
-        ${cfg.priceColumn},
-        ${cfg.dependenciesColumn},
-        ${cfg.codeColumn}
-      )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `;
+  let personalityCreated = false;
+  let metadataCreated = false;
 
   try {
-    await env.DB.prepare(sql).bind(
-      String(body.title),
-      String(body.developer_id),
-      String(body.developer_tier),
-      String(body.item_id),
-      JSON.stringify(schema),
-      String(body.description ?? ""),
-      JSON.stringify(display),
-      String(body.item_version),
-      String(body.item_price),
-      JSON.stringify(dependencies),
-      String(body.code),
+    // Personality-specific database.
+    await env.PERSONALITIES.prepare(`
+      INSERT INTO personalities (
+        item_id,
+        chosen_name,
+        chosen_system_prompt
+      )
+      VALUES (?, ?, ?)
+    `).bind(
+      itemId,
+      personalityName,
+      systemPrompt,
     ).run();
+
+    personalityCreated = true;
+
+    // Shared Engine Forge metadata database.
+    await env.DB.prepare(`
+      INSERT INTO metadata (
+        item_id,
+        item_type,
+        developer_id,
+        developer_tier,
+        item_name,
+        item_description
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      itemId,
+      "personality",
+      developerId,
+      developerTier,
+      productName,
+      itemDescription,
+    ).run();
+
+    metadataCreated = true;
 
     return cors(json({
       success: true,
-      item_type: type,
-      item_id: body.item_id,
-      message: "Item queued successfully.",
+      item: {
+        item_id: itemId,
+        item_type: "personality",
+        developer_id: developerId,
+        developer_tier: developerTier,
+        item_name: productName,
+        personality_name: personalityName,
+      },
     }, 201));
   } catch (error) {
+    /*
+     * DB and PERSONALITIES are separate D1 databases, so there is no
+     * cross-D1 transaction. Compensate for whichever write succeeded.
+     */
+    if (metadataCreated) {
+      try {
+        await env.DB.prepare(
+          "DELETE FROM metadata WHERE item_id = ?"
+        ).bind(itemId).run();
+      } catch {}
+    }
+
+    if (personalityCreated) {
+      try {
+        await env.PERSONALITIES.prepare(
+          "DELETE FROM personalities WHERE item_id = ?"
+        ).bind(itemId).run();
+      } catch {}
+    }
+
     return cors(json({
-      error: "Could not queue item.",
+      error: "Could not create personality.",
       detail: error instanceof Error ? error.message : String(error),
     }, 500));
   }
 }
 
 async function health(env) {
-  let database = "offline";
+  const databases = {
+    metadata: false,
+    personalities: false,
+    accounts: false,
+  };
+
   try {
     await env.DB.prepare("SELECT 1").first();
-    database = "online";
+    databases.metadata = true;
   } catch {}
 
+  try {
+    await env.PERSONALITIES.prepare("SELECT 1").first();
+    databases.personalities = true;
+  } catch {}
+
+  try {
+    await env.ATLAS.prepare("SELECT 1").first();
+    databases.accounts = true;
+  } catch {}
+
+  const online =
+    databases.metadata &&
+    databases.personalities &&
+    databases.accounts;
+
   return {
-    status: database === "online" ? "ok" : "degraded",
+    status: online ? "ok" : "degraded",
     service: "engine-forge",
-    database,
-    // Engine Forge itself does not depend on the inference PC.
+    databases,
     inference_dependency: "none",
   };
 }
@@ -180,7 +275,8 @@ export default {
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          "Access-Control-Allow-Headers":
+            "Content-Type, Authorization, X-Account-ID",
         },
       });
     }
@@ -191,15 +287,15 @@ export default {
       return cors(json(await health(env)));
     }
 
-    if (request.method === "POST") {
-      const match = url.pathname.match(
-        /^\/produce\/(module|personality|workflow|webvector)$/
-      );
-      if (match) {
-        return produce(match[1], request, env);
-      }
+    if (
+      url.pathname === "/produce/personality" &&
+      request.method === "POST"
+    ) {
+      return producePersonality(request, env);
     }
 
-    return cors(json({ error: "Not found." }, 404));
+    return cors(json({
+      error: "Not found.",
+    }, 404));
   },
 };
