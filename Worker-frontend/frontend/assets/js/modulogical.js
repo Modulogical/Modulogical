@@ -389,7 +389,12 @@ const Modulogical = (() => {
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
       const link = event.target.closest("a[data-nav], a[data-persistent-nav]");
-      if (!link || !link.closest("[data-shared-sidebar]")) return;
+      if (!link) return;
+
+      const isSidebarLink = !!link.closest("[data-shared-sidebar]");
+      const isPersistentLink = link.hasAttribute("data-persistent-nav");
+
+      if (!isSidebarLink && !isPersistentLink) return;
 
       const href = link.href;
       if (!href) return;
