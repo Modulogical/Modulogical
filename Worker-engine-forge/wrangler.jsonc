@@ -6,8 +6,18 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "modulogical-engine-forge",
-      "database_id": "28ae57bc-fdb7-4fdb-a327-1e68736be0b2"
+      "database_name": "modulogical-engine-forge-metadata",
+      "database_id": "c925e334-268c-4f1c-a2f8-6f90b78d5d5f"
+    },
+    {
+      "binding": "DB",
+      "database_name": "modulogical-engine-forge-personalities",
+      "database_id": "29237b3b-dc90-402c-abe7-46831ef4b91c"
+    },
+    {
+      "binding": "DB",
+      "database_name": "modulogical-atlas",
+      "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e1a"
     }
   ]
 }
