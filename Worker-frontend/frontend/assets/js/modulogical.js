@@ -378,7 +378,7 @@ const Modulogical = (() => {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      const link = event.target.closest("a[data-nav]");
+      const link = event.target.closest("a[data-nav], a[data-persistent-nav]");
       if (!link || !link.closest("[data-shared-sidebar]")) return;
 
       const href = link.href;
