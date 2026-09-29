@@ -101,12 +101,27 @@
       };
 
       try {
-        // Connect this to the Personality Forge API once its endpoint is finalised.
-        console.log("Personality commit payload:", payload);
-        Modulogical.toast("Personality ready to commit.", "success");
+        const response = await fetch("/produce/personality", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to commit personality.");
+        }
+
+        console.log("Personality committed:", result);
+        Modulogical.toast("Personality committed successfully.", "success");
+        form.reset();
       } catch (error) {
         console.error("Personality commit failed:", error);
-        Modulogical.toast("Unable to commit personality.", "error");
+        Modulogical.toast(error.message || "Unable to commit personality.", "error");
       } finally {
         button.disabled = false;
         button.textContent = originalText;

@@ -1,256 +1,305 @@
-"""
-Engine Forge backend for Cloudflare Python Workers.
-
-This is the Python/ASGI backend for the Engine Forge Worker.
-It exposes separate production endpoints for each item type and a
-standard health endpoint.
-
-Routes:
-    GET  /health
-    POST /produce/module
-    POST /produce/personality
-    POST /produce/workflow
-    POST /produce/webvector
-
-D1 binding:
-    env.DB
-
-Inference:
-    https://inference.modulogical.com/health
-"""
-
-import json
-import urllib.request
-import urllib.error
-from typing import Any
-
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+from typing import Optional
+from uuid import uuid4
 
 app = FastAPI(title="Modulogical Engine Forge")
 
 
-ITEM_TYPES = {
-    "module": {
-        "table": "module_queue",
-        "id_column": "module_id",
-        "version_column": "module_version",
-        "price_column": "module_price",
-        "dependencies_column": "module_dependencies",
-    },
-    "personality": {
-        "table": "personality_queue",
-        "id_column": "personality_id",
-        "version_column": "personality_version",
-        "price_column": "personality_price",
-        "dependencies_column": "personality_dependencies",
-    },
-    "workflow": {
-        "table": "workflow_queue",
-        "id_column": "workflow_id",
-        "version_column": "workflow_version",
-        "price_column": "workflow_price",
-        "dependencies_column": "workflow_dependencies",
-    },
-    "webvector": {
-        "table": "webvector_queue",
-        "id_column": "webvector_id",
-        "version_column": "webvector_version",
-        "price_column": "webvector_price",
-        "dependencies_column": "webvector_dependencies",
-    },
-}
+# ---------------------------------------------------------------------------
+# Request models
+# ---------------------------------------------------------------------------
+
+class PersonalityCommit(BaseModel):
+    product_name: str
+    personality_name: str
+    system_prompt: str
 
 
-def get_db(request: Request):
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def clean_string(value: str) -> str:
+    return value.strip() if isinstance(value, str) else ""
+
+
+async def get_account(request: Request):
     """
-    Cloudflare's Python Worker exposes bindings through request.scope["env"].
+    Resolve the authenticated Modulogical account.
+
+    The Engine Forge worker expects the authenticated upstream layer to
+    provide X-Account-ID. The ID is then checked against the accounts D1
+    binding (ATLAS), so developer_id is always tied to an existing account.
+
+    The current Personality Forge HTML does not yet send this header; this
+    backend is therefore ready for the authenticated request once the
+    frontend/auth layer supplies it.
     """
-    env = request.scope.get("env")
-    if env is None:
-        raise RuntimeError("Cloudflare Worker environment is unavailable.")
-    db = getattr(env, "DB", None)
-    if db is None:
-        raise RuntimeError("D1 binding DB is unavailable.")
-    return db
+    account_id = request.headers.get("X-Account-ID", "").strip()
 
-
-def parse_json(value: Any, fallback: Any):
-    if value is None:
-        return fallback
-    if isinstance(value, (dict, list)):
-        return value
-    if not isinstance(value, str):
-        return value
-    try:
-        return json.loads(value)
-    except (TypeError, ValueError):
-        return None
-
-
-async def inference_health() -> str:
-    try:
-        request = urllib.request.Request(
-            "https://inference.modulogical.com/health",
-            method="GET",
-        )
-        with urllib.request.urlopen(request, timeout=5) as response:
-            return "online" if 200 <= response.status < 300 else "offline"
-    except Exception:
-        return "offline"
-
-
-async def produce_item(item_type: str, request: Request):
-    config = ITEM_TYPES[item_type]
-
-    try:
-        body = await request.json()
-    except Exception:
-        return JSONResponse(
-            {"error": "Request body must be valid JSON."},
-            status_code=400,
+    if not account_id:
+        return None, JSONResponse(
+            status_code=401,
+            content={"error": "Authentication required."},
         )
 
-    required = [
-        "title",
-        "developer_id",
-        "developer_tier",
-        "item_id",
-        "item_version",
-        "item_price",
-        "item_dependencies",
-        "code",
-    ]
+    result = await request.app.state.env.ATLAS.prepare(
+        """
+        SELECT id, account_subscription_status
+        FROM accounts
+        WHERE id = ?
+        LIMIT 1
+        """
+    ).bind(account_id).first()
 
-    missing = [
-        field for field in required
-        if body.get(field) is None or body.get(field) == ""
-    ]
-
-    if missing:
-        return JSONResponse(
-            {"error": "Missing required fields.", "fields": missing},
-            status_code=400,
+    if not result:
+        return None, JSONResponse(
+            status_code=401,
+            content={"error": "Invalid account."},
         )
 
-    schema = parse_json(body.get("schema"), {})
-    display = parse_json(body.get("display"), {})
-    dependencies = parse_json(body.get("item_dependencies"), [])
+    return result, None
 
-    if schema is None:
-        return JSONResponse(
-            {"error": "schema must contain valid JSON."},
-            status_code=400,
-        )
 
-    if display is None:
-        return JSONResponse(
-            {"error": "display must contain valid JSON."},
-            status_code=400,
-        )
+def get_env(request: Request):
+    return request.app.state.env
 
-    if dependencies is None:
-        return JSONResponse(
-            {"error": "item_dependencies must contain valid JSON."},
-            status_code=400,
-        )
 
-    # WebVector uses the Information JSON object as its stored schema payload.
-    if item_type == "webvector":
-        information = parse_json(body.get("information"), {})
-        if information is None:
-            return JSONResponse(
-                {"error": "information must contain valid JSON."},
-                status_code=400,
-            )
-        schema = information
-
-    # Workflow flowchart data can be supplied as part of the schema.
-    if item_type == "workflow":
-        flow = body.get("flow")
-        if flow is not None:
-            if isinstance(flow, str):
-                flow = parse_json(flow, None)
-            if flow is None:
-                return JSONResponse(
-                    {"error": "flow must contain valid JSON."},
-                    status_code=400,
-                )
-            if not isinstance(schema, dict):
-                schema = {"schema": schema}
-            schema["flow"] = flow
-
-    values = [
-        str(body["title"]),
-        str(body["developer_id"]),
-        str(body["developer_tier"]),
-        str(body["item_id"]),
-        json.dumps(schema, separators=(",", ":")),
-        str(body.get("description", "")),
-        json.dumps(display, separators=(",", ":")),
-        str(body["item_version"]),
-        str(body["item_price"]),
-        json.dumps(dependencies, separators=(",", ":")),
-    ]
-
-    # The requested queue schema currently has no code column.
-    # Do not silently discard code. Return a clear response until the
-    # corresponding *_code column is added to the D1 queue table.
-    return JSONResponse(
-        {
-            "error": "Queue schema is missing a code column.",
-            "item_type": item_type,
-            "message": (
-                f"{config['table']} does not currently contain a code column. "
-                "Add one before submitting executable item code."
-            ),
-            "received": {
-                "title": body["title"],
-                "item_id": body["item_id"],
-                "version": body["item_version"],
-                "code_received": True,
-            },
-        },
-        status_code=409,
-    )
-
+# ---------------------------------------------------------------------------
+# Health
+# ---------------------------------------------------------------------------
 
 @app.get("/health")
 async def health(request: Request):
-    inference = await inference_health()
+    env = get_env(request)
 
     try:
-        db = get_db(request)
-        db.prepare("SELECT 1").first()
-        database = "online"
-    except Exception:
-        database = "offline"
+        metadata = await env.DB.prepare(
+            "SELECT 1 AS ok"
+        ).first()
 
-    status = "ok" if database == "online" else "degraded"
+        personalities = await env.PERSONALITIES.prepare(
+            "SELECT 1 AS ok"
+        ).first()
 
-    return {
-        "status": status,
-        "service": "engine-forge",
-        "database": database,
-        "inference": inference,
-    }
+        accounts = await env.ATLAS.prepare(
+            "SELECT 1 AS ok"
+        ).first()
+
+        return {
+            "status": "ok",
+            "databases": {
+                "metadata": bool(metadata),
+                "personalities": bool(personalities),
+                "accounts": bool(accounts),
+            },
+        }
+    except Exception as error:
+        return JSONResponse(
+            status_code=500,
+            content={
+                "status": "error",
+                "error": str(error),
+            },
+        )
 
 
-@app.post("/produce/module")
-async def produce_module(request: Request):
-    return await produce_item("module", request)
-
+# ---------------------------------------------------------------------------
+# Personality Forge
+# ---------------------------------------------------------------------------
 
 @app.post("/produce/personality")
-async def produce_personality(request: Request):
-    return await produce_item("personality", request)
+async def produce_personality(payload: PersonalityCommit, request: Request):
+    """
+    Create a Personality Forge item.
+
+    D1 layout:
+      ATLAS         -> account lookup / subscription tier
+      PERSONALITIES -> personality-specific data
+      DB            -> shared Engine Forge metadata
+
+    Because the metadata and personality records live in separate D1
+    databases, the operation uses compensation if the second write fails.
+    """
+
+    product_name = clean_string(payload.product_name)
+    personality_name = clean_string(payload.personality_name)
+    system_prompt = payload.system_prompt.strip()
+
+    if not product_name:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Product name is required."},
+        )
+
+    if not personality_name:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "Personality name is required."},
+        )
+
+    if not system_prompt:
+        return JSONResponse(
+            status_code=400,
+            content={"error": "System prompt is required."},
+        )
+
+    account, auth_error = await get_account(request)
+    if auth_error:
+        return auth_error
+
+    env = get_env(request)
+
+    developer_id = account["id"]
+    developer_tier = account["account_subscription_status"]
+
+    # Server-generated identity. The client never chooses the item ID.
+    item_id = str(uuid4())
+
+    # The current Forge form has no description field. Keep metadata valid
+    # without inventing description content.
+    item_description = ""
+
+    personality_inserted = False
+
+    try:
+        # 1. Store personality-specific data.
+        await env.PERSONALITIES.prepare(
+            """
+            INSERT INTO personalities (
+                item_id,
+                chosen_name,
+                chosen_system_prompt
+            )
+            VALUES (?, ?, ?)
+            """
+        ).bind(
+            item_id,
+            personality_name,
+            system_prompt,
+        ).run()
+
+        personality_inserted = True
+
+        # 2. Store shared metadata.
+        await env.DB.prepare(
+            """
+            INSERT INTO metadata (
+                item_id,
+                item_type,
+                developer_id,
+                developer_tier,
+                item_name,
+                item_description
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """
+        ).bind(
+            item_id,
+            "personality",
+            developer_id,
+            developer_tier,
+            product_name,
+            item_description,
+        ).run()
+
+        return {
+            "success": True,
+            "item": {
+                "item_id": item_id,
+                "item_type": "personality",
+                "developer_id": developer_id,
+                "developer_tier": developer_tier,
+                "item_name": product_name,
+                "personality_name": personality_name,
+            },
+        }
+
+    except Exception as error:
+        # D1 cannot atomically transact across two separate databases.
+        # If metadata insertion failed after the personality was created,
+        # remove the personality record to avoid leaving an orphan.
+        if personality_inserted:
+            try:
+                await env.PERSONALITIES.prepare(
+                    "DELETE FROM personalities WHERE item_id = ?"
+                ).bind(item_id).run()
+            except Exception:
+                pass
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Failed to create personality.",
+                "detail": str(error),
+                "item_id": item_id,
+            },
+        )
+
+
+# ---------------------------------------------------------------------------
+# Unsupported/legacy endpoints
+# ---------------------------------------------------------------------------
+
+@app.post("/produce/module")
+async def produce_module():
+    return JSONResponse(
+        status_code=501,
+        content={
+            "error": "Module Forge has not been implemented in this backend yet."
+        },
+    )
 
 
 @app.post("/produce/workflow")
-async def produce_workflow(request: Request):
-    return await produce_item("workflow", request)
+async def produce_workflow():
+    return JSONResponse(
+        status_code=501,
+        content={
+            "error": "Workflow Forge has not been implemented in this backend yet."
+        },
+    )
 
 
 @app.post("/produce/webvector")
-async def produce_webvector(request: Request):
-    return await produce_item("webvector", request)
+async def produce_webvector():
+    return JSONResponse(
+        status_code=501,
+        content={
+            "error": "WebVector Forge has not been implemented in this backend yet."
+        },
+    )
+
+
+# ---------------------------------------------------------------------------
+# Cloudflare Python Worker entrypoint
+# ---------------------------------------------------------------------------
+
+async def on_fetch(request, env):
+    """
+    Cloudflare Python Workers entrypoint.
+
+    The ASGI adapter below is intentionally kept small so the Worker can
+    expose the FastAPI application while making the Cloudflare bindings
+    available through request.app.state.env.
+    """
+    request_scope = {
+        "type": "http",
+        "method": request.method,
+        "path": request.url.path,
+        "query_string": request.url.query.encode(),
+        "headers": [
+            (k.lower().encode(), v.encode())
+            for k, v in request.headers.items()
+        ],
+        "scheme": request.url.scheme,
+        "server": (request.url.hostname, request.url.port or 443),
+    }
+
+    # Cloudflare's Python Worker runtime supplies the ASGI bridge in the
+    # deployment environment. The application itself is defined above.
+    request.app.state.env = env
+
+    return await app(request_scope)
