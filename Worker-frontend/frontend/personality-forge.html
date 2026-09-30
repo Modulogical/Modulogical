@@ -112,9 +112,15 @@
 
         const result = await response.json().catch(() => ({}));
 
-        if (!response.ok) {
-          throw new Error(result.error || "Unable to commit personality.");
-        }
+        if (!response.ok || !result.valid) {
+  return {
+    error: cors(json({
+      error: "Main authentication failed.",
+      auth_status: response.status,
+      auth_response: result,
+    }, 401)),
+  };
+}
 
         console.log("Personality committed:", result);
         Modulogical.toast("Personality committed successfully.", "success");
