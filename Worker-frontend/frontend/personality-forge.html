@@ -64,6 +64,12 @@
           </div>
 
           <div class="forge-field">
+            <label for="item-description">Item description</label>
+            <div class="field-note">A short description shown to users in the Modulogical Marketplace.</div>
+            <textarea class="input" id="item-description" name="item_description" placeholder="Describe what this personality does and who it is for..." required></textarea>
+          </div>
+
+          <div class="forge-field">
             <label for="system-prompt">System prompt</label>
             <div class="field-note">Instructions injected into the model's system context.</div>
             <textarea class="input" id="system-prompt" name="system_prompt" placeholder="Enter the system instructions for this personality..." required></textarea>
@@ -97,6 +103,7 @@
       const payload = {
         product_name: document.getElementById("product-name").value.trim(),
         personality_name: document.getElementById("personality-name").value.trim(),
+        item_description: document.getElementById("item-description").value.trim(),
         system_prompt: document.getElementById("system-prompt").value
       };
 
