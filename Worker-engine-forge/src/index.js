@@ -14,7 +14,7 @@ function cors(response) {
   headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   headers.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, Authorization, X-Account-ID"
+    "Content-Type, Authorization"
   );
 
   return new Response(response.body, {
@@ -58,36 +58,40 @@ async function getAccount(request, env) {
     };
   }
 
-  const accountId = (request.headers.get("X-Account-ID") || "").trim();
-
-  if (!accountId) {
-    return {
-      error: unauthorized("Authenticated account context is missing."),
-    };
-  }
-
   try {
-    const account = await env.ATLAS.prepare(`
-      SELECT id, account_subscription_status
-      FROM accounts
-      WHERE id = ?
-      LIMIT 1
-    `).bind(accountId).first();
+    const response = await fetch(
+      `${env.MODULOLOGICAL_API_URL}/auth/me`,
+      {
+        method: "GET",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+        },
+      }
+    );
 
-    if (!account) {
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok || !result.valid) {
       return {
-        error: unauthorized("Invalid account."),
+        error: unauthorized("Invalid or expired session."),
       };
     }
 
     return {
-      account,
+      account: {
+        id: result.account_id,
+        account_subscription_status:
+          result.account_subscription_status,
+      },
     };
+
   } catch (error) {
     return {
       error: cors(json({
         error: "Could not verify account.",
-        detail: error instanceof Error ? error.message : String(error),
+        detail: error instanceof Error
+          ? error.message
+          : String(error),
       }, 500)),
     };
   }
@@ -276,7 +280,7 @@ export default {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
           "Access-Control-Allow-Headers":
-            "Content-Type, Authorization, X-Account-ID",
+            "Content-Type, Authorization",
         },
       });
     }

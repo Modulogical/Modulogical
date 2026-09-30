@@ -83,7 +83,7 @@
   Modulogical.requireAuth().then((token) => {
     if (!token) return;
     Modulogical.initNav("engine-forge");
-
+    const ENGINE_FORGE_API = "https://engine-forge.modulogical.com";
     const form = document.getElementById("personality-form");
 
     form.addEventListener("submit", async (event) => {
@@ -101,7 +101,7 @@
       };
 
       try {
-        const response = await fetch("/produce/personality", {
+        const response = await fetch(`${ENGINE_FORGE_API}/produce/personality`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
