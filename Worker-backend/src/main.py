@@ -103,7 +103,7 @@ async def authenticate(request: Request, token: Optional[str] = None): #verifies
         return None
     return await d1_first(
         request,
-        """SELECT a.id, a.username, a.name
+        """SELECT a.id, a.username, a.name, a.account_subscription_status
            FROM sessions s JOIN accounts a ON a.id = s.account_id
            WHERE s.token_hash = ?""",
         token_hash(actual),
