@@ -3,6 +3,10 @@
   "name": "modulogical-admin-dashboard",
   "main": "src/index.js",
   "compatibility_date": "2026-09-20",
+  "assets": {
+    "directory": "./frontend",
+    "binding": "ASSETS"
+  },
   "d1_databases": [
     {
       "binding": "DB",
@@ -26,6 +30,6 @@
     }
   ],
   "vars": {
-    "MODULOLOGICAL_API_URL": "https://modulogical.com/api"
+    "MODULOLOGICAL_API_URL": "https://admin.modulogical.com"
   },
 }
