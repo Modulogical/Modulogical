@@ -119,30 +119,11 @@ async def auth_me(request: Request, token: Optional[str] = None):
             content={"valid": False},
         )
 
-    env = get_env(request)
-
-    account_details = await env.ATLAS.prepare(
-        """
-        SELECT id, username, name, account_subscription_status
-        FROM accounts
-        WHERE id = ?
-        LIMIT 1
-        """
-    ).bind(account["id"]).first()
-
-    if not account_details:
-        return JSONResponse(
-            status_code=401,
-            content={"valid": False},
-        )
-
     return {
         "valid": True,
-        "account_id": account_details["id"],
-        "username": account_details["username"],
-        "name": account_details["name"],
-        "account_subscription_status":
-            account_details["account_subscription_status"],
+        "account_id": account["id"],
+        "username": account["username"],
+        "name": account["name"],
     }
 
 JSON_HEADERS = { #configurations for frontend
