@@ -124,6 +124,8 @@ async def auth_me(request: Request, token: Optional[str] = None):
         "account_id": account["id"],
         "username": account["username"],
         "name": account["name"],
+        "account_subscription_status":
+            account["account_subscription_status"],
     }
 
 JSON_HEADERS = { #configurations for frontend
