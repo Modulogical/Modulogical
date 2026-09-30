@@ -103,18 +103,37 @@ async def authenticate(request: Request, token: Optional[str] = None): #verifies
         return None
     return await d1_first(
         request,
-        """SELECT a.id, a.username, a.name
+        """SELECT a.id, a.username, a.name, a.account_subscription_status
            FROM sessions s JOIN accounts a ON a.id = s.account_id
            WHERE s.token_hash = ?""",
         token_hash(actual),
     )
+
+@app.get("/auth/me")
+async def auth_me(request: Request, token: Optional[str] = None):
+    account = await authenticate(request, token)
+
+    if not account:
+        return JSONResponse(
+            status_code=401,
+            content={"valid": False},
+        )
+
+    return {
+        "valid": True,
+        "account_id": account["id"],
+        "username": account["username"],
+        "name": account["name"],
+        "account_subscription_status":
+            account["account_subscription_status"],
+    }
 
 JSON_HEADERS = { #configurations for frontend
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 }
-
+#change check
 def json_response(data, status=200): #sends data to frontend for display
     return Response(
         content=json.dumps(data),
@@ -470,10 +489,11 @@ async def build_prompt(prompt: str, account: dict, request: Request):
     system_instructions = (config or {}).get("system_instructions", "")
 
     return f"""
-ATLAS CORE IDENTITY
+CORE IDENTITY
 ===================
-You are Atlas.
-You are an AI running with Ollama
+You are Modulogical.
+You are an AI running with Ollama.
+You exist within the website 'Modulogical.com'
 Your communication style is pragmatic, utilitarian, concise, and analytical.
 Your purpose is to help the user.
 
