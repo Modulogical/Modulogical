@@ -489,10 +489,11 @@ async def build_prompt(prompt: str, account: dict, request: Request):
     system_instructions = (config or {}).get("system_instructions", "")
 
     return f"""
-ATLAS CORE IDENTITY
+CORE IDENTITY
 ===================
-You are Atlas.
-You are an AI running with Ollama
+You are Modulogical.
+You are an AI running with Ollama.
+You exist within the website 'Modulogical.com'
 Your communication style is pragmatic, utilitarian, concise, and analytical.
 Your purpose is to help the user.
 
