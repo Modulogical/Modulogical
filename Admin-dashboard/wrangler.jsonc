@@ -1,36 +1,21 @@
 {
-  "$schema": "https://unpkg.com/wrangler@latest/config-schema.json",
-  "name": "modulogical-admin-dashboard",
-  "main": "src/index.js",
-  "compatibility_date": "2026-09-20",
-  "assets": {
-    "directory": "./frontend",
-    "binding": "ASSETS"
-  },
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "modulogical-admin-python",
+  "main": "backend.py",
+  "compatibility_date": "2026-09-30",
+  "compatibility_flags": [
+    "python_workers"
+  ],
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "modulogical-engine-forge-metadata",
+      "database_name": "modulogical-metadata",
       "database_id": "c925e334-268c-4f1c-a2f8-6f90b78d5d5f"
-    },
-    {
-      "binding": "PERSONALITIES",
-      "database_name": "modulogical-engine-forge-personalities",
-      "database_id": "29237b3b-dc90-402c-abe7-46831ef4b91c"
     },
     {
       "binding": "ATLAS",
       "database_name": "modulogical-atlas",
-      "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e1a"
-    },
-    {
-        "binding" : "MARKETPLACE",
-        "database_name": "modulogical-marketplace",
-        "database_id": "ebb35def-2d31-46b5-ba28-488d9b9e8a6d"
+      "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e9a"
     }
-  ],
-  "vars": {
-    "ADMIN_ACCOUNT_ID": "60274c4e-362a-4dda-ac2c-222ddbbe9e9a",
-    "MODULOLOGICAL_API_URL": "https://modulogical.com/api"
-  },
+  ]
 }

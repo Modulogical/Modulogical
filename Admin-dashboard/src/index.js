@@ -1,327 +1,402 @@
-/**
- * Modulogical — Admin Dashboard Worker
- *
- * This Worker:
- *   1. Serves the admin dashboard/login assets.
- *   2. Validates existing Modulogical session tokens against ATLAS D1.
- *   3. Proxies admin login to the main Modulogical API so the existing
- *      Argon2 password system remains the single source of truth.
- *   4. Restricts moderation endpoints to ADMIN_ACCOUNT_ID.
- *   5. Reads and moderates Engine Forge metadata.
- */
-
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Authorization, Content-Type",
-};
-
-const JSON_HEADERS = {
-  "Content-Type": "application/json; charset=utf-8",
-  "Cache-Control": "no-store",
-};
-
-function json(data, status = 200) {
+function json(data, status = 200, extraHeaders = {}) {
   return new Response(JSON.stringify(data), {
     status,
-    headers: { ...JSON_HEADERS, ...CORS },
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      ...extraHeaders,
+    },
   });
 }
 
-function tokenFrom(request) {
-  const auth = request.headers.get("Authorization") || "";
-  if (auth.toLowerCase().startsWith("bearer ")) {
-    return auth.slice(7).trim();
-  }
-  return new URL(request.url).searchParams.get("token") || "";
+function cors(response) {
+  const headers = new Headers(response.headers);
+  headers.set("Access-Control-Allow-Origin", "*");
+  headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  return new Response(response.body, {
+    status: response.status,
+    headers,
+  });
 }
 
-async function sha256(value) {
+function unauthorized(message = "Authentication required.") {
+  return cors(json({ error: message }, 401));
+}
+
+function forbidden(message = "Admin access required.") {
+  return cors(json({ error: message }, 403));
+}
+
+function getBearerToken(request) {
+  const header = request.headers.get("Authorization") || "";
+  if (!header.startsWith("Bearer ")) return null;
+  const token = header.slice(7).trim();
+  return token || null;
+}
+
+async function sha256Hex(value) {
   const bytes = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest))
+  return [...new Uint8Array(digest)]
     .map(b => b.toString(16).padStart(2, "0"))
     .join("");
 }
 
-async function authenticateToken(request, env) {
-  const token = tokenFrom(request);
-  if (!token) return null;
+/*
+ * Authenticate the request directly against the same ATLAS D1 database
+ * used by Modulogical's main authentication system.
+ *
+ * Admin status is determined solely by:
+ *
+ *   accounts.account_subscription_status = "admin"
+ *
+ * No hard-coded admin account ID is required.
+ */
+async function getAdminAccount(request, env) {
+  const token = getBearerToken(request);
 
-  const hash = await sha256(token);
-
-  return env.ATLAS.prepare(`
-    SELECT a.id, a.username, a.name, a.account_subscription_status
-    FROM sessions s
-    JOIN accounts a ON a.id = s.account_id
-    WHERE s.token_hash = ?
-    LIMIT 1
-  `).bind(hash).first();
-}
-
-async function requireAdmin(request, env) {
-  const account = await authenticateToken(request, env);
-
-  if (!account) {
-    return { ok: false, response: json({ valid: false, error: "Unauthorized" }, 401) };
+  if (!token) {
+    return { error: unauthorized() };
   }
 
-  if (!env.ADMIN_ACCOUNT_ID || account.id !== env.ADMIN_ACCOUNT_ID) {
-    return { ok: false, response: json({ valid: false, error: "Forbidden" }, 403) };
+  try {
+    const tokenHash = await sha256Hex(token);
+
+    const account = await env.ATLAS.prepare(`
+      SELECT
+        a.id,
+        a.username,
+        a.name,
+        a.account_subscription_status
+      FROM sessions s
+      JOIN accounts a ON a.id = s.account_id
+      WHERE s.token_hash = ?
+        AND (s.expires_at IS NULL OR s.expires_at > CURRENT_TIMESTAMP)
+      LIMIT 1
+    `).bind(tokenHash).first();
+
+    if (!account) {
+      return {
+        error: unauthorized("Invalid or expired session."),
+      };
+    }
+
+    if (account.account_subscription_status !== "admin") {
+      return {
+        error: forbidden(),
+      };
+    }
+
+    return { account };
+  } catch (error) {
+    return {
+      error: cors(json({
+        error: "Could not verify admin account.",
+        detail: error instanceof Error ? error.message : String(error),
+      }, 500)),
+    };
   }
-
-  return { ok: true, account };
-}
-
-function validStatus(value) {
-  return ["pending", "approved", "rejected"].includes(String(value || "").toLowerCase())
-    ? String(value).toLowerCase()
-    : "pending";
-}
-
-async function counts(env) {
-  const row = await env.DB.prepare(`
-    SELECT
-      SUM(CASE WHEN marketplace_status = 'pending' THEN 1 ELSE 0 END) AS pending_count,
-      SUM(CASE WHEN marketplace_status = 'approved' THEN 1 ELSE 0 END) AS approved_count,
-      SUM(CASE WHEN marketplace_status = 'rejected' THEN 1 ELSE 0 END) AS rejected_count
-    FROM metadata
-  `).first();
-
-  return {
-    pending_count: Number(row?.pending_count || 0),
-    approved_count: Number(row?.approved_count || 0),
-    rejected_count: Number(row?.rejected_count || 0),
-  };
 }
 
 async function listItems(request, env) {
+  const auth = await getAdminAccount(request, env);
+  if (auth.error) return auth.error;
+
   const url = new URL(request.url);
-  const status = validStatus(url.searchParams.get("status"));
+  const status = (url.searchParams.get("status") || "pending").trim();
   const search = (url.searchParams.get("search") || "").trim();
   const type = (url.searchParams.get("type") || "").trim();
 
-  let sql = `
-    SELECT item_id, item_type, developer_id, developer_tier,
-           item_name, item_description, marketplace_status,
-           submitted_at, moderated_at, moderated_by, rejection_reason
-    FROM metadata
-    WHERE marketplace_status = ?
+  const allowedStatuses = new Set(["pending", "approved", "rejected", "all"]);
+  if (!allowedStatuses.has(status)) {
+    return cors(json({ error: "Invalid status." }, 400));
+  }
+
+  let query = `
+    SELECT
+      m.item_id,
+      m.item_type,
+      m.developer_id,
+      m.developer_tier,
+      m.item_name,
+      m.item_description,
+      m.marketplace_status,
+      m.submitted_at,
+      m.moderated_at,
+      m.moderated_by,
+      m.rejection_reason,
+      a.username AS developer_username,
+      a.name AS developer_name
+    FROM metadata m
+    LEFT JOIN accounts a ON a.id = m.developer_id
+    WHERE 1 = 1
   `;
-  const params = [status];
+
+  const params = [];
+
+  if (status !== "all") {
+    query += ` AND m.marketplace_status = ?`;
+    params.push(status);
+  }
 
   if (type) {
-    sql += " AND item_type = ?";
+    query += ` AND m.item_type = ?`;
     params.push(type);
   }
 
   if (search) {
-    sql += " AND (item_name LIKE ? OR item_description LIKE ?)";
+    query += ` AND (
+      LOWER(m.item_name) LIKE LOWER(?) OR
+      LOWER(m.item_description) LIKE LOWER(?) OR
+      LOWER(a.username) LIKE LOWER(?) OR
+      LOWER(a.name) LIKE LOWER(?)
+    )`;
     const pattern = `%${search}%`;
-    params.push(pattern, pattern);
+    params.push(pattern, pattern, pattern, pattern);
   }
 
-  sql += " ORDER BY submitted_at DESC, item_name ASC LIMIT 100";
+  query += ` ORDER BY COALESCE(m.submitted_at, '') DESC, m.item_name ASC LIMIT 100`;
 
-  const result = await env.DB.prepare(sql).bind(...params).all();
-  const rows = result.results || [];
+  try {
+    const result = await env.DB.prepare(query).bind(...params).all();
 
-  const developerIds = [...new Set(rows.map(x => x.developer_id).filter(Boolean))];
-  const developers = new Map();
+    const counts = await env.DB.prepare(`
+      SELECT marketplace_status, COUNT(*) AS count
+      FROM metadata
+      GROUP BY marketplace_status
+    `).all();
 
-  for (const id of developerIds) {
-    const developer = await env.ATLAS.prepare(
-      "SELECT id, username, name FROM accounts WHERE id = ? LIMIT 1"
-    ).bind(id).first();
+    const countMap = {};
+    for (const row of counts.results || []) {
+      countMap[row.marketplace_status] = Number(row.count);
+    }
 
-    if (developer) developers.set(id, developer);
+    return cors(json({
+      admin: true,
+      items: result.results || [],
+      pending_count: countMap.pending || 0,
+      approved_count: countMap.approved || 0,
+      rejected_count: countMap.rejected || 0,
+    }));
+  } catch (error) {
+    return cors(json({
+      error: "Could not load marketplace submissions.",
+      detail: error instanceof Error ? error.message : String(error),
+    }, 500));
   }
-
-  const items = rows.map(row => {
-    const developer = developers.get(row.developer_id);
-    return {
-      ...row,
-      developer_username: developer?.username || null,
-      developer_name: developer?.name || null,
-    };
-  });
-
-  return json({
-    items,
-    approved_count: (await counts(env)).approved_count,
-    rejected_count: (await counts(env)).rejected_count,
-  });
 }
 
-async function moderate(request, env, itemId, action, adminAccountId) {
-  if (!itemId) return json({ error: "Missing item ID" }, 400);
-  if (!["approve", "reject"].includes(action)) {
-    return json({ error: "Invalid moderation action" }, 400);
+async function getItem(request, env, itemId) {
+  const auth = await getAdminAccount(request, env);
+  if (auth.error) return auth.error;
+
+  try {
+    const item = await env.DB.prepare(`
+      SELECT
+        m.*,
+        a.username AS developer_username,
+        a.name AS developer_name
+      FROM metadata m
+      LEFT JOIN accounts a ON a.id = m.developer_id
+      WHERE m.item_id = ?
+      LIMIT 1
+    `).bind(itemId).first();
+
+    if (!item) {
+      return cors(json({ error: "Item not found." }, 404));
+    }
+
+    return cors(json({ item }));
+  } catch (error) {
+    return cors(json({
+      error: "Could not load item.",
+      detail: error instanceof Error ? error.message : String(error),
+    }, 500));
+  }
+}
+
+async function moderateItem(request, env, itemId, action) {
+  const auth = await getAdminAccount(request, env);
+  if (auth.error) return auth.error;
+
+  if (action !== "approve" && action !== "reject") {
+    return cors(json({ error: "Invalid moderation action." }, 400));
   }
 
-  const existing = await env.DB.prepare(
-    "SELECT item_id, marketplace_status FROM metadata WHERE item_id = ? LIMIT 1"
-  ).bind(itemId).first();
-
-  if (!existing) return json({ error: "Item not found" }, 404);
-
-  if (existing.marketplace_status !== "pending") {
-    return json({
-      error: "Item has already been moderated",
-      marketplace_status: existing.marketplace_status,
-    }, 409);
+  let body = {};
+  if (request.method === "POST") {
+    try {
+      body = await request.json();
+    } catch {
+      body = {};
+    }
   }
 
-  const body = await request.json().catch(() => ({}));
-  const reason = String(body?.rejection_reason || "").trim();
-  const status = action === "approve" ? "approved" : "rejected";
-  const now = new Date().toISOString();
+  const rejectionReason =
+    typeof body.rejection_reason === "string"
+      ? body.rejection_reason.trim()
+      : "";
 
-  await env.DB.prepare(`
-    UPDATE metadata
-    SET marketplace_status = ?,
+  if (action === "reject" && rejectionReason.length > 2000) {
+    return cors(json({
+      error: "Rejection reason is too long."
+    }, 400));
+  }
+
+  const newStatus = action === "approve" ? "approved" : "rejected";
+  const moderatedBy = auth.account.id;
+  const moderatedAt = new Date().toISOString();
+
+  try {
+    const item = await env.DB.prepare(`
+      SELECT item_id, marketplace_status
+      FROM metadata
+      WHERE item_id = ?
+      LIMIT 1
+    `).bind(itemId).first();
+
+    if (!item) {
+      return cors(json({ error: "Item not found." }, 404));
+    }
+
+    if (item.marketplace_status !== "pending") {
+      return cors(json({
+        error: "Item has already been moderated.",
+        marketplace_status: item.marketplace_status,
+      }, 409));
+    }
+
+    await env.DB.prepare(`
+      UPDATE metadata
+      SET
+        marketplace_status = ?,
         moderated_at = ?,
         moderated_by = ?,
         rejection_reason = ?
-    WHERE item_id = ?
-  `).bind(
-    status,
-    now,
-    adminAccountId,
-    status === "rejected" ? reason : "",
-    itemId
-  ).run();
+      WHERE item_id = ?
+        AND marketplace_status = 'pending'
+    `).bind(
+      newStatus,
+      moderatedAt,
+      moderatedBy,
+      action === "reject" ? rejectionReason : "",
+      itemId
+    ).run();
 
-  const item = await env.DB.prepare(`
-    SELECT item_id, item_type, developer_id, developer_tier,
-           item_name, item_description, marketplace_status,
-           submitted_at, moderated_at, moderated_by, rejection_reason
-    FROM metadata
-    WHERE item_id = ?
-    LIMIT 1
-  `).bind(itemId).first();
-
-  return json({ success: true, item });
+    return cors(json({
+      success: true,
+      item_id: itemId,
+      marketplace_status: newStatus,
+      moderated_at: moderatedAt,
+      moderated_by: moderatedBy,
+      rejection_reason: action === "reject" ? rejectionReason : "",
+    }));
+  } catch (error) {
+    return cors(json({
+      error: "Could not moderate item.",
+      detail: error instanceof Error ? error.message : String(error),
+    }, 500));
+  }
 }
 
-async function proxyLogin(request, env) {
-  if (!env.MODULOLOGICAL_API_URL) {
-    return json({ message: "MODULOLOGICAL_API_URL is not configured." }, 500);
-  }
+async function health(env) {
+  const databases = {
+    metadata: false,
+    accounts: false,
+  };
 
-  const incoming = await request.json().catch(() => null);
-  if (!incoming || typeof incoming.username !== "string" || typeof incoming.password !== "string") {
-    return json({ message: "Username and password are required." }, 400);
-  }
+  try {
+    await env.DB.prepare("SELECT 1").first();
+    databases.metadata = true;
+  } catch {}
 
-  // The main Modulogical API remains responsible for Argon2 password
-  // verification and session creation.
-  const target = env.MODULOLOGICAL_API_URL.replace(/\/+$/, "") + "/login";
+  try {
+    await env.ATLAS.prepare("SELECT 1").first();
+    databases.accounts = true;
+  } catch {}
 
-  const response = await fetch(target, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      username: incoming.username.trim(),
-      password: incoming.password,
-    }),
-  });
+  const online = databases.metadata && databases.accounts;
 
-  const text = await response.text();
-
-  return new Response(text, {
-    status: response.status,
-    headers: { ...JSON_HEADERS, ...CORS },
-  });
-}
-
-async function adminRoutes(request, env) {
-  const url = new URL(request.url);
-  const path = url.pathname.replace(/\/+$/, "") || "/";
-
-  // The login endpoint intentionally does not require an existing session.
-  if (request.method === "POST" && path === "/login") {
-    return proxyLogin(request, env);
-  }
-
-  // The dashboard's existing Modulogical.requireAuth() calls this endpoint.
-  if (request.method === "GET" && path === "/api/auth/check") {
-    const account = await authenticateToken(request, env);
-    return json({ valid: !!account });
-  }
-
-  if (request.method === "GET" && path === "/auth/check") {
-    const account = await authenticateToken(request, env);
-    return json({ valid: !!account });
-  }
-
-  if (request.method === "GET" && path === "/admin/me") {
-    const auth = await requireAdmin(request, env);
-    if (!auth.ok) return auth.response;
-
-    return json({
-      valid: true,
-      account_id: auth.account.id,
-      username: auth.account.username,
-      name: auth.account.name,
-    });
-  }
-
-  const auth = await requireAdmin(request, env);
-  if (!auth.ok) return auth.response;
-
-  if (request.method === "GET" && path === "/admin/items") {
-    return listItems(request, env);
-  }
-
-  const match = path.match(/^\/admin\/items\/([^/]+)\/(approve|reject)$/);
-  if (request.method === "POST" && match) {
-    return moderate(
-      request,
-      env,
-      decodeURIComponent(match[1]),
-      match[2],
-      auth.account.id
-    );
-  }
-
-  return json({ error: "Not found" }, 404);
+  return {
+    status: online ? "ok" : "degraded",
+    service: "admin",
+    databases,
+    admin_auth: "account_subscription_status=admin",
+  };
 }
 
 export default {
   async fetch(request, env) {
     if (request.method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS });
+      return new Response(null, {
+        status: 204,
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        },
+      });
     }
 
     const url = new URL(request.url);
 
-    try {
-      if (request.method === "GET" && url.pathname === "/health") {
-        return json({ ok: true, service: "modulogical-admin-dashboard" });
-      }
-
-      // API routes are handled before static assets.
-      if (
-        url.pathname === "/login" ||
-        url.pathname === "/auth/check" ||
-        url.pathname === "/api/auth/check" ||
-        url.pathname === "/admin" ||
-        url.pathname.startsWith("/admin/")
-      ) {
-        return adminRoutes(request, env);
-      }
-
-      // Root is the dedicated admin login page.
-      if (url.pathname === "/" || url.pathname === "") {
-        const loginUrl = new URL("/login.html", request.url);
-        return env.ASSETS.fetch(new Request(loginUrl, request));
-      }
-
-      return env.ASSETS.fetch(request);
-    } catch (error) {
-      console.error("Admin Worker error:", error);
-      return json({ error: "Internal server error" }, 500);
+    if (url.pathname === "/health" && request.method === "GET") {
+      return cors(json(await health(env)));
     }
+
+    if (url.pathname === "/admin/me" && request.method === "GET") {
+      const auth = await getAdminAccount(request, env);
+      if (auth.error) return auth.error;
+
+      return cors(json({
+        admin: true,
+        account: auth.account,
+      }));
+    }
+
+    if (url.pathname === "/api/auth/check" && request.method === "GET") {
+      const auth = await getAdminAccount(request, env);
+      if (auth.error) return auth.error;
+
+      return cors(json({
+        valid: true,
+        admin: true,
+        account_id: auth.account.id,
+        username: auth.account.username,
+        name: auth.account.name,
+        account_subscription_status:
+          auth.account.account_subscription_status,
+      }));
+    }
+
+    if (url.pathname === "/admin/items" && request.method === "GET") {
+      return listItems(request, env);
+    }
+
+    const itemMatch = url.pathname.match(
+      /^\/admin\/items\/([^/]+)$/
+    );
+
+    if (itemMatch && request.method === "GET") {
+      return getItem(request, env, decodeURIComponent(itemMatch[1]));
+    }
+
+    const moderationMatch = url.pathname.match(
+      /^\/admin\/items\/([^/]+)\/(approve|reject)$/
+    );
+
+    if (
+      moderationMatch &&
+      request.method === "POST"
+    ) {
+      return moderateItem(
+        request,
+        env,
+        decodeURIComponent(moderationMatch[1]),
+        moderationMatch[2]
+      );
+    }
+
+    return cors(json({ error: "Not found." }, 404));
   },
 };
