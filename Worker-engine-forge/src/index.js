@@ -46,8 +46,9 @@ function getBearerToken(request) {
  * The existing main authentication system is responsible for validating
  * that token. Engine Forge must not treat the token itself as an account ID.
  *
- * The authenticated account ID is expected in X-Account-ID when the
- * authentication layer forwards the request to this Worker.
+ * The Worker calls the main API through MODULOLOGICAL_API_URL/auth/me.
+ * MODULOLOGICAL_API_URL must include /api because the frontend Worker
+ * proxies /api/* to the main backend service.
  */
 async function getAccount(request, env) {
   const token = getBearerToken(request);
