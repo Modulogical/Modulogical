@@ -72,10 +72,14 @@ async function getAccount(request, env) {
     const result = await response.json().catch(() => ({}));
 
     if (!response.ok || !result.valid) {
-      return {
-        error: unauthorized("Invalid or expired session."),
-      };
-    }
+  return {
+    error: cors(json({
+      error: "Main authentication failed.",
+      auth_status: response.status,
+      auth_response: result,
+    }, 401)),
+  };
+}
 
     return {
       account: {
