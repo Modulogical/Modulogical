@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Admin Login</title>
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+<style>
+  .login-main{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+  .login-panel{width:min(430px,100%);padding:28px}
+  .login-brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.08em;margin-bottom:28px}
+  .login-title{margin-bottom:7px}
+  .login-subtitle{margin-bottom:24px}
+  .login-form{display:flex;flex-direction:column;gap:15px}
+  .login-field{display:flex;flex-direction:column;gap:7px}
+  .login-field label{font-size:.78rem;color:var(--text-2)}
+  .login-field input{
+    width:100%;box-sizing:border-box;padding:12px 13px;
+    background:var(--surface-2);color:var(--text-1);
+    border:1px solid var(--line);border-radius:var(--radius-md);
+    outline:none;
+  }
+  .login-field input:focus{border-color:var(--line-strong)}
+  .login-error{display:none;padding:11px 12px;border:1px solid var(--line);border-radius:var(--radius-md);font-size:.8rem;color:var(--text-2)}
+  .login-error.show{display:block}
+  .login-btn{width:100%;margin-top:4px}
+  .login-note{margin-top:18px;text-align:center}
+</style>
+</head>
+<body>
+<main class="login-main">
+  <section class="panel login-panel">
+    <div class="login-brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      MODULOGICAL ADMIN
+    </div>
+
+    <h1 class="h2 login-title">Sign in</h1>
+    <p class="small login-subtitle">Sign in with your Modulogical administrator account.</p>
+
+    <div class="login-error" id="login-error"></div>
+
+    <form class="login-form" id="login-form">
+      <div class="login-field">
+        <label for="username">Username</label>
+        <input id="username" name="username" autocomplete="username" required>
+      </div>
+
+      <div class="login-field">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+      </div>
+
+      <button class="btn btn-accent login-btn" id="login-btn" type="submit">Sign in</button>
+    </form>
+
+    <p class="small login-note">Administrator access only.</p>
+  </section>
+</main>
+
+<script>
+const form = document.getElementById("login-form");
+const button = document.getElementById("login-btn");
+const error = document.getElementById("login-error");
+
+form.addEventListener("submit", async event => {
+  event.preventDefault();
+  error.classList.remove("show");
+  button.disabled = true;
+  button.textContent = "Signing in…";
+
+  try {
+    const response = await fetch("/login", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        username:document.getElementById("username").value.trim(),
+        password:document.getElementById("password").value
+      })
+    });
+
+    const result = await response.json().catch(() => ({}));
+
+    if(!response.ok || !result.token){
+      error.textContent = result.message || "Sign-in failed.";
+      error.classList.add("show");
+      return;
+    }
+
+    // Use the same token storage keys as the existing Modulogical frontend.
+    localStorage.setItem("atlas_token", result.token);
+
+    // Confirm this session belongs to the administrator before showing the dashboard.
+    const check = await fetch("/admin/me", {
+      headers:{"Authorization":"Bearer " + result.token}
+    });
+
+    if(!check.ok){
+      localStorage.removeItem("atlas_token");
+      error.textContent = "This account does not have administrator access.";
+      error.classList.add("show");
+      return;
+    }
+
+    const admin = await check.json();
+    localStorage.setItem("atlas_username", admin.username || "");
+    localStorage.setItem("atlas_name", admin.name || "");
+
+    window.location.href = "/dashboard.html";
+  } catch (err) {
+    console.error(err);
+    error.textContent = "The admin service is unavailable right now.";
+    error.classList.add("show");
+  } finally {
+    button.disabled = false;
+    button.textContent = "Sign in";
+  }
+});
+</script>
+</body>
+</html>
