@@ -21,6 +21,6 @@
     }
   ],
   "vars": {
-    "MODULOLOGICAL_API_URL": "https://modulogical.com"
+    "MODULOLOGICAL_API_URL": "https://modulogical.com/api"
   },
 }
