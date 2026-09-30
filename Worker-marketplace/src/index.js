@@ -4,7 +4,7 @@ function json(data, status = 200) {
     headers: {"Content-Type": "application/json; charset=utf-8"},
   });
 }
-
+//
 function cors(response) {
   const headers = new Headers(response.headers);
   headers.set("Access-Control-Allow-Origin", "*");
