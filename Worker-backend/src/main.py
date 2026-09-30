@@ -114,7 +114,7 @@ async def auth_me(request: Request, token: Optional[str] = None):
     account = await authenticate(request, token)
 
     if not account:
-        return JSONResponse(
+        return json_response(
             status_code=401,
             content={"valid": False},
         )
