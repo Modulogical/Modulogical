@@ -83,7 +83,7 @@
   Modulogical.requireAuth().then((token) => {
     if (!token) return;
     Modulogical.initNav("engine-forge");
-    const ENGINE_FORGE_API = "https://engine-forge.modulogical.com";
+    const ENGINE_FORGE_API = "https://modulogical.com";
     const form = document.getElementById("personality-form");
 
     form.addEventListener("submit", async (event) => {
