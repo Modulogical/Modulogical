@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+     <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-K63NP7E16W"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-K63NP7E16W');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Admin Dashboard</title>
+<!-- Served at /dashboard.html — reachable only via nav, not the auth redirect target. -->
+<!-- Reason: index.html is what every static host serves for "/" by default, so the
+     public entry / auth page has to live there. The dashboard can't live at the same
+     spot without creating a redirect loop for unauthenticated visitors. -->
+
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
+<style>
+  .app-main{ padding: 40px 0 80px; }
+
+  .welcome-row{
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+  }
+  .welcome-row h1{ margin-bottom: 6px; }
+
+  .grid-2{
+    display: grid;
+    grid-template-columns: 1.6fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: start;
+  }
+
+  .continue-empty{
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 18px 4px 6px;
+  }
+  .continue-thread{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .continue-msg{
+    padding: 12px 14px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+  .continue-msg .role{ font-size: .74rem; color: var(--text-3); margin-bottom: 4px; text-transform: none; }
+  .continue-msg .body{ font-size: .86rem; color: var(--text-1); white-space: pre-wrap; overflow-wrap: anywhere; max-height: 3.3em; overflow: hidden; }
+
+  .section-head{ display: flex; align-items: baseline; justify-content: space-between; margin: 40px 0 14px; }
+  .section-head .h3{ margin: 0; }
+
+  .model-row{ display: flex; gap: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .model-chip{
+    flex: 0 0 auto;
+    min-width: 168px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    padding: 15px;
+    transition: border-color var(--fast) var(--ease), transform var(--fast) var(--ease);
+  }
+  .model-chip:hover{ border-color: var(--line-strong); transform: translateY(-1px); }
+  .model-chip .name{ font-size: .9rem; font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 7px; }
+  .model-chip .desc{ font-size: .78rem; color: var(--text-2); }
+  .model-dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+  .module-row{ display: flex; flex-direction: column; gap: 10px; }
+  .module-item{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--surface-1);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+  }
+  .module-icon{
+    width: 34px; height: 34px;
+    border-radius: 8px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+  .module-icon svg{ width: 16px; height: 16px; }
+  .module-item .name{ font-size: .9rem; font-weight: 600; }
+  .module-item .desc{ font-size: .8rem; color: var(--text-2); }
+  .module-item.is-dim{ opacity: .5; }
+  .module-item .spacer{ flex: 1; }
+
+  @media (max-width: 860px){
+    .grid-2{ grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px){
+    .welcome-row{ align-items: stretch; gap: 16px; margin-bottom: 24px; }
+    .welcome-row .btn{ width: 100%; }
+    .section-head{ margin-top: 30px; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+
+
+<style>
+.admin-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.admin-stat{background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-md);padding:14px}
+.admin-stat .value{font-size:1.35rem;font-weight:700;margin-bottom:3px}
+.admin-stat .label{font-size:.76rem;color:var(--text-2)}
+.submission-list{display:flex;flex-direction:column;gap:10px}
+.submission{display:flex;align-items:center;gap:14px;padding:15px 16px;background:var(--surface-1);border:1px solid var(--line);border-radius:var(--radius-md)}
+.submission-main{min-width:0}
+.submission-name{font-size:.92rem;font-weight:600;margin-bottom:3px}
+.submission-meta{font-size:.76rem;color:var(--text-2)}
+.submission-desc{font-size:.8rem;color:var(--text-2);margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:620px}
+.submission-spacer{flex:1}
+.status-badge{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--line);border-radius:999px;font-size:.7rem;color:var(--text-2);white-space:nowrap}
+.submission-actions{display:flex;gap:8px;flex-shrink:0}
+.empty-admin{padding:22px 4px 8px}
+.admin-error{padding:14px;border:1px solid var(--line);border-radius:var(--radius-md);color:var(--text-2)}
+@media(max-width:700px){
+  .admin-stats{grid-template-columns:1fr}
+  .submission{align-items:flex-start;flex-wrap:wrap}
+  .submission-spacer{display:none}
+  .submission-actions{width:100%}
+  .submission-actions .btn{flex:1}
+  .submission-desc{max-width:100%}
+}
+</style>
+
+<div class="shared-app-main" data-page-root><main class="app-main" id="main">
+  <div class="shell">
+    <div class="welcome-row fade-up">
+      <div>
+        <h1 class="h1">Admin Dashboard</h1>
+        <p class="small">Review and manage items submitted to the Modulogical Marketplace.</p>
+      </div>
+      <button class="btn btn-ghost" id="refresh-btn" type="button">Refresh</button>
+    </div>
+
+    <div class="grid-2">
+      <section class="panel fade-up">
+        <div class="panel-header"><h2 class="h3">Marketplace overview</h2></div>
+        <div id="stats-slot">
+          <div class="continue-empty"><p class="small">Loading marketplace statistics…</p></div>
+        </div>
+      </section>
+
+      <section class="panel fade-up">
+        <div class="panel-header"><h2 class="h3">Admin status</h2></div>
+        <div class="status-row">
+          <span class="status-label"><span class="status-dot warn" id="dot-auth"></span>Admin access</span>
+          <span class="status-value" id="status-auth">Checking…</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label"><span class="status-dot"></span>Marketplace API</span>
+          <span class="status-value" id="status-api">Checking…</span>
+        </div>
+      </section>
+    </div>
+
+    <div class="section-head fade-up">
+      <h2 class="h3">Pending submissions</h2>
+      <span class="small" id="pending-count">Loading…</span>
+    </div>
+
+    <section class="panel fade-up">
+      <div id="pending-slot">
+        <div class="continue-empty"><p class="small">Loading pending submissions…</p></div>
+      </div>
+    </section>
+  </div>
+</main></div>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
+(async function init(){
+  const token = await Modulogical.requireAuth();
+  Modulogical.initNav("dashboard");
+
+  const username = localStorage.getItem(Modulogical.USERNAME_KEY);
+  const name = localStorage.getItem(Modulogical.NAME_KEY);
+  const displayName = name || username || "Admin";
+  document.getElementById("nav-name").textContent = displayName;
+  document.getElementById("nav-avatar").textContent = Modulogical.initials(displayName);
+
+  const ADMIN_API = window.ADMIN_API || "https://admin.modulogical.com";
+
+  const authDot = document.getElementById("dot-auth");
+  const authStatus = document.getElementById("status-auth");
+  const apiStatus = document.getElementById("status-api");
+
+  function escapeHtml(value){
+    return String(value ?? "")
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#039;");
+  }
+
+  function setAuth(ok, text){
+    authStatus.textContent = text;
+    authDot.className = "status-dot" + (ok ? "" : " warn");
+  }
+
+  async function loadSubmissions(){
+    const slot = document.getElementById("pending-slot");
+    const count = document.getElementById("pending-count");
+    const stats = document.getElementById("stats-slot");
+
+    slot.innerHTML = '<div class="continue-empty"><p class="small">Loading pending submissions…</p></div>';
+
+    try{
+      const res = await fetch(ADMIN_API + "/admin/items?status=pending", {
+        headers: { "Authorization": "Bearer " + token }
+      });
+
+      if(!res.ok){
+        if(res.status === 401 || res.status === 403)
+          setAuth(false, res.status === 403 ? "Not authorized" : "Invalid session");
+        throw new Error("Admin API returned " + res.status);
+      }
+
+      setAuth(true, "Authorized");
+      apiStatus.textContent = "Online";
+
+      const data = await res.json();
+      const items = Array.isArray(data.items) ? data.items : [];
+
+      count.textContent = items.length + (items.length === 1 ? " item" : " items");
+
+      stats.innerHTML = `
+        <div class="admin-stats">
+          <div class="admin-stat"><div class="value">${items.length}</div><div class="label">Pending</div></div>
+          <div class="admin-stat"><div class="value">${data.approved_count ?? "—"}</div><div class="label">Approved</div></div>
+          <div class="admin-stat"><div class="value">${data.rejected_count ?? "—"}</div><div class="label">Rejected</div></div>
+        </div>`;
+
+      if(!items.length){
+        slot.innerHTML = '<div class="empty-admin"><p class="small">No items are waiting for review.</p></div>';
+        return;
+      }
+
+      slot.innerHTML = '<div class="submission-list">' + items.map(item => `
+        <article class="submission">
+          <div class="submission-main">
+            <div class="submission-name">${escapeHtml(item.item_name || "Unnamed item")}</div>
+            <div class="submission-meta">${escapeHtml(item.item_type || "Unknown type")} · ${escapeHtml(item.developer_username || item.developer_id || "Unknown developer")}</div>
+            <div class="submission-desc">${escapeHtml(item.item_description || "No description provided.")}</div>
+          </div>
+          <div class="submission-spacer"></div>
+          <span class="status-badge">Pending review</span>
+          <div class="submission-actions">
+            <button class="btn btn-accent btn-sm" data-action="approve" data-id="${escapeHtml(item.item_id)}">Approve</button>
+            <button class="btn btn-ghost btn-sm" data-action="reject" data-id="${escapeHtml(item.item_id)}">Reject</button>
+          </div>
+        </article>
+      `).join("") + '</div>';
+
+      slot.querySelectorAll("[data-action]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const action = btn.dataset.action;
+          const itemId = btn.dataset.id;
+          const reason = action === "reject" ? prompt("Reason for rejection (optional):") : "";
+          if(action === "reject" && reason === null) return;
+          btn.disabled = true;
+
+          try{
+            const response = await fetch(
+              ADMIN_API + "/admin/items/" + encodeURIComponent(itemId) + "/" + action,
+              {
+                method:"POST",
+                headers:{
+                  "Authorization":"Bearer " + token,
+                  "Content-Type":"application/json"
+                },
+                body:JSON.stringify({ rejection_reason: reason || "" })
+              }
+            );
+            if(!response.ok) throw new Error("Action failed: " + response.status);
+            await loadSubmissions();
+          }catch(err){
+            console.error(err);
+            alert("Could not " + action + " this item.");
+            btn.disabled = false;
+          }
+        });
+      });
+    }catch(err){
+      console.error("Could not load admin submissions:", err);
+      apiStatus.textContent = "Unavailable";
+      count.textContent = "Unavailable";
+      slot.innerHTML = '<div class="admin-error">The admin service is unavailable right now.</div>';
+    }
+  }
+
+  document.getElementById("refresh-btn").addEventListener("click", loadSubmissions);
+  await loadSubmissions();
+})();
+</script>
+
+</body>
+</html>

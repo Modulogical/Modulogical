@@ -311,15 +311,25 @@ const Modulogical = (() => {
     });
   }
 
-  function activePageFromUrl(url){
-    const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "");
-    if (path === "/dashboard" || path === "/dashboard.html" || path === "") return "dashboard";
-    if (path === "/chat" || path === "/chat.html") return "chat";
-    if (path === "/marketplace" || path === "/marketplace.html") return "marketplace";
-    if (path === "/engine-forge" || path === "/engine-forge.html") return "engine-forge";
-    if (path === "/settings" || path === "/settings.html") return "settings";
-    return null;
-  }
+    function activePageFromUrl(url){
+  const path = new URL(url, window.location.origin).pathname.replace(/\/+$/, "");
+
+  if (path === "/dashboard" || path === "/dashboard.html" || path === "") return "dashboard";
+  if (path === "/chat" || path === "/chat.html") return "chat";
+  if (path === "/marketplace" || path === "/marketplace.html") return "marketplace";
+
+  // Engine Forge and all of its subpages
+  if (
+    path === "/engine-forge" ||
+    path === "/engine-forge.html" ||
+    path.startsWith("/engine-forge/")
+  ) return "engine-forge";
+
+  if (path === "/settings" || path === "/settings.html") return "settings";
+  if (path === "/themes" || path === "/themes.html") return "themes";
+
+  return null;
+}
 
   async function navigatePersistent(url, push = true){
     if (!isDesktopNavigation() || persistentNavigationBusy) return false;
@@ -376,8 +386,13 @@ const Modulogical = (() => {
       if (event.defaultPrevented || event.button !== 0) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
-      const link = event.target.closest("a[data-nav]");
-      if (!link || !link.closest("[data-shared-sidebar]")) return;
+      const link = event.target.closest("a[data-nav], a[data-persistent-nav]");
+      if (!link) return;
+
+      const isSidebarLink = !!link.closest("[data-shared-sidebar]");
+      const isPersistentLink = link.hasAttribute("data-persistent-nav");
+
+      if (!isSidebarLink && !isPersistentLink) return;
 
       const href = link.href;
       if (!href) return;

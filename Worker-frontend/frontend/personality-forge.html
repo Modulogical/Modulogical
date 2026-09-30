@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modulogical — Create Personality</title>
+<link rel="stylesheet" href="/assets/css/modulogical.css">
+<link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
+<style>
+.app-main{padding:40px 0 80px}
+.page-head{margin-bottom:28px;max-width:760px}
+.forge-panel{background:var(--surface-1);border:1px solid var(--line);border-radius:var(--radius-lg);padding:28px;max-width:900px}
+.forge-form{display:flex;flex-direction:column;gap:22px}
+.forge-field{display:flex;flex-direction:column;gap:8px}
+.forge-field label{font-size:.9rem;font-weight:600;color:var(--text-1)}
+.field-note{font-size:.78rem;color:var(--text-2)}
+.forge-field textarea{min-height:260px;resize:vertical;line-height:1.5}
+.forge-actions{display:flex;justify-content:flex-end;margin-top:4px;padding-top:6px}
+@media(max-width:760px){
+  input:not([type="range"]),textarea,select{font-size:16px!important}
+  .forge-panel{padding:18px}
+  .forge-actions{flex-direction:column}
+  .forge-actions .btn{width:100%;box-sizing:border-box}
+}
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+
+<header class="appnav" aria-label="Mobile navigation">
+  <div class="shell appnav-row">
+    <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
+    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Open navigation" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+    <nav class="appnav-links" data-nav-drawer aria-label="Main navigation"></nav>
+  </div>
+</header>
+<aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
+
+
+<div class="shared-app-main" data-page-root>
+  <main class="app-main" id="main">
+    <div class="shell">
+      <div class="page-head fade-up">
+        <h1 class="h1">Create Personality</h1>
+        <p class="lede">Create a personality for use with Modulogical.</p>
+      </div>
+
+      <section class="forge-panel fade-up">
+        <form class="forge-form" id="personality-form">
+          <div class="forge-field">
+            <label for="product-name">Product name</label>
+            <div class="field-note">The name of the personality product.</div>
+            <input class="input" id="product-name" name="product_name" type="text" placeholder="e.g. Academic Research Assistant" required>
+          </div>
+          
+          <div class="forge-field">
+            <label for="item-description">Item description</label>
+            <div class="field-note">A short description shown to users in the Modulogical Marketplace.</div>
+            <textarea class="input" id="item-description" name="item_description" placeholder="Describe what this personality does and who it is for..." required></textarea>
+          </div>
+
+          <div class="forge-field">
+            <label for="personality-name">Personality name</label>
+            <div class="field-note">The name the model uses when presenting itself.</div>
+            <input class="input" id="personality-name" name="personality_name" type="text" placeholder="e.g. Atlas" required>
+          </div>
+
+
+          <div class="forge-field">
+            <label for="system-prompt">System prompt</label>
+            <div class="field-note">Instructions injected into the model's system context.</div>
+            <textarea class="input" id="system-prompt" name="system_prompt" placeholder="Enter the system instructions for this personality..." required></textarea>
+          </div>
+
+          <div class="forge-actions">
+            <button class="btn btn-primary" type="submit">Commit</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
+  Modulogical.requireAuth().then((token) => {
+    if (!token) return;
+    Modulogical.initNav("engine-forge");
+    const ENGINE_FORGE_API = "https://engine-forge.modulogical.com";
+    const form = document.getElementById("personality-form");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const button = form.querySelector("button[type='submit']");
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = "Committing...";
+
+      const payload = {
+        product_name: document.getElementById("product-name").value.trim(),
+        personality_name: document.getElementById("personality-name").value.trim(),
+        item_description: document.getElementById("item-description").value.trim(),
+        system_prompt: document.getElementById("system-prompt").value
+      };
+
+      try {
+        const response = await fetch(`${ENGINE_FORGE_API}/produce/personality`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok) {
+          throw new Error(result.error || "Unable to commit personality.");
+        }
+
+        console.log("Personality committed:", result);
+        Modulogical.toast("Personality committed successfully.", "success");
+        form.reset();
+      } catch (error) {
+        console.error("Personality commit failed:", error);
+        Modulogical.toast(error.message || "Unable to commit personality.", "error");
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+      }
+    });
+  });
+</script>
+</body>
+</html>
