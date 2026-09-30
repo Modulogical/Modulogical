@@ -133,7 +133,7 @@ JSON_HEADERS = { #configurations for frontend
     "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
 }
-
+#change check
 def json_response(data, status=200): #sends data to frontend for display
     return Response(
         content=json.dumps(data),
