@@ -292,16 +292,17 @@
 <body>
 <div class="workspace">
   <div class="sidebar-scrim" data-scrim></div>
-<aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
-  <header class="appnav" aria-label="Mobile navigation">
-  <div class="shell appnav-row">
-    <a class="brand" href="/chat"><span class="brand-mark" aria-hidden="true"></span>MODULOGICAL</a>
-    <button class="nav-toggle topbar-button" data-nav-toggle aria-label="Open navigation" aria-expanded="false">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
-    </button>
-    <nav class="appnav-links" data-nav-drawer aria-label="Main navigation"></nav>
-  </div>
-</header>
+
+  <aside class="sidebar shared-sidebar" data-shared-sidebar data-nav-drawer aria-label="Main navigation"></aside>
+
+  <div class="shared-app-main" data-page-root>
+    <div class="chat-main">
+    <div class="mobile-topbar">
+      <button data-nav-toggle aria-label="Open navigation" aria-expanded="false" class="topbar-button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+      </button>
+      <div class="brand" style="font-size:.88rem;"><span class="brand-mark"></span>MODULOGICAL</div>
+    </div>
 
     <div class="thread-scroll" id="thread-scroll">
       <div class="thread-inner" id="thread-inner">
