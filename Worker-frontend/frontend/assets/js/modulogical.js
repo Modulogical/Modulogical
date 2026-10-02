@@ -328,6 +328,7 @@ const Modulogical = (() => {
 
   if (path === "/settings" || path === "/settings.html") return "settings";
   if (path === "/themes" || path === "/themes.html") return "themes";
+  if (path === "/about" || path === "/about.html") return "about";
 
   return null;
 }
