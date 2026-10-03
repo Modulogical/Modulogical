@@ -25,4 +25,52 @@
   </div>
 </header>
 <aside class="shared-sidebar" data-shared-sidebar aria-label="Main navigation"></aside>
-<div class="shared-app-main" data-page-root><main class="app-main" id="main"><div class="shell"><div class="page-head fade-up"><h1 class="h1">Marketplace</h1><p class="lede">Discover modules, personalities, and other items built for the Modulogical platform.</p></div><div class="toolbar fade-up"><input class="input search" id="search" type="search" placeholder="Search marketplace..." aria-label="Search Marketplace"><div class="category-row" aria-label="Categories"><button class="category-btn active" type="button">Modules</button><button class="category-btn " type="button">Personalities</button><button class="category-btn " type="button">Workflows</button><button class="category-btn " type="button">WebVector</button></div></div><div class="section-label">Browse</div><section class="empty-panel fade-up"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9h18l-1.5 11h-15z"/><path d="M5 9l2-5h10l2 5"/><path d="M9 13h6"/></svg></div><h2 class="h2">Marketplace is ready for its first products</h2><p class="lede">The catalogue interface is in place. Product cards and item-specific displays can be added once their specification is defined.</p></section></div></main></div><script src="/assets/js/modulogical.js"></script><script>(async function(){await Modulogical.requireAuth();Modulogical.initNav("marketplace");const n=localStorage.getItem(Modulogical.NAME_KEY)||localStorage.getItem(Modulogical.USERNAME_KEY)||"Account";document.getElementById("nav-name").textContent=n;document.getElementById("nav-avatar").textContent=Modulogical.initials(n);document.querySelectorAll('.category-btn').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.category-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');}));})();</script></body></html>
+<div class="shared-app-main" data-page-root>
+  <main class="app-main" id="main">
+    <div class="shell">
+      <div class="page-head fade-up">
+        <h1 class="h1">Marketplace</h1>
+        <p class="lede">Discover modules, personalities, and other items built for the Modulogical platform.</p>
+      </div>
+      <div class="toolbar fade-up">
+        <input class="input search" id="search" type="search" placeholder="Search marketplace..." aria-label="Search Marketplace">
+        <div class="category-row" aria-label="Categories">
+          <button class="category-btn active" type="button">Modules</button>
+          <button class="category-btn " type="button">Personalities</button>
+          <button class="category-btn " type="button">Workflows</button>
+          <button class="category-btn " type="button">Databases</button>
+          <button class="category-btn " type="button">Themes</button>
+          <button class="category-btn " type="button">Agents</button>
+        </div>
+      </div>
+      <div class="section-label">Browse</div>
+      <section class="empty-panel fade-up">
+        <div class="icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M3 9h18l-1.5 11h-15z"/>
+            <path d="M5 9l2-5h10l2 5"/>
+            <path d="M9 13h6"/>
+          </svg>
+        </div>
+        <h2 class="h2">Marketplace is currently being developed</h2>
+        <p class="lede">Check back soon for </p>
+      </section>
+    </div>
+  </main>
+</div>
+<script src="/assets/js/modulogical.js"></script>
+<script>
+(async function(){
+  await Modulogical.requireAuth();
+  Modulogical.initNav("marketplace");
+  const n=localStorage.getItem(Modulogical.NAME_KEY)||localStorage.getItem(Modulogical.USERNAME_KEY)||"Account";
+  document.getElementById("nav-name").textContent=n;
+  document.getElementById("nav-avatar").textContent=Modulogical.initials(n);
+  document.querySelectorAll('.category-btn').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.category-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+  }));
+})();
+  </script>
+  </body>
+  </html>
