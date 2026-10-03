@@ -278,6 +278,14 @@
     .msg-bubble{ max-width: 92%; }
     .control-pill{ padding-left: 10px; padding-right: 10px; }
   }
+  .msg-text .caret{
+    display: inline-block;
+    width: 7px; height: 1em;
+    background: var(--accent);
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    animation: blink 1s step-end infinite;
+  }
 </style>
 </head>
 <body>
@@ -446,7 +454,11 @@
     hideEmptyState();
     const wrap = document.createElement("div");
     wrap.className = "msg msg-assistant";
-    wrap.innerHTML = '<div class="msg-bubble"><div class="msg-meta"><span class="brand-mark"></span><span>Modulogical</span><span class="model-tag"></span></div><div class="msg-text"></div></div>';
+    wrap.innerHTML = `
+    <div class="msg-bubble">
+      <div class="msg-meta"><span class="brand-mark"></span><span>Modulogical</span><span class="model-tag"></span></div>
+      <div class="msg-text"><span class="caret"></span></div>
+    </div>`;
     threadInner.appendChild(wrap);
 
     const msg = {
