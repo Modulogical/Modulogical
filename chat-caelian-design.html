@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Modulogical — Chat</title>
+<link rel="icon" type="image/x-icon" href="/assets/favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="/assets/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/assets/apple-touch-icon-180.png">
+
+<style>
+
+
+:root{
+  
+  --bg: #000;
+  --ink: #fff;
+  --surface-1: rgba(255,255,255,.05);
+  --surface-2: rgba(255,255,255,.08);
+  --surface-3: rgba(255,255,255,.13);
+  --line: rgba(255,255,255,.14);
+  --line-strong: rgba(255,255,255,.32);
+  --text-1: #fff;
+  --text-2: #b8b8b8;
+  --text-3: #8a8a8a;
+
+  
+  --accent: #fff;
+  --accent-line: rgba(255,255,255,.6);
+  --accent-wash: rgba(255,255,255,.08);
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 22px;
+  --fast: 140ms;
+  --med: 260ms;
+  --ease: cubic-bezier(.2,.7,.2,1);
+  --font: "Helvetica Neue", "Neue Haas Grotesk Text Pro", Helvetica, Arial, sans-serif;
+  --sidebar-w: 268px;
+  --topbar-h: 54px;
+}
+
+*{ box-sizing: border-box; }
+html, body{ height: 100%; margin: 0; overflow: hidden; }
+body{
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+button{ font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
+a{ color: inherit; text-decoration: none; }
+:focus-visible{ outline: 2px solid #fff; outline-offset: 2px; }
+.small{ font-size: .88rem; color: var(--text-2); line-height: 1.55; }
+.tiny{ font-size: .75rem; color: var(--text-3); }
+.h2{ margin: 0; font-weight: 300; letter-spacing: -.035em; }
+
+
+.brand-mark{
+  display: inline-block;
+  width: 16px; height: 16px;
+  flex: none;
+  background: #fff;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 82V20L50 58L80 20V82' fill='none' stroke='black' stroke-width='11' stroke-miterlimit='10'/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpath d='M20 82V20L50 58L80 20V82' fill='none' stroke='black' stroke-width='11' stroke-miterlimit='10'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.brand{ display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: .08em; }
+
+
+.workspace{
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr);
+  height: 100%;
+}
+.shared-app-main{ min-width: 0; height: 100%; }
+.chat-main{
+  display: flex; flex-direction: column;
+  min-width: 0;
+  height: 100%;
+}
+.mobile-topbar{ display: none; }
+.sidebar-scrim{ display: none; }
+
+
+.shared-sidebar{
+  background: var(--bg);
+  border-right: 1px solid var(--line);
+  color: var(--text-1);
+  padding: 20px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+  overflow-y: auto;
+  min-width: 0;
+}
+.shared-sidebar a,
+.shared-sidebar button{
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 9px 11px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-size: .9rem;
+  text-align: left;
+  transition: background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.shared-sidebar a:hover,
+.shared-sidebar button:hover{ background: var(--surface-2); color: #fff; }
+.shared-sidebar a.active,
+.shared-sidebar a[aria-current],
+.shared-sidebar .active{ background: var(--surface-2); color: #fff; }
+.shared-sidebar .brand{ padding: 4px 11px 18px; color: #fff; font-size: .9rem; }
+.shared-sidebar svg{ width: 16px; height: 16px; flex: none; }
+.shared-sidebar #new-chat-btn{
+  border: 1px solid var(--line-strong);
+  color: #fff;
+  justify-content: center;
+  margin-bottom: 10px;
+}
+.shared-sidebar #new-chat-btn:hover{ background: #fff; color: #000; }
+.shared-sidebar #nav-avatar{
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; flex: none;
+  border-radius: 50%;
+  background: #fff; color: #000;
+  font-size: .72rem; font-weight: 700;
+}
+.shared-sidebar #nav-name{ color: #fff; font-size: .88rem; }
+
+
+.thread-scroll{
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px 0 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.25) transparent;
+}
+.thread-inner{ max-width: 740px; margin: 0 auto; padding: 0 28px; min-height: 100%; }
+
+.thread-empty{
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  gap: 14px;
+  padding: 40px 20px;
+}
+.thread-empty .brand-mark{ width: 38px; height: 38px; margin-bottom: 10px; }
+.thread-empty .h2{ font-size: clamp(1.9rem, 4.6vw, 2.7rem); line-height: 1.1; }
+.thread-empty .small{ max-width: 360px; }
+
+.msg{ display: flex; margin-bottom: 30px; }
+.msg-user{ justify-content: flex-end; }
+.msg-user .msg-bubble{
+  max-width: 78%;
+  background: var(--surface-2);
+  border-radius: 18px 18px 4px 18px;
+  padding: 11px 17px;
+  font-size: .95rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.msg-assistant{ gap: 14px; align-items: flex-start; }
+.m-loader{
+  width: 40px; height: 40px;
+  flex: none;
+  margin-top: -6px;
+  transition: opacity .5s var(--ease);
+}
+.msg-body{ min-width: 0; flex: 1; }
+.msg-text{
+  font-size: 1rem;
+  line-height: 1.72;
+  letter-spacing: -.005em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding-top: 2px;
+}
+.msg-text.is-error{ color: var(--text-2); }
+
+
+.w.g{
+  background-image: linear-gradient(100deg, #fff 0%, #8f8f8f 45%, #e6e6e6 75%, #6e6e6e 100%);
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+          background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+.w.new{ animation: word-in .8s var(--ease) both; }
+@keyframes word-in{
+  0%{ opacity: 0; filter: blur(5px); background-position: 100% 0; }
+  100%{ opacity: 1; filter: blur(0); background-position: 0 0; }
+}
+.w.solid{ animation: land .5s ease-out; }
+@keyframes land{
+  0%{ text-shadow: 0 0 14px rgba(255,255,255,.95); }
+  100%{ text-shadow: 0 0 0 rgba(255,255,255,0); }
+}
+
+
+canvas.fx{
+  position: fixed; inset: 0;
+  width: 100vw; height: 100vh;
+  pointer-events: none;
+  z-index: 60;
+  display: none;
+}
+
+
+.msg-actions{
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+  margin-top: 12px;
+  opacity: 0;
+  pointer-events: none;
+}
+.msg-actions.ready{ opacity: 1; pointer-events: auto; transition: opacity .45s var(--ease); }
+.act{
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  color: var(--text-3);
+  font-size: .8rem;
+  transition: color var(--fast) var(--ease), background var(--fast) var(--ease), border-color var(--fast) var(--ease);
+}
+.act:hover:not(:disabled){ color: #fff; background: var(--surface-2); border-color: var(--line); }
+.act:disabled{ opacity: .35; cursor: not-allowed; }
+.act.done{ color: #fff; }
+.act svg{
+  width: 15px; height: 15px; flex: none;
+  fill: none; stroke: currentColor; stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+}
+.model-tag{ margin-left: auto; font-size: .75rem; color: var(--text-3); }
+
+
+.composer-wrap{ padding: 12px 0 calc(18px + env(safe-area-inset-bottom, 0px)); }
+.composer{ max-width: 740px; margin: 0 auto; padding: 0 28px; }
+.composer-box{
+  background: var(--surface-1);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 12px 12px 10px;
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease);
+}
+.composer-box.is-focused{ border-color: var(--accent-line); background: var(--surface-2); }
+#message{
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: none;
+  resize: none;
+  color: var(--text-1);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  padding: 6px 8px 12px;
+  max-height: 200px;
+  min-height: 24px;
+}
+#message:focus{ outline: none; }
+#message::placeholder{ color: var(--text-3); }
+
+.composer-toolbar{ display: flex; align-items: center; gap: 8px; padding: 0 2px; }
+.composer-spacer{ flex: 1; }
+
+.control-pill{
+  display: flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: .8rem;
+  color: var(--text-2);
+  transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease), color var(--fast) var(--ease);
+}
+.control-pill:hover{ border-color: var(--line-strong); background: var(--surface-2); color: #fff; }
+.control-pill svg{ width: 12px; height: 12px; color: var(--text-3); }
+.control-pill .dot{ width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+
+.send-btn{
+  width: 36px; height: 36px; flex: none;
+  border-radius: 50%;
+  background: #fff; color: #000;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform var(--fast) var(--ease), opacity var(--fast) var(--ease);
+}
+.send-btn:hover:not(:disabled){ transform: scale(1.06); }
+.send-btn:active:not(:disabled){ transform: scale(.94); }
+.send-btn:disabled{ opacity: .28; cursor: not-allowed; }
+.send-btn svg{ width: 16px; height: 16px; }
+
+.composer-hint{ text-align: center; margin-top: 10px; }
+
+
+.popover{
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 270px;
+  background: #000;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  display: none;
+  z-index: 30;
+}
+.popover.open{ display: block; animation: pop 150ms var(--ease) both; }
+@keyframes pop{ from{ opacity: 0; transform: translateY(4px); } to{ opacity: 1; transform: none; } }
+.model-option{
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background var(--fast) var(--ease);
+}
+.model-option:hover{ background: var(--surface-2); }
+.model-option.selected{ background: var(--surface-3); }
+.model-option .dot{ width: 6px; height: 6px; border-radius: 50%; background: var(--text-3); flex: none; }
+.model-option.selected .dot{ background: #fff; }
+.model-option .name{ font-size: .86rem; font-weight: 600; color: #fff; }
+.model-option .desc{ font-size: .76rem; color: var(--text-2); }
+
+.temp-popover{ width: 230px; padding: 14px 14px 10px; }
+.temp-popover-row{ display: flex; justify-content: space-between; font-size: .8rem; color: var(--text-2); margin-bottom: 8px; }
+.temp-popover-row b{ color: #fff; font-weight: 600; }
+input[type="range"]{
+  -webkit-appearance: none; appearance: none;
+  width: 100%; height: 3px;
+  border-radius: 2px;
+  background: var(--surface-3);
+  margin: 8px 0 6px;
+}
+input[type="range"]::-webkit-slider-thumb{
+  -webkit-appearance: none;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 0; cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb{
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #fff; border: 0; cursor: pointer;
+}
+.temp-scale{ display: flex; justify-content: space-between; font-size: .72rem; color: var(--text-3); }
+
+
+@media (max-width: 760px){
+  .workspace{ display: block; }
+  .shared-app-main{ height: 100%; }
+
+  .mobile-topbar{
+    position: relative; z-index: 90;
+    display: flex; align-items: center; gap: 12px;
+    height: var(--topbar-h);
+    padding: 0 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--bg);
+    flex-shrink: 0;
+  }
+  .mobile-topbar button{
+    width: 36px; height: 36px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .mobile-topbar button:hover{ background: var(--surface-2); border-color: var(--line-strong); }
+  .mobile-topbar button svg{ width: 16px; height: 16px; }
+
+  .shared-sidebar{
+    position: fixed; left: 0; bottom: 0;
+    top: var(--topbar-h);
+    width: min(300px, 86vw);
+    z-index: 80;
+    transform: translateX(-102%);
+    transition: transform var(--med) var(--ease);
+  }
+  .shared-sidebar.open{ transform: none; }
+  .sidebar-scrim{
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 70;
+  }
+  .sidebar-scrim.show{ display: block; }
+
+  .thread-inner{ padding: 0 16px; }
+  .composer{ padding: 0 14px; }
+  .msg-user .msg-bubble{ max-width: 88%; }
+  .msg-assistant{ gap: 10px; }
+  .m-loader{ width: 32px; height: 32px; margin-top: -3px; }
+}
+@media (max-width: 520px){
+  .act span{ display: none; }
+  .act{ padding: 0 10px; }
+}
+@media (max-width: 430px){
+  .thread-inner{ padding: 0 12px; }
+  .composer{ padding: 0 10px; }
+  .composer-box{ border-radius: var(--radius-md); }
+  .control-pill{ padding: 0 10px; }
+}
+@media (prefers-reduced-motion: reduce){
+  .w.new, .w.solid, .popover.open{ animation: none; }
+  .shared-sidebar{ transition: none; }
+}
+</style>
+</head>
+
+<body>
+<div class="workspace">
+  <div class="sidebar-scrim" data-scrim></div>
+
+  <aside class="sidebar shared-sidebar" data-shared-sidebar data-nav-drawer aria-label="Main navigation"></aside>
+
+  <div class="shared-app-main" data-page-root>
+    <div class="chat-main">
+      <div class="mobile-topbar">
+        <button data-nav-toggle aria-label="Open navigation" aria-expanded="false" class="topbar-button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+        </button>
+        <div class="brand" style="font-size:.88rem;"><span class="brand-mark"></span>MODULOGICAL</div>
+      </div>
+
+      <div class="thread-scroll" id="thread-scroll">
+        <div class="thread-inner" id="thread-inner">
+          <div class="thread-empty" id="thread-empty">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <h2 class="h2" id="greeting">Ask Modulogical anything</h2>
+            <p class="small">Auto mode picks the right model for what you ask. You can choose one yourself from the composer below.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer-wrap">
+        <div class="composer">
+          <div class="composer-box" id="composer-box">
+            <textarea id="message" placeholder="Message Modulogical…" rows="1" aria-label="Message Modulogical"></textarea>
+            <div class="composer-toolbar">
+              <div style="position:relative;">
+                <button class="control-pill chat-preference-button" id="model-pill" aria-haspopup="true" aria-expanded="false">
+                  <span class="dot"></span>
+                  <span id="model-pill-label">Auto</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </button>
+                <div class="popover" id="model-popover" role="listbox"></div>
+              </div>
+
+              <div style="position:relative;">
+                <button class="control-pill chat-preference-button" id="temp-pill" aria-haspopup="true" aria-expanded="false" aria-label="Temperature">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v13M9 8h6"/><circle cx="12" cy="18" r="3"/></svg>
+                  <span id="temp-pill-label">0.2</span>
+                </button>
+                <div class="popover temp-popover" id="temp-popover">
+                  <div class="temp-popover-row"><span>Temperature</span><b id="temp-value">0.2</b></div>
+                  <input type="range" id="temperature" min="0" max="1" step="0.01" value="0.2" aria-label="Temperature">
+                  <div class="temp-scale"><span>Precise</span><span>Creative</span></div>
+                </div>
+              </div>
+
+              <span class="composer-spacer"></span>
+              <button class="send-btn chat-button" id="send-btn" aria-label="Send message" disabled>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="composer-hint">
+            <span class="tiny" id="model-actual-hint">Auto — automatically selecting the best model</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script type="application/json" id="m-anim">
+{
+  "name": "modulogical-m",
+  "version": 1,
+  "glyph": { "points": [[20,82],[20,20],[50,58],[80,20],[80,82]], "stroke": 11 },
+  "spin": {
+    "period": 1.5,
+    "gradientSpeed": 0.55,
+    "stops": [[0,"#ffffff"],[0.25,"#5a5a5a"],[0.5,"#ffffff"],[0.75,"#5a5a5a"],[1,"#ffffff"]]
+  },
+  "dissolve": { "duration": 0.9, "radius": [26, 120], "atoms": 18, "orbit": [7, 13] },
+  "hold": 0.35,
+  "converge": { "duration": 1.1, "spread": 0.8, "swirl": 28 },
+  "pixel": [1.6, 2.6]
+}
+</script>
+
+<script src="/assets/js/modulogical.js"></script>
+<script>
+(async function initChat(){
+  const token = await Modulogical.requireAuth();
+  Modulogical.initNav("chat");
+
+  const displayName = localStorage.getItem(Modulogical.NAME_KEY) || localStorage.getItem(Modulogical.USERNAME_KEY) || "Account";
+  const navName = document.getElementById("nav-name");
+  const navAvatar = document.getElementById("nav-avatar");
+  if (navName) navName.textContent = displayName;
+  if (navAvatar) navAvatar.textContent = Modulogical.initials(displayName);
+
+  
+  const threadInner = document.getElementById("thread-inner");
+  const threadScroll = document.getElementById("thread-scroll");
+  const threadEmpty = document.getElementById("thread-empty");
+  const messageEl = document.getElementById("message");
+  const sendBtn = document.getElementById("send-btn");
+  const composerBox = document.getElementById("composer-box");
+  const greetingEl = document.getElementById("greeting");
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let busy = false;
+
+  function scrollToBottom(){ threadScroll.scrollTop = threadScroll.scrollHeight; }
+  function hideEmptyState(){ if (threadEmpty) threadEmpty.style.display = "none"; }
+
+  
+  function setGreeting(){
+    const h = new Date().getHours();
+    const part = h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening";
+    const first = (displayName && displayName !== "Account") ? displayName.trim().split(/\s+/)[0] : "";
+    greetingEl.textContent = first ? part + ", " + first : part;
+  }
+  setGreeting();
+
+  
+  const ANIM = JSON.parse(document.getElementById("m-anim").textContent);
+  const TAU = Math.PI * 2;
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const easeOutCubic = t => 1 - Math.pow(1 - t, 3);
+  const easeInOutCubic = t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  const smooth = (a, b, t) => { const x = clamp((t - a) / (b - a)); return x * x * (3 - 2 * x); };
+
+  function drawM(ctx, size, dpr, o){
+    const px = size * dpr, k = px / 100;
+    const sc = o.scale || 1;
+    const cos = Math.cos(o.angle || 0);
+    const a = k * cos * sc, d = k * sc;
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, px, px);
+    ctx.setTransform(a, 0, 0, d, px / 2 - 50 * a, px / 2 - 50 * d);
+
+    if (o.flat) {
+      ctx.strokeStyle = "#fff";
+    } else {
+      const x0 = -100 + ((o.phase || 0) % 1) * 100;
+      const g = ctx.createLinearGradient(x0, 0, x0 + 200, 0);
+      ANIM.spin.stops.forEach(s => g.addColorStop(s[0], s[1]));
+      ctx.strokeStyle = g;
+    }
+    ctx.globalAlpha = (o.alpha == null ? 1 : o.alpha) * (0.4 + 0.6 * Math.abs(cos));
+    ctx.lineWidth = ANIM.glyph.stroke;
+    ctx.lineJoin = "miter";
+    ctx.miterLimit = 10;
+    ctx.lineCap = "butt";
+    ctx.beginPath();
+    ANIM.glyph.points.forEach((p, i) => i ? ctx.lineTo(p[0], p[1]) : ctx.moveTo(p[0], p[1]));
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+
+  class MLoader {
+    constructor(canvas){
+      this.c = canvas;
+      this.ctx = canvas.getContext("2d");
+      this.state = "idle";
+      this.raf = 0;
+      this.fit();
+    }
+    fit(){
+      const r = this.c.getBoundingClientRect();
+      this.size = Math.max(24, r.width || 40);
+      this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+      this.c.width = this.c.height = Math.round(this.size * this.dpr);
+    }
+    paint(angle, phase){ drawM(this.ctx, this.size, this.dpr, { angle, phase }); }
+    still(){ drawM(this.ctx, this.size, this.dpr, { angle: 0, flat: true, alpha: .85, scale: .62 }); }
+    spin(){
+      this.fit();
+      this.state = "spin";
+      this.t0 = performance.now();
+      const w = TAU / ANIM.spin.period;
+      const tick = now => {
+        if (this.state !== "spin") return;
+        const t = (now - this.t0) / 1000;
+        this.paint(t * w, t * ANIM.spin.gradientSpeed);
+        this.raf = requestAnimationFrame(tick);
+      };
+      this.raf = requestAnimationFrame(tick);
+    }
+    
+    finish(){
+      return new Promise(resolve => {
+        if (this.state !== "spin") { resolve(); return; }
+        cancelAnimationFrame(this.raf);
+        const now0 = performance.now();
+        const w = TAU / ANIM.spin.period;
+        const a0 = ((now0 - this.t0) / 1000) * w;
+        const A = Math.ceil(a0 / TAU) * TAU - a0;
+        const D = Math.min(1.4, (2 * A) / w);
+        this.state = "stopping";
+        const tick = now => {
+          const u = D > 0 ? clamp((now - now0) / 1000 / D) : 1;
+          const e = 1 - (1 - u) * (1 - u);
+          this.paint(a0 + A * e, ((now - this.t0) / 1000) * ANIM.spin.gradientSpeed);
+          if (u < 1) this.raf = requestAnimationFrame(tick);
+          else { this.state = "face"; resolve(); }
+        };
+        this.raf = requestAnimationFrame(tick);
+      });
+    }
+  }
+
+  
+  const segs = [];
+  let glyphLen = 0;
+  (function buildSegs(){
+    const pts = ANIM.glyph.points;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x1, y1] = pts[i], [x2, y2] = pts[i + 1];
+      const L = Math.hypot(x2 - x1, y2 - y1);
+      segs.push({ x1, y1, x2, y2, L, nx: -(y2 - y1) / L, ny: (x2 - x1) / L });
+      glyphLen += L;
+    }
+  })();
+  function sampleM(){
+    let d = Math.random() * glyphLen;
+    for (const s of segs) {
+      if (d <= s.L) {
+        const t = d / s.L, o = (Math.random() - .5) * ANIM.glyph.stroke;
+        return [s.x1 + (s.x2 - s.x1) * t + s.nx * o, s.y1 + (s.y2 - s.y1) * t + s.ny * o];
+      }
+      d -= s.L;
+    }
+    return [50, 50];
+  }
+
+  
+  const fx = document.createElement("canvas");
+  fx.className = "fx";
+  fx.setAttribute("aria-hidden", "true");
+  document.body.appendChild(fx);
+  const fxCtx = fx.getContext("2d");
+
+  function settleWord(el){
+    el.classList.remove("g", "new");
+    el.classList.add("solid");
+  }
+
+  
+  function assemble(loader, wordEls){
+    return new Promise(resolve => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const W = window.innerWidth, H = window.innerHeight;
+      fx.width = Math.round(W * dpr);
+      fx.height = Math.round(H * dpr);
+
+      const sr = threadScroll.getBoundingClientRect(), st = threadScroll.scrollTop;
+      const lr = loader.c.getBoundingClientRect();
+      const mSize = lr.width;
+      const mx = lr.left + lr.width / 2;
+      const my = lr.top - sr.top + st + lr.height / 2;
+
+      const words = [];
+      wordEls.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (r.width > 0) words.push({ el, x: r.left, y: r.top - sr.top + st, w: r.width, h: r.height, settle: 0, done: false });
+      });
+      if (!words.length) { resolve(); return; }
+
+      const D = ANIM.dissolve, C = ANIM.converge;
+      const totalW = words.reduce((s, w) => s + w.w, 0);
+      const target = Math.max(240, Math.min(900, Math.round(words.length * 9)));
+      const parts = [];
+
+      words.forEach((w, wi) => {
+        const n = Math.max(2, Math.round(target * w.w / totalW));
+        const wordDelay = (wi / words.length) * C.spread;
+        for (let i = 0; i < n; i++) {
+          const [gx, gy] = sampleM();
+          const sx = mx + (gx - 50) * mSize / 100;
+          const sy = my + (gy - 50) * mSize / 100;
+          const ang = rand(0, TAU), rad = rand(D.radius[0], D.radius[1]);
+          const v = Math.round(rand(150, 255));
+          const p = {
+            sx, sy,
+            cx: sx + Math.cos(ang) * rad,
+            cy: sy + Math.sin(ang) * rad * .8,
+            tx: w.x + Math.random() * w.w,
+            ty: w.y + w.h * rand(.3, .8),
+            d0: rand(0, .12),
+            cs: D.duration + ANIM.hold + wordDelay + rand(0, .15),
+            sw: rand(-C.swirl, C.swirl),
+            size: rand(ANIM.pixel[0], ANIM.pixel[1]),
+            col: "rgb(" + v + "," + v + "," + v + ")",
+            sp: rand(2, 4.5), ph: rand(0, TAU),
+            atom: false, R: 0, tilt: 0,
+            word: w
+          };
+          p.end = p.cs + C.duration;
+          w.settle = Math.max(w.settle, p.end);
+          parts.push(p);
+        }
+      });
+
+      
+      for (let i = 0; i < D.atoms; i++) {
+        const p = parts[Math.floor(Math.random() * parts.length)];
+        p.atom = true; p.R = rand(D.orbit[0], D.orbit[1]); p.tilt = rand(0, Math.PI);
+      }
+
+      const lastEnd = parts.reduce((m, p) => Math.max(m, p.end), 0) + .25;
+      const start = performance.now();
+      fx.style.display = "block";
+      loader.c.style.transition = "none";
+      loader.c.style.opacity = "0";
+
+      function tick(now){
+        const t = (now - start) / 1000;
+        const r = threadScroll.getBoundingClientRect();
+        const oy = r.top - threadScroll.scrollTop;
+
+        fxCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        fxCtx.clearRect(0, 0, W, H);
+        fxCtx.save();
+        fxCtx.beginPath();
+        fxCtx.rect(r.left, r.top, r.width, r.height);
+        fxCtx.clip();
+
+        const orbitAlpha = smooth(.2, .55, t) * (1 - smooth(1.0, 1.35, t));
+
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          const e1 = easeOutCubic(clamp((t - p.d0) / D.duration));
+          let x = lerp(p.sx, p.cx, e1) + Math.cos(t * p.sp + p.ph) * 2.5 * e1;
+          let y = lerp(p.sy, p.cy, e1) + Math.sin(t * p.sp * 1.3 + p.ph) * 2.5 * e1;
+          let a = 1, size = p.size;
+
+          if (t > p.cs) {
+            const u2 = clamp((t - p.cs) / C.duration);
+            const e2 = easeInOutCubic(u2);
+            const dx = p.tx - x, dy = p.ty - y;
+            const len = Math.hypot(dx, dy) || 1;
+            const bend = p.sw * Math.sin(Math.PI * e2);
+            x = lerp(x, p.tx, e2) + (-dy / len) * bend;
+            y = lerp(y, p.ty, e2) + (dx / len) * bend;
+            if (u2 >= 1) {
+              a = 1 - clamp((t - p.end) / .18);
+              size = p.size * a;
+            }
+          }
+          if (a <= 0) continue;
+
+          const vx = x, vy = oy + y;
+          fxCtx.globalAlpha = a;
+          fxCtx.fillStyle = p.col;
+          fxCtx.fillRect(vx - size / 2, vy - size / 2, size, size);
+
+          if (p.atom && orbitAlpha > .01 && t < p.cs) {
+            fxCtx.globalAlpha = orbitAlpha;
+            fxCtx.strokeStyle = "rgba(255,255,255,.4)";
+            fxCtx.lineWidth = .7;
+            for (let k = 0; k < 2; k++) {
+              const tilt = p.tilt + k * Math.PI / 3;
+              fxCtx.beginPath();
+              fxCtx.ellipse(vx, vy, p.R, p.R * .38, tilt, 0, TAU);
+              fxCtx.stroke();
+              const th = t * (3 + k) + p.ph;
+              const ex = p.R * Math.cos(th), ey = p.R * .38 * Math.sin(th);
+              fxCtx.fillStyle = "#fff";
+              fxCtx.fillRect(vx + ex * Math.cos(tilt) - ey * Math.sin(tilt) - .9,
+                             vy + ex * Math.sin(tilt) + ey * Math.cos(tilt) - .9, 1.8, 1.8);
+            }
+            fxCtx.beginPath();
+            fxCtx.arc(vx, vy, 2, 0, TAU);
+            fxCtx.fillStyle = "#fff";
+            fxCtx.fill();
+          }
+        }
+        fxCtx.restore();
+        fxCtx.globalAlpha = 1;
+
+        
+        for (let i = 0; i < words.length; i++) {
+          const w = words[i];
+          if (!w.done && t >= w.settle) { w.done = true; settleWord(w.el); }
+        }
+
+        if (t < lastEnd) {
+          requestAnimationFrame(tick);
+        } else {
+          words.forEach(w => { if (!w.done) settleWord(w.el); });
+          fxCtx.clearRect(0, 0, W, H);
+          fx.style.display = "none";
+          resolve();
+        }
+      }
+      requestAnimationFrame(tick);
+    });
+  }
+
+  
+  const ICONS = {
+    copy:     '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+    download: '<svg viewBox="0 0 24 24"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 20h14"/></svg>',
+    context:  '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>',
+    research: '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>',
+    check:    '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>'
+  };
+
+  function addUserMessage(text){
+    hideEmptyState();
+    const wrap = document.createElement("div");
+    wrap.className = "msg msg-user";
+    wrap.innerHTML = '<div class="msg-bubble"></div>';
+    wrap.querySelector(".msg-bubble").textContent = text;
+    threadInner.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+    return new Promise((res, rej) => {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy") ? res() : rej(); } catch (e) { rej(e); }
+      ta.remove();
+    });
+  }
+
+  function downloadText(text){
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[-:T]/g, "");
+    a.href = url;
+    a.download = "modulogical-reply-" + stamp + ".txt";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  function flash(btn, label){
+    const icon = btn.querySelector("svg"), txt = btn.querySelector("span");
+    const oldIcon = icon.outerHTML, oldTxt = txt.textContent;
+    btn.classList.add("done");
+    icon.outerHTML = ICONS.check;
+    txt.textContent = label;
+    setTimeout(() => {
+      btn.classList.remove("done");
+      btn.querySelector("svg").outerHTML = oldIcon;
+      btn.querySelector("span").textContent = oldTxt;
+    }, 1500);
+  }
+
+  
+  function buildActions(msg){
+    const bar = document.createElement("div");
+    bar.className = "msg-actions";
+    bar.innerHTML =
+      '<button class="act" data-act="copy" title="Copy message" aria-label="Copy message">' + ICONS.copy + '<span>Copy</span></button>' +
+      '<button class="act" data-act="download" title="Download message" aria-label="Download message">' + ICONS.download + '<span>Download</span></button>' +
+      '<button class="act" data-act="context" title="Ask for more context" aria-label="Ask for more context">' + ICONS.context + '<span>More context</span></button>' +
+      '<button class="act" data-act="research" title="Deep research" aria-label="Deep research">' + ICONS.research + '<span>Deep research</span></button>' +
+      '<span class="model-tag"></span>';
+
+    bar.addEventListener("click", (e) => {
+      const btn = e.target.closest(".act");
+      if (!btn || busy) return;
+      const text = msg.text || "";
+      const act = btn.getAttribute("data-act");
+
+      if (act === "copy") {
+        copyText(text).then(() => flash(btn, "Copied")).catch(() => flash(btn, "Press Ctrl+C"));
+      } else if (act === "download") {
+        downloadText(text);
+        flash(btn, "Saved");
+      } else if (act === "context") {
+        const ref = text.replace(/\s+/g, " ").slice(0, 140);
+        chat({
+          show: "Ask for more context",
+          send: "Give me more context on your earlier answer that began: \"" + ref + "\". Explain the background, the assumptions behind it, and anything I should know before relying on it.",
+          topic: msg.topic
+        });
+      } else if (act === "research") {
+        const subject = msg.topic || text.replace(/\s+/g, " ").slice(0, 200);
+        chat({
+          show: "Deep research",
+          send: "Do deep research on this and give me a thorough, well-structured answer with the main findings, where sources disagree, and what is still unknown: " + subject,
+          topic: msg.topic
+        });
+      }
+    });
+    return bar;
+  }
+
+  
+  function createStreamer(textEl){
+    const words = [];
+    let consumed = 0;
+    return {
+      words,
+      push(full, final){
+        const upto = final ? full.length : full.search(/\S*$/);
+        if (upto <= consumed) return;
+        const chunk = full.slice(consumed, upto);
+        consumed = upto;
+        const frag = document.createDocumentFragment();
+        chunk.split(/(\s+)/).forEach(tok => {
+          if (!tok) return;
+          if (/^\s+$/.test(tok)) { frag.appendChild(document.createTextNode(tok)); return; }
+          const s = document.createElement("span");
+          s.className = "w g new";
+          s.textContent = tok;
+          words.push(s);
+          frag.appendChild(s);
+        });
+        textEl.appendChild(frag);
+      }
+    };
+  }
+
+  function addAssistantMessage(topic){
+    hideEmptyState();
+    const wrap = document.createElement("div");
+    wrap.className = "msg msg-assistant";
+    wrap.innerHTML =
+      '<canvas class="m-loader" aria-hidden="true"></canvas>' +
+      '<div class="msg-body"><div class="msg-text"></div></div>';
+    threadInner.appendChild(wrap);
+
+    const msg = { text: "", topic: topic || "" };
+    msg.wrap = wrap;
+    msg.textEl = wrap.querySelector(".msg-text");
+    msg.loader = new MLoader(wrap.querySelector(".m-loader"));
+    msg.bar = buildActions(msg);
+    msg.tagEl = msg.bar.querySelector(".model-tag");
+    wrap.querySelector(".msg-body").appendChild(msg.bar);
+    msg.stream = createStreamer(msg.textEl);
+    scrollToBottom();
+    return msg;
+  }
+
+  function addStaticAssistantMessage(text, topic){
+    const msg = addAssistantMessage(topic);
+    msg.text = text;
+    msg.textEl.textContent = text;
+    msg.loader.still();
+    msg.bar.classList.add("ready");
+    return msg;
+  }
+
+  
+  async function loadContext(){
+    try {
+      const res = await fetch(Modulogical.API + "/context?token=" + encodeURIComponent(token), {
+        headers: Modulogical.headers(false)
+      });
+      const result = await res.json();
+      if (!result.valid) { Modulogical.clearSession(); Modulogical.goToEntry(); return; }
+
+      if (result.messages && result.messages.length > 0) {
+        let lastUser = "";
+        for (const m of result.messages) {
+          const role = (m.role || "").toLowerCase();
+          if (role.includes("you") || role.includes("user")) {
+            lastUser = m.content;
+            addUserMessage(m.content);
+          } else {
+            addStaticAssistantMessage(m.content, lastUser);
+          }
+        }
+        scrollToBottom();
+      }
+    } catch (e) {
+      console.error("Could not load context:", e);
+    }
+  }
+  loadContext();
+
+  
+  const newChatBtn = document.getElementById("new-chat-btn");
+  if (newChatBtn) {
+    newChatBtn.addEventListener("click", () => {
+      threadInner.querySelectorAll(".msg").forEach(el => el.remove());
+      if (threadEmpty) { setGreeting(); threadEmpty.style.display = "flex"; }
+      messageEl.value = "";
+      messageEl.style.height = "auto";
+      updateSendState();
+      messageEl.focus();
+    });
+  }
+
+  
+  function updateSendState(){ sendBtn.disabled = busy || messageEl.value.trim().length === 0; }
+  messageEl.addEventListener("input", () => {
+    messageEl.style.height = "auto";
+    messageEl.style.height = Math.min(messageEl.scrollHeight, 200) + "px";
+    updateSendState();
+  });
+  messageEl.addEventListener("focus", () => composerBox.classList.add("is-focused"));
+  messageEl.addEventListener("blur", () => composerBox.classList.remove("is-focused"));
+  messageEl.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) chat();
+    }
+  });
+  sendBtn.addEventListener("click", () => chat());
+
+  function setBusy(v){
+    busy = v;
+    updateSendState();
+    document.querySelectorAll(".msg-actions .act").forEach(b => { b.disabled = v; });
+  }
+
+  
+  const slider = document.getElementById("temperature");
+  const tempValue = document.getElementById("temp-value");
+  const tempPillLabel = document.getElementById("temp-pill-label");
+  slider.addEventListener("input", function(){
+    tempValue.textContent = this.value;
+    tempPillLabel.textContent = this.value;
+  });
+
+  
+  const modelPill = document.getElementById("model-pill");
+  const modelPopover = document.getElementById("model-popover");
+  const modelPillLabel = document.getElementById("model-pill-label");
+  const modelActualHint = document.getElementById("model-actual-hint");
+
+  function renderModelPopover(){
+    const current = Modulogical.getModelKey();
+    modelPopover.innerHTML = Modulogical.MODELS.map(m => `
+      <div class="model-option${m.key === current ? " selected" : ""}" data-key="${m.key}" role="option">
+        <span class="dot"></span>
+        <div>
+          <div class="name">${m.label}</div>
+          <div class="desc">${m.blurb}</div>
+        </div>
+      </div>
+    `).join("");
+    modelPopover.querySelectorAll(".model-option").forEach(opt => {
+      opt.addEventListener("click", () => {
+        Modulogical.setModelKey(opt.getAttribute("data-key"));
+        applySelectedModel();
+        closePopovers();
+      });
+    });
+  }
+
+  function applySelectedModel(){
+    const model = Modulogical.modelByKey(Modulogical.getModelKey()) || Modulogical.modelByKey("auto");
+    modelPillLabel.textContent = model.label;
+    modelActualHint.textContent = model.key === "auto"
+      ? "Auto — automatically selecting the best model"
+      : model.label + " — " + model.description;
+  }
+
+  const tempPill = document.getElementById("temp-pill");
+  const tempPopover = document.getElementById("temp-popover");
+
+  function closePopovers(){
+    modelPopover.classList.remove("open");
+    tempPopover.classList.remove("open");
+    modelPill.setAttribute("aria-expanded", "false");
+    tempPill.setAttribute("aria-expanded", "false");
+  }
+  modelPill.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = !modelPopover.classList.contains("open");
+    closePopovers();
+    if (willOpen) { renderModelPopover(); modelPopover.classList.add("open"); modelPill.setAttribute("aria-expanded", "true"); }
+  });
+  tempPill.addEventListener("click", (e) => {
+    e.stopPropagation();
+    const willOpen = !tempPopover.classList.contains("open");
+    closePopovers();
+    if (willOpen) { tempPopover.classList.add("open"); tempPill.setAttribute("aria-expanded", "true"); }
+  });
+  tempPopover.addEventListener("click", (e) => e.stopPropagation());
+  document.addEventListener("click", closePopovers);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closePopovers(); });
+
+  applySelectedModel();
+
+  
+  
+  
+  async function chat(opts){
+    if (busy) return;
+
+    let shown, sent, topic;
+    if (opts) {
+      shown = opts.show; sent = opts.send; topic = opts.topic;
+    } else {
+      sent = messageEl.value;
+      if (!sent.trim()) return;
+      shown = sent; topic = sent;
+      messageEl.value = "";
+      messageEl.style.height = "auto";
+    }
+
+    setBusy(true);
+    addUserMessage(shown);
+    const msg = addAssistantMessage(topic);
+    msg.loader.spin();
+
+    const fail = async (text) => {
+      await msg.loader.finish();
+      msg.loader.still();
+      msg.textEl.textContent = text;
+      msg.textEl.classList.add("is-error");
+      msg.text = text;
+      scrollToBottom();
+    };
+
+    try {
+      const modelKey = Modulogical.getModelKey();
+      const model = (Modulogical.modelByKey(modelKey) || Modulogical.modelByKey("auto")).id;
+
+      let response;
+      try {
+        response = await fetch(Modulogical.API + "/chat", {
+          method: "POST",
+          headers: Modulogical.headers(),
+          body: JSON.stringify({
+            token: token,
+            message: sent,
+            model: model,
+            temperature: document.getElementById("temperature").value
+          })
+        });
+      } catch (err) {
+        console.error(err);
+        await fail("Couldn't reach Modulogical. Check your connection and try again.");
+        return;
+      }
+
+      const usedModelId = response.headers.get("X-Atlas-Model");
+      if (usedModelId) {
+        const used = Modulogical.modelById(usedModelId);
+        msg.tagEl.textContent = used ? "· " + used.label : "";
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let output = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        output += decoder.decode(value, { stream: true });
+        msg.stream.push(output, false);
+        scrollToBottom();
+      }
+      output += decoder.decode();
+      msg.stream.push(output, true);
+      msg.text = output;
+      scrollToBottom();
+
+      if (!output.trim()) {
+        await fail("Modulogical didn't return a reply. Try sending it again.");
+        return;
+      }
+
+      
+      await msg.loader.finish();
+      if (reduceMotion) {
+        msg.stream.words.forEach(settleWord);
+      } else {
+        await assemble(msg.loader, msg.stream.words);
+      }
+      msg.loader.still();
+      msg.loader.c.style.transition = "";
+      msg.loader.c.style.opacity = "1";
+      msg.bar.classList.add("ready");
+      scrollToBottom();
+    } finally {
+      setBusy(false);
+    }
+  }
+})();
+</script>
+</body>
+</html>
