@@ -580,6 +580,7 @@
     const msg = addAssistantMessage(topic);
     msg.text = text;
     msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(text || ""));
+    msg.actions.style.display = "flex";
     return msg;
   }
 
