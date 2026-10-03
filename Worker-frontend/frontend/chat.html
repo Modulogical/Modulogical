@@ -516,7 +516,7 @@
 
     const contextButton = createActionButton("More context", () => {
       if (busy || !msg.text) return;
-      const ref = msg.text.replace(/\s+/g, " ").slice(0, 140);
+      const ref = msg.text.replace(/\s+/g, " ");
       chat({
         show: "More context",
         send: 'Give me more context on your earlier answer that began: "' + ref + '". Explain the background, the assumptions behind it, and anything I should know before relying on it.',
