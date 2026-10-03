@@ -570,6 +570,7 @@
       tagEl: wrap.querySelector(".model-tag")
     };
     msg.actions = buildActions(msg);
+    msg.actions.style.display = "none";
     wrap.querySelector(".msg-bubble").appendChild(msg.actions);
     scrollToBottom();
     return msg;
@@ -736,6 +737,7 @@
       msg.text = "Modulogical didn't return a reply. Try sending it again.";
       msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(msg.text));
     }
+    msg.actions.style.display = "flex";
     scrollToBottom();
     busy = false;
     updateSendState();
