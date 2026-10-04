@@ -168,6 +168,43 @@
     background: var(--surface-2);
   }
 
+  /* ---- Modulogical loading animation -------------------------------- */
+  .modulogical-loader{
+    position: relative;
+    width: 78px;
+    height: 78px;
+    flex: none;
+    margin: 0 0 8px 0;
+    overflow: visible;
+    opacity: 1;
+    transition: opacity .32s var(--ease), transform .32s var(--ease);
+  }
+  .modulogical-loader.is-hidden{
+    opacity: 0;
+    transform: scale(.9);
+    pointer-events: none;
+  }
+  .loader-block{
+    position: absolute;
+    width: 48px;
+    height: 48px;
+    border-radius: 18px;
+    will-change: transform;
+    transition: transform .58s cubic-bezier(.22,.75,.24,1);
+  }
+  .loader-blue{ background: #20afe4; }
+  .loader-red{ background: #ea3e61; }
+  .loader-purple{ background: #7650d7; }
+
+  @media (max-width: 760px){
+    .modulogical-loader{ width: 64px; height: 64px; margin-top: -2px; }
+    .loader-block{ width: 40px; height: 40px; border-radius: 15px; }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .loader-block{ transition: none; }
+    .modulogical-loader{ transition: opacity .15s ease; }
+  }
+
   .msg-text .caret{
     display: inline-block;
     width: 7px; height: 1em;
@@ -552,6 +589,120 @@
     scrollToBottom();
   }
 
+  /*
+   * Three-block loading animation.
+   * A, B and C form an equilateral triangle, so every block-to-position
+   * movement uses the same distance.
+   */
+  const LOADER = {
+    reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    positions: [
+      [0, 0],       // A: upper-left
+      [48, 8],      // B: upper-right
+      [24, 49.57]   // C: lower
+    ],
+    move: 580,
+    gap: 80,
+    group: 580
+  };
+
+  function setLoaderPositions(blocks, slots, instant){
+    blocks.forEach((block, i) => {
+      block.style.transition = instant ? "none" : "";
+      const p = LOADER.positions[slots[i]];
+      block.style.transform = `translate3d(${p[0]}px,${p[1]}px,0)`;
+    });
+    if (instant) requestAnimationFrame(() => blocks.forEach(b => b.style.transition = ""));
+  }
+
+  function createLoaderController(el, blocks){
+    let running = false;
+    let finishing = false;
+    let state = [0, 1, 2]; // blue=A, red=B, purple=C
+
+    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+    const apply = (slots, instant = false) => setLoaderPositions(blocks, slots, instant);
+
+    async function cycle(){
+      /*
+       * 1. Blue A -> C
+       * 2. Red B -> A
+       * 3. Purple C -> B
+       *
+       * Each move is exactly one side of the triangle.
+       */
+      const next = [state[2], state[0], state[1]];
+
+      apply([next[0], state[1], state[2]]);
+      await sleep(LOADER.move);
+      if (!running && !finishing) return;
+
+      apply([next[0], next[1], state[2]]);
+      await sleep(LOADER.move);
+      if (!running && !finishing) return;
+
+      apply(next);
+      await sleep(LOADER.move);
+      if (!running && !finishing) return;
+
+      /*
+       * All three now rotate together to the left. This is also one
+       * equal-distance position movement for every block.
+       */
+      const rotated = [next[2], next[0], next[1]];
+      apply(rotated);
+      await sleep(LOADER.group);
+      state = rotated;
+    }
+
+    async function loop(){
+      while (running) await cycle();
+    }
+
+    async function finish(){
+      if (finishing) return;
+      finishing = true;
+      running = false;
+
+      if (LOADER.reduced){
+        el.remove();
+        finishing = false;
+        return;
+      }
+
+      /*
+       * Continue full cycles until the colours are back in their original
+       * formation. Nothing is teleported when generation ends.
+       */
+      while (state[0] !== 0 || state[1] !== 1 || state[2] !== 2){
+        await cycle();
+      }
+
+      await sleep(120);
+      el.classList.add("is-hidden");
+      await sleep(320);
+      el.remove();
+      finishing = false;
+    }
+
+    function start(){
+      if (running || finishing) return;
+      state = [0, 1, 2];
+      apply(state, true);
+
+      if (LOADER.reduced){
+        el.classList.add("is-hidden");
+        return;
+      }
+
+      el.classList.remove("is-hidden");
+      running = true;
+      loop();
+    }
+
+    return { start, finish };
+  }
+
   function addAssistantMessage(){
     hideEmptyState();
     const wrap = document.createElement("div");
@@ -559,6 +710,11 @@
     wrap.innerHTML = `
     <div class="msg-bubble">
       <div class="msg-meta"><span class="brand-mark"></span><span>Modulogical</span><span class="model-tag"></span></div>
+      <div class="modulogical-loader" aria-hidden="true">
+        <span class="loader-block loader-blue"></span>
+        <span class="loader-block loader-red"></span>
+        <span class="loader-block loader-purple"></span>
+      </div>
       <div class="msg-text markdown-body"><span class="caret"></span></div>
     </div>`;
     threadInner.appendChild(wrap);
@@ -567,17 +723,22 @@
       text: "",
       topic: "",
       textEl: wrap.querySelector(".msg-text"),
-      tagEl: wrap.querySelector(".model-tag")
+      tagEl: wrap.querySelector(".model-tag"),
+      loaderEl: wrap.querySelector(".modulogical-loader"),
+      loaderBlocks: Array.from(wrap.querySelectorAll(".loader-block"))
     };
     msg.actions = buildActions(msg);
+    msg.loader = createLoaderController(msg.loaderEl, msg.loaderBlocks);
     msg.actions.style.display = "none";
     wrap.querySelector(".msg-bubble").appendChild(msg.actions);
+    msg.loader.start();
     scrollToBottom();
     return msg;
   }
 
   function addStaticAssistantMessage(text, topic){
     const msg = addAssistantMessage(topic);
+    if (msg.loaderEl) msg.loaderEl.remove();
     msg.text = text;
     msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(text || ""));
     msg.actions.style.display = "flex";
@@ -712,6 +873,7 @@
       console.error(err);
       msg.text = "Couldn't reach Modulogical. Check your connection and try again.";
       msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(msg.text));
+      await msg.loader.finish();
       busy = false; updateSendState(); return;
     }
 
@@ -738,6 +900,7 @@
       msg.text = "Modulogical didn't return a reply. Try sending it again.";
       msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(msg.text));
     }
+    await msg.loader.finish();
     msg.actions.style.display = "flex";
     scrollToBottom();
     busy = false;
