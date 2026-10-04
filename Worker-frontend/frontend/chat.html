@@ -169,60 +169,57 @@
   }
 
   /* ---- Modulogical loading animation -------------------------------- */
-  /* Three blocks drawn in SVG. Colours come from the active theme
-     (data-theme on <html>), so switching themes recolours it live.
-     Default / "Holographic dark" values are on the base rule. */
-  .modulogical-loader{
-    --lb-0: #7ed3fc;  --lb-1: #f5b8da;  --lb-2: #ab9fdd;      /* left, right, bottom block */
-    --lb-ov01: #f7b6e0; --lb-ov02: #d4eeff; --lb-ov12: #fce4fa; /* where two blocks overlap */
-    --lb-line: none;                                            /* outline themes only */
-
+  /* Lives in the message header, in the slot where the brand mark sits.
+     While loading the slot grows to fit the flying blocks; when the reply
+     is done it collapses back and the static brand mark fades in.
+     Colours come ONLY from the theme variables in modulogical.css:
+       --loader-blue / --loader-red / --loader-purple   (required)
+       --loader-outline  (optional: draws outlines instead of fills)
+       --loader-blend    (optional: overlap blending, default "screen")      */
+  .msg-mark{
+    --mm: 26px;
     position: relative;
-    width: 84px;
-    height: 66px;
     flex: none;
-    margin: 0 0 10px 0;
-    overflow: visible;
+    width: var(--mm);
+    height: var(--mm);
+    transition: width .34s var(--ease), height .34s var(--ease);
+  }
+  .msg-mark .brand-mark{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     opacity: 1;
-    transition: opacity .32s var(--ease), transform .32s var(--ease),
-                height .32s var(--ease), margin .32s var(--ease);
+    transition: opacity .34s var(--ease) .08s;
   }
-  [data-theme="Greyscale"] .modulogical-loader{
-    --lb-0: #cfd0d5;  --lb-1: #e8e7ec;  --lb-2: #87878f;
-    --lb-ov01: #e8e7ec; --lb-ov02: #e9e8ed; --lb-ov12: #f4f4f6;
+  .msg-mark.is-loading{ width: 76px; height: 92px; }
+  .msg-mark.is-loading .brand-mark{ opacity: 0; transition: none; }
+
+  .modulogical-loader{
+    position: absolute;
+    inset: 0;
+    isolation: isolate;          /* overlap blending only sees the blocks, not the page */
+    opacity: 1;
+    transition: opacity .3s var(--ease);
   }
-  [data-theme="Company-Colours"] .modulogical-loader{
-    --lb-0: #1cb8f5;  --lb-1: #e9425e;  --lb-2: #7951d6;
-    --lb-ov01: #ea4162; --lb-ov02: #88cffd; --lb-ov12: #f37ee6;
-  }
-  [data-theme="Hacker-Terminal"] .modulogical-loader{
-    --lb-0: none;  --lb-1: none;  --lb-2: none;
-    --lb-ov01: none; --lb-ov02: none; --lb-ov12: none;
-    --lb-line: #01fc4b;
-  }
-  .modulogical-loader.is-hidden{
-    opacity: 0;
-    height: 0;
-    margin-bottom: 0;
-    transform: scale(.9);
-    pointer-events: none;
-  }
+  .modulogical-loader.is-hidden{ opacity: 0; pointer-events: none; }
   .lb-svg{ display: block; width: 100%; height: 100%; overflow: visible; }
-  .lb-block{ stroke: var(--lb-line); stroke-width: 28px; stroke-linejoin: round; } /* 28 = 14px visible: the stroke is clipped to the inside of its own block */
-  .lb-b0{ fill: var(--lb-0); }
-  .lb-b1{ fill: var(--lb-1); }
-  .lb-b2{ fill: var(--lb-2); }
-  .lb-ov{ stroke: none; }
-  .lb-ov01{ fill: var(--lb-ov01); }
-  .lb-ov02{ fill: var(--lb-ov02); }
-  .lb-ov12{ fill: var(--lb-ov12); }
+  .lb-block{
+    stroke: var(--loader-outline, none);
+    stroke-width: 14px;
+    stroke-linejoin: round;
+  }
+  .lb-b0{ fill: var(--loader-blue); }
+  .lb-b1{ fill: var(--loader-red); }
+  .lb-b2{ fill: var(--loader-purple); mix-blend-mode: var(--loader-blend, screen); }
 
   @media (max-width: 760px){
-    .modulogical-loader{ width: 68px; height: 53px; }
+    .msg-mark{ --mm: 24px; }
+    .msg-mark.is-loading{ width: 60px; height: 73px; }
   }
   @keyframes lb-soft-pulse{ from{ opacity: .55; } to{ opacity: 1; } }
   @media (prefers-reduced-motion: reduce){
-    .modulogical-loader{ transition: opacity .15s ease; }
+    .msg-mark{ transition: none; }
     .lb-svg{ animation: lb-soft-pulse 1.6s ease-in-out infinite alternate; }
   }
 
@@ -614,29 +611,33 @@
    * Three-block loading animation.
    *
    * One cycle:
-   *   1. the LEFT block moves through the other two
-   *   2. the RIGHT block moves through the bottom block
-   *   3. the BOTTOM block moves up
-   *      (steps 1-3 each travel exactly LOADER.distance)
+   *   1. the LEFT block flies through the other two
+   *   2. the RIGHT block flies through the bottom block
+   *   3. the BOTTOM block flies up
+   *      (steps 1-3 each travel exactly LOADER.distance, far enough that
+   *       all three blocks end up clearly apart from each other)
    *   4. all three move round: left -> right -> bottom -> left
    * Every cycle ends in the logo formation, with the colours shuffled.
    *
    * When the response finishes, the step in progress completes and the
    * blocks glide into whichever formation slots are nearest, so the
-   * colours can land in any order.
+   * colours can land in any order. Colours are read from the theme's
+   * --loader-* CSS variables (see modulogical.css), never from this file.
    */
   const LOADER = {
-    // Formation = the logo mark (centre x/y and side length, in a 564x442 viewBox)
+    // Formation = the logo mark (centre x/y and side length, in SVG units)
     slots: [
       { x: 150,   y: 150,   size: 280 },  // left
       { x: 415,   y: 190,   size: 280 },  // right
       { x: 280.5, y: 300.5, size: 263 }   // bottom
     ],
-    distance: 120,   // equal travel for steps 1-3
-    step: 460,       // ms per step 1-3
-    rotate: 760,     // ms for the move round
-    rest: 140,       // ms pause once the blocks are back in formation
-    settle: 560,     // ms to glide into the nearest slots when generation ends
+    // Room for the formation AND the furthest flight (recompute if distance changes)
+    view: [-10, -190, 620, 755],
+    distance: 340,   // equal travel for steps 1-3
+    step: 520,       // ms per step 1-3
+    rotate: 820,     // ms for the move round
+    rest: 160,       // ms pause once the blocks are back in formation
+    settle: 600,     // ms to glide into the nearest slots when generation ends
     radius: 0.2,     // corner radius as a fraction of the side length
     reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches
   };
@@ -644,34 +645,18 @@
   const easeInOut = t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
   const easeOut = t => 1 - Math.pow(1 - t, 3);
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  let loaderCount = 0;
 
   function createLoader(){
-    const id = ++loaderCount;
     const el = document.createElement("div");
     el.className = "modulogical-loader";
     el.setAttribute("aria-hidden", "true");
     el.innerHTML = `
-      <svg class="lb-svg" viewBox="0 0 564 442" focusable="false">
-        <defs>
-          <rect id="lb${id}-g0"/><rect id="lb${id}-g1"/><rect id="lb${id}-g2"/>
-          <clipPath id="lb${id}-c0"><rect/></clipPath>
-          <clipPath id="lb${id}-c1"><rect/></clipPath>
-          <clipPath id="lb${id}-c2"><rect/></clipPath>
-        </defs>
-        <use href="#lb${id}-g0" class="lb-block lb-b0" clip-path="url(#lb${id}-c0)"/>
-        <use href="#lb${id}-g1" class="lb-block lb-b1" clip-path="url(#lb${id}-c1)"/>
-        <use href="#lb${id}-g2" class="lb-block lb-b2" clip-path="url(#lb${id}-c2)"/>
-        <use href="#lb${id}-g1" class="lb-ov lb-ov01" clip-path="url(#lb${id}-c0)"/>
-        <use href="#lb${id}-g2" class="lb-ov lb-ov02" clip-path="url(#lb${id}-c0)"/>
-        <use href="#lb${id}-g2" class="lb-ov lb-ov12" clip-path="url(#lb${id}-c1)"/>
+      <svg class="lb-svg" viewBox="${LOADER.view.join(" ")}" focusable="false">
+        <rect class="lb-block lb-b0"/>
+        <rect class="lb-block lb-b1"/>
+        <rect class="lb-block lb-b2"/>
       </svg>`;
-
-    // geometry elements per block: the shape itself + its clip copy
-    const rects = [0, 1, 2].map(i => [
-      el.querySelector(`#lb${id}-g${i}`),
-      el.querySelector(`#lb${id}-c${i} rect`)
-    ]);
+    const rects = Array.from(el.querySelectorAll("rect"));
 
     const slots = LOADER.slots;
     const state = slots.map(s => ({ ...s }));   // live position of each block
@@ -686,14 +671,12 @@
 
     function draw(){
       state.forEach((s, i) => {
-        const half = s.size / 2;
-        rects[i].forEach(r => {
-          r.setAttribute("x", s.x - half);
-          r.setAttribute("y", s.y - half);
-          r.setAttribute("width", s.size);
-          r.setAttribute("height", s.size);
-          r.setAttribute("rx", s.size * LOADER.radius);
-        });
+        const half = s.size / 2, r = rects[i];
+        r.setAttribute("x", s.x - half);
+        r.setAttribute("y", s.y - half);
+        r.setAttribute("width", s.size);
+        r.setAttribute("height", s.size);
+        r.setAttribute("rx", s.size * LOADER.radius);
       });
     }
 
@@ -729,16 +712,16 @@
       const who = [0, 1, 2].map(s => slotOf.indexOf(s));
       const d = LOADER.distance;
 
-      // 1. left block passes through the other two
+      // 1. left block flies through the other two
       const mid = { x: (slots[1].x + slots[2].x) / 2, y: (slots[1].y + slots[2].y) / 2 };
       if (!await tween({ [who[0]]: towards(slots[0], mid, d) }, LOADER.step, easeInOut)) return;
       if (stopping) return;
 
-      // 2. right block passes through the bottom block
+      // 2. right block flies through the bottom block
       if (!await tween({ [who[1]]: towards(slots[1], slots[2], d) }, LOADER.step, easeInOut)) return;
       if (stopping) return;
 
-      // 3. bottom block moves up
+      // 3. bottom block flies up
       if (!await tween({ [who[2]]: { x: slots[2].x, y: slots[2].y - d } }, LOADER.step, easeInOut)) return;
       if (stopping) return;
 
@@ -797,8 +780,12 @@
           await sleep(LOADER.rest);
         }
         if (alive()){
+          // collapse the header slot back to brand-mark size; the static
+          // brand mark fades in as the animated one fades out
+          const mark = el.closest(".msg-mark");
+          if (mark) mark.classList.remove("is-loading");
           el.classList.add("is-hidden");
-          await sleep(340);
+          await sleep(360);
         }
         el.remove();
       })();
@@ -816,17 +803,16 @@
     wrap.className = "msg msg-assistant";
     wrap.innerHTML = `
     <div class="msg-bubble">
-      <div class="msg-meta"><span class="brand-mark"></span><span>Modulogical</span><span class="model-tag"></span></div>
+      <div class="msg-meta"><span class="msg-mark${withLoader ? " is-loading" : ""}"><span class="brand-mark"></span></span><span>Modulogical</span><span class="model-tag"></span></div>
       <div class="msg-text markdown-body"><span class="caret"></span></div>
     </div>`;
     threadInner.appendChild(wrap);
 
     const bubble = wrap.querySelector(".msg-bubble");
-    const textEl = wrap.querySelector(".msg-text");
     const msg = {
       text: "",
       topic: topic || "",
-      textEl,
+      textEl: wrap.querySelector(".msg-text"),
       tagEl: wrap.querySelector(".model-tag")
     };
     msg.actions = buildActions(msg);
@@ -835,7 +821,7 @@
 
     if (withLoader){
       msg.loader = createLoader();
-      bubble.insertBefore(msg.loader.el, textEl);
+      wrap.querySelector(".msg-mark").appendChild(msg.loader.el);
       msg.loader.start();
     } else {
       msg.loader = { start(){}, finish: () => Promise.resolve() };

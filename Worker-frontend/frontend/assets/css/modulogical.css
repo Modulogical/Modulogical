@@ -107,6 +107,10 @@
 
   --logo-mark: url('/assets/img/logo-mark/holographic-dark.png');
 
+  --loader-blue: #7ED3FC;
+  --loader-red: #F5B8DA;
+  --loader-purple: #AB9FDD;
+
   --accent:        #b9aaff;      /* representative solid, for small dots/carets */
   --accent-dim:    #786fb0;
   --accent-wash:   rgba(185,170,255,.1);
@@ -271,9 +275,9 @@
   --button-default-hover: #f0f0f0;
   --button-default-accent-text: #0a0a0a;
 
-  --loader-blue: #1CB8F5;
-  --loader-red: #E9425E;
-  --loader-purple: #7951D6;
+  --loader-blue: #CFCFD5;
+  --loader-red: #E8E7EC;
+  --loader-purple: #87878F;
 
   --left-glow-secondary:    #cfcfd6;
   --left-glow-primary:  #9a9aa3;
@@ -348,9 +352,9 @@
   --button-default-hover: #d9d8d2;
   --button-default-accent-text: #14121f;
 
-  --loader-blue: #CFCFD5;
-  --loader-red: #E8E7EC;
-  --loader-purple: #87878F;
+  --loader-blue: #1CB8F5;
+  --loader-red: #E9425E;
+  --loader-purple: #7951D6;
 
   --left-glow-secondary:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
@@ -376,6 +380,13 @@
 [data-theme="Hacker-Terminal"] {
   /* semantic button roles */
   --logo-mark: url('/assets/img/logo-mark/hacker-terminal.png');
+
+  /* loading animation: outlines instead of fills */
+  --loader-blue: transparent;
+  --loader-red: transparent;
+  --loader-purple: transparent;
+  --loader-outline: #01FC4B;
+  --loader-blend: normal;
 
   --button-chat-bg: #00ff41;
   --button-chat-text: #001a08;
