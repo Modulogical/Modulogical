@@ -197,6 +197,10 @@
   --button-default-hover: #d9d8d2;
   --button-default-accent-text: #14121f;
 
+  --loader-blue: #7ED3FC;
+  --loader-red: #F5B8DA;
+  --loader-purple: #AB9FDD;
+
   --left-glow-secondary:    #7dd3fc;
   --left-glow-primary:  #c4b5fd;
   --right-glow-primary:    #f5b8da;
@@ -266,6 +270,10 @@
   --button-default-text: var(--text-inverse);
   --button-default-hover: #f0f0f0;
   --button-default-accent-text: #0a0a0a;
+
+  --loader-blue: #1CB8F5;
+  --loader-red: #E9425E;
+  --loader-purple: #7951D6;
 
   --left-glow-secondary:    #cfcfd6;
   --left-glow-primary:  #9a9aa3;
@@ -339,6 +347,10 @@
   --button-default-text: var(--text-inverse);
   --button-default-hover: #d9d8d2;
   --button-default-accent-text: #14121f;
+
+  --loader-blue: #CFCFD5;
+  --loader-red: #E8E7EC;
+  --loader-purple: #87878F;
 
   --left-glow-secondary:    #17b2ff;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #4b6bff;   /* blue-leaning transition tone, replaces violet */
