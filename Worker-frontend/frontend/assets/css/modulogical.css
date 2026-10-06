@@ -433,6 +433,10 @@
   --button-default-hover: #39ff14;
   --button-default-accent-text: #001a08;
 
+  --loader-blue: #00ff41;
+  --loader-red: #00ff41;
+  --loader-purple: #00ff41;
+
   --left-glow-secondary:    #06070a;   /* primary electric blue, from the emblem's left/blue facets */
   --left-glow-primary:  #090c0a;   /* blue-leaning transition tone, replaces violet */
   --right-glow-primary:    #06070a;  /* neon red, from the emblem's right/red facets */
