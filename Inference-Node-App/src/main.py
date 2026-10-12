@@ -6,7 +6,48 @@ import secrets
 import requests
 import json
 from datetime import datetime
+import os
 import psutil
+from pathlib import Path
+import subprocess
+
+def get_nvidia_gpus():
+    command = [
+        "nvidia-smi",
+        "--query-gpu=name,memory.total,memory.free,memory.used,utilization.gpu",
+        "--format=csv,noheader,nounits"
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True
+        )
+
+        gpus = []
+
+        for line in result.stdout.strip().splitlines():
+            name, total, free, used, utilisation = [
+                value.strip() for value in line.split(",")
+            ]
+
+            gpus = [{
+                "name": name,
+                "vram_total_mb": int(total),
+                "vram_free_mb": int(free),
+                "vram_used_mb": int(used),
+                "utilisation_percent": int(utilisation),
+            }]
+
+        return gpus
+
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
+        return []
+
+
 
 
 APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
@@ -25,9 +66,14 @@ class GenerateRequest(BaseModel):
     model: str = "gemma3:latest"
     temperature: float = 0.2
     stream: bool = True
-
-with open(CONFIG_FILE, "w") as write_config:
-    data={
+def config():
+ if CONFIG_FILE.exists():
+    with open(CONFIG_FILE, "r") as read_config:
+        config_data=json.load(read_config)
+    return config_data
+ else: 
+    with open(CONFIG_FILE, "w") as write_config:
+        data={
     "resource_limits": {
         "cpu_percent": 50,
         "gpu_percent": 50,
@@ -47,24 +93,50 @@ with open(CONFIG_FILE, "w") as write_config:
         "minimize_to_tray": True
     }
 }
-    json.dump(data, write_config, indent=4)
+        json.dump(data, write_config, indent=4)
+    return data
 
-with open(NODE_FILE, "w") as write_node:
-    data={
+def node():
+ if NODE_FILE.exists():
+    with open(NODE_FILE, "r") as read_node:
+        node_data=json.load(read_node)
+        with open(NODE_FILE, "w") as New_heartbeat:
+            node_data.update({"last_heartbeat" : datetime.now().strftime("%H:%M:%S")})
+            json.dump(node_data, New_heartbeat, indent=4)
+            return node_data
+ else: 
+    with open(NODE_FILE, "w") as write_node:
+     ram=psutil.virtual_memory()
+     disk = psutil.disk_usage("C:\\")
+     data={
         "node_id" : f"node_{secrets.token_urlsafe(32)}",
         "node_secret" : "",
         "modulogical_id" : "",
-        "last_heartbeat" : datetime.now().strtime("%H:%M:%S"),
+        "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
         "hardware" : {
-            "gpu" : "",
-            "ram" : "",
-            "vram" : "",
-            "ssd" : "",
+            "cpu" : {
+                "logical_cores" :  psutil.cpu_count(logical=True),
+                "physical_cores" : psutil.cpu_count(logical=False)
+            },
+            "gpu" : {
+                "name" : get_nvidia_gpus()[0]["name"],
+                "vram_total_mb" : get_nvidia_gpus()[0]["vram_total_mb"]
+            },
+            "ram" : {
+                "total_ram_gb" : round(ram.total / (1024 ** 3), 1)
+            },
+            "ssd" : {
+                "total_gb" : round(disk.total / 1024**3,1),
+                "free_gb" : round(disk.free / 1024**3,1)
+            },
         }
     }
+     json.dump(data, write_node, indent=4)
+     return data
 
 
-
+config()
+node()
 
 
 
