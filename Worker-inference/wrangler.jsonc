@@ -6,8 +6,8 @@
   "compatibility_flags": ["python_workers"],
   "observability": {"enabled": true},
   "d1_databases": [{
-    "binding": "DB",
-    "database_name": "REPLACE_WITH_YOUR_EXISTING_D1_DATABASE_NAME",
-    "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e1a"
+    "binding": "INFERENCE-NODE",
+    "database_name": "inference-nodes",
+    "database_id": "380f9d27-bb93-4904-9b2f-4480ef79542e"
   }]
 }
