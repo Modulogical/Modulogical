@@ -11,44 +11,9 @@ import psutil
 from pathlib import Path
 import subprocess
 
-def get_nvidia_gpus():
-    command = [
-        "nvidia-smi",
-        "--query-gpu=name,memory.total,memory.free,memory.used,utilization.gpu",
-        "--format=csv,noheader,nounits"
-    ]
+app = FastAPI()
 
-    try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            timeout=5,
-            check=True
-        )
-
-        gpus = []
-
-        for line in result.stdout.strip().splitlines():
-            name, total, free, used, utilisation = [
-                value.strip() for value in line.split(",")
-            ]
-
-            gpus = [{
-                "name": name,
-                "vram_total_mb": int(total),
-                "vram_free_mb": int(free),
-                "vram_used_mb": int(used),
-                "utilisation_percent": int(utilisation),
-            }]
-
-        return gpus
-
-    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
-        return []
-
-
-
+OLLAMA_URL = "http://localhost:11434/api/generate"
 
 APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
 APPDATA.mkdir(parents=True, exist_ok=True)
@@ -56,17 +21,10 @@ APPDATA.mkdir(parents=True, exist_ok=True)
 CONFIG_FILE = APPDATA / "config.json"
 NODE_FILE = APPDATA / "node.json"
 
-app = FastAPI()
+# ------------------------------------ Initialise/Load startup files ------------------------------------ #
 
-OLLAMA_URL = "http://localhost:11434/api/generate"
-
-
-class GenerateRequest(BaseModel):
-    prompt: str
-    model: str = "gemma3:latest"
-    temperature: float = 0.2
-    stream: bool = True
-def config():
+# - Config Catch-all function - #
+def config(): 
  if CONFIG_FILE.exists():
     with open(CONFIG_FILE, "r") as read_config:
         config_data=json.load(read_config)
@@ -95,7 +53,8 @@ def config():
 }
         json.dump(data, write_config, indent=4)
     return data
-
+ 
+# - Node Catch-all function - #
 def node():
  if NODE_FILE.exists():
     with open(NODE_FILE, "r") as read_node:
@@ -134,23 +93,52 @@ def node():
      json.dump(data, write_node, indent=4)
      return data
 
+# ---------- Load GPU data ---------- #
 
-config()
-node()
+def get_nvidia_gpus():
+    command = [
+        "nvidia-smi",
+        "--query-gpu=name,memory.total,memory.free,memory.used,utilization.gpu",
+        "--format=csv,noheader,nounits"
+    ]
 
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=True
+        )
 
+        gpus = []
 
+        for line in result.stdout.strip().splitlines():
+            name, total, free, used, utilisation = [
+                value.strip() for value in line.split(",")
+            ]
 
+            gpus = [{
+                "name": name,
+                "vram_total_mb": int(total),
+                "vram_free_mb": int(free),
+                "vram_used_mb": int(used),
+                "utilisation_percent": int(utilisation),
+            }]
 
+        return gpus
 
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
+        return []
 
+# ---------------------------------------- Classes ---------------------------------------- #
+class GenerateRequest(BaseModel):
+    prompt: str
+    model: str = "gemma3:latest"
+    temperature: float = 0.2
+    stream: bool = True
 
-
-
-
-
-
-
+# ---------------------------------------- Endpoints ---------------------------------------- #
 
 @app.get("/health")
 def health():
