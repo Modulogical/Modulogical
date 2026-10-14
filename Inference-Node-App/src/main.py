@@ -15,7 +15,7 @@ app = FastAPI()
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-WORKER_URL = "https://nodes.modulogical.com"
+WORKER_URL = "https://modulogical.dalfie201014.workers.dev"
 
 APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
 APPDATA.mkdir(parents=True, exist_ok=True)
@@ -143,6 +143,7 @@ def register_node():
 )
  response.raise_for_status()
  result = response.json()
+register_node()
 # ---------------------------------------- Classes ---------------------------------------- #
 class GenerateRequest(BaseModel):
     prompt: str
