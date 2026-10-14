@@ -15,7 +15,7 @@ app = FastAPI()
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
-WORKER_URL = "https://modulogical.dalfie201014.workers.dev"
+WORKER_URL = "https://nodes.modulogical.com"
 
 APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
 APPDATA.mkdir(parents=True, exist_ok=True)

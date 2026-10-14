@@ -118,7 +118,7 @@ async def register_node(request: Request):
             "pending",
             metadata_json,
             created_at,
-            created_at,
+            metadata_json["last_heartbeat"],
         ).run()
     except Exception:
         raise HTTPException(
