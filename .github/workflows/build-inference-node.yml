@@ -33,7 +33,13 @@ jobs:
       - name: Build executable
         working-directory: Inference-Node-App/src
         run: |
-          python -m PyInstaller --clean --noconfirm --onefile --name InferenceNode main.py
+            python -m PyInstaller --clean --noconfirm --onefile --name InferenceNode main.py
+
+      - name: Commit executable to repository
+        uses: stefanzweifel/git-auto-commit-action@v6
+        with:
+          commit_message: "Build updated InferenceNode.exe"
+          file_pattern: "releases/InferenceNode.exe"
 
       - name: Upload executable
         uses: actions/upload-artifact@v6
