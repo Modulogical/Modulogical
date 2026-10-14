@@ -15,6 +15,8 @@ app = FastAPI()
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
+WORKER_URL = "https://nodes.modulogical.com"
+
 APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
 APPDATA.mkdir(parents=True, exist_ok=True)
 
@@ -131,6 +133,16 @@ def get_nvidia_gpus():
     except (FileNotFoundError, subprocess.SubprocessError, ValueError):
         return []
 
+# ---------------------------------------- Registration ---------------------------------------- #
+def register_node():
+ metadata = node()
+ response = requests.post(
+   f"{WORKER_URL}/v1/nodes/register",
+   json=metadata,
+   timeout=15
+)
+ response.raise_for_status()
+ result = response.json()
 # ---------------------------------------- Classes ---------------------------------------- #
 class GenerateRequest(BaseModel):
     prompt: str
