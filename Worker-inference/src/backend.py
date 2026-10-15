@@ -67,6 +67,9 @@ async def heartbeat(request: Request):
         node_id = metadata.get("node_id")
         if not isinstance(node_id, str) or not NODE_ID_PATTERN.fullmatch(node_id):
                 raise HTTPException(status_code=400, detail="Invalid or missing node_id")
+        node_secret = metadata.get("node_secret")
+        if not isinstance(node_secret, str):
+            raise HTTPException(status_code=400, detail="Must pass node secret")
 
         node_heartbeat = metadata.get("timestamp", {})
         if not isinstance(node_heartbeat, dict):
@@ -75,7 +78,19 @@ async def heartbeat(request: Request):
         env = get_env(request)
         db = get_db(env)
     except:
-        pass
+        try:
+           existing = await db.prepare(
+           "SELECT node_id FROM heartbeats WHERE node_id = ?"
+           ).bind(node_id).first()
+        except Exception:
+            raise HTTPException(
+                  status_code=500,
+                  detail="Could not query D1")
+        if existing:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            try:
+                pass #cba
+           
 
 
         
