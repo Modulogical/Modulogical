@@ -156,9 +156,9 @@ def register_node():
   config_data.update({"registered" : 1})
   with open(CONFIG_FILE, "w") as Register_status:
     json.dump(config_data, Register_status, indent=4)
- node_data = node()
- node_data["node_secret"] = result["node_secret"]
- with open(NODE_FILE, "w") as Write_secret:
+  node_data = node()
+  node_data["node_secret"] = result["node_secret"]
+  with open(NODE_FILE, "w") as Write_secret:
     json.dump(node_data, Write_secret, indent=4)
 
 
