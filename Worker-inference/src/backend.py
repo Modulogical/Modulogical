@@ -88,6 +88,7 @@ async def register_node(request: Request):
     Accepts either the node object directly or {"metadata": <node object>}.
     This initial endpoint intentionally does not provision a Cloudflare Tunnel.
     """
+    node_secret = secrets.token_urlsafe(32)
     try:
         body = await request.json()
     except Exception:
@@ -138,7 +139,7 @@ async def register_node(request: Request):
             """
         ).bind(
             node_id,
-            metadata_json["node_secret"],
+            node_secret,
             "pending",
             metadata_json,
             created_at,
@@ -158,7 +159,7 @@ async def register_node(request: Request):
             """
         ).bind(
             node_id,
-            metadata_json["node_secret"],
+            node_secret,
             "pending",
             metadata_json["last_heartbeat"],
         ).run()
