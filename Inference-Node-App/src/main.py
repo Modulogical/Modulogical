@@ -5,11 +5,14 @@ from typing import Optional
 import secrets
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import os
 import psutil
 from pathlib import Path
 import subprocess
+import threading
+import time
+
 
 app = FastAPI()
 
@@ -34,6 +37,7 @@ def config():
  else: 
     with open(CONFIG_FILE, "w") as write_config:
         data={
+    "registered" : 0,
     "resource_limits": {
         "cpu_percent": 50,
         "gpu_percent": 50,
@@ -71,7 +75,7 @@ def node():
      disk = psutil.disk_usage("C:\\")
      data={
         "node_id" : f"node_{secrets.token_urlsafe(32)}",
-        "node_secret" : "",
+        "node_secret" : secrets.token_urlsafe(32),
         "modulogical_id" : "",
         "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
         "hardware" : {
@@ -143,7 +147,59 @@ def register_node():
 )
  response.raise_for_status()
  result = response.json()
+ config_data = config()
+ config_data.update({"registered" : 1})
+ with open(CONFIG_FILE, "w") as Register_status:
+    json.dump(config_file, Register, indent=4)
 register_node()
+
+# ---------------------------------------- Send Heartbeat ---------------------------------------- #
+
+def send_heartbeat():
+    node = node()  # Your saved node.json
+    node_id = node["node_id"]
+    node_secret = node["node_secret"]
+    HEARTBEAT_INTERVAL = 30
+
+    url = f"{WORKER_URL}/v1/nodes/heartbeat"
+
+    while True:
+        config_data = config()
+        if config["registered"] == 1:
+          try:
+            metadata = {
+                   "node_id" : node_id,
+                    "status": "online",
+                    "timestamp": datetime.now(
+                        timezone.utc
+                    ).isoformat()
+                }
+            response = requests.post(
+                url,
+                headers={
+                    "Authorization": f"Bearer {node_secret}"
+                },
+                json=metadata,
+                timeout=10
+            )
+
+            response.raise_for_status()
+            print("Heartbeat acknowledged:", response.status_code)
+
+          except requests.RequestException as e:
+            print("Heartbeat failed:", e)
+
+          time.sleep(HEARTBEAT_INTERVAL)
+
+
+def start_heartbeat_thread():
+    thread = threading.Thread(
+        target=send_heartbeat,
+        daemon=True
+    )
+    thread.start()
+
+
 # ---------------------------------------- Classes ---------------------------------------- #
 class GenerateRequest(BaseModel):
     prompt: str
@@ -193,3 +249,10 @@ def generate(details: GenerateRequest):
                 yield line + b"\n"
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
+
+if __name__ == "__main__":
+    register_node()
+    start_heartbeat_thread()
+
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

@@ -44,15 +44,39 @@ def hash_secret(secret: str) -> str:
     return hashlib.sha256(secret.encode("utf-8")).hexdigest()
 
 
-class NodeHeartbeat(BaseModel):
-    status: str = Field(default="online", pattern="^(online|idle|busy|offline)$")
-    telemetry: dict[str, Any] = Field(default_factory=dict)
-    app_version: str | None = Field(default=None, max_length=40)
-
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "modulogical-inference"}
+
+@app.post("/v1/nodes/heartbeat")
+async def heartbeat(request: Request):
+    try:
+        try:
+                body = await request.json()
+        except Exception:
+                raise HTTPException(status_code=400, detail="Request body must be valid JSON")
+        
+        if not isinstance(body, dict):
+                raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+        
+        metadata = body.get("metadata", body)
+        if not isinstance(metadata, dict):
+                raise HTTPException(status_code=400, detail="'metadata' must be a JSON object")
+        
+        node_id = metadata.get("node_id")
+        if not isinstance(node_id, str) or not NODE_ID_PATTERN.fullmatch(node_id):
+                raise HTTPException(status_code=400, detail="Invalid or missing node_id")
+
+        node_heartbeat = metadata.get("timestamp", {})
+        if not isinstance(node_heartbeat, dict):
+             raise HTTPException(status_code=400, details="'timestamp' must exist")
+
+        env = get_env(request)
+        db = get_db(env)
+
+
+        
 
 
 @app.post("/v1/nodes/register")
@@ -101,11 +125,10 @@ async def register_node(request: Request):
             detail="This node_id is already registered. Use the existing node credentials or implement an authenticated re-registration flow.",
         )
 
-    node_secret = secrets.token_urlsafe(32)
     created_at = utc_now()
     metadata_json = json.dumps(metadata, separators=(",", ":"), ensure_ascii=False)
-
-    try:
+    def insert_infnodes():
+     try:
         await db.prepare(
             """
             INSERT INTO inference_nodes
@@ -114,17 +137,40 @@ async def register_node(request: Request):
             """
         ).bind(
             node_id,
-            hash_secret(node_secret),
+            metadata_json["node_secret"],
             "pending",
             metadata_json,
             created_at,
             metadata_json["last_heartbeat"],
         ).run()
-    except Exception:
+     except Exception:
         raise HTTPException(
             status_code=500,
             detail="Could not save node registration; check that the D1 table has the expected columns.",
         )
+
+     def insert_heartbeats():
+        try:
+         await db.prepare(
+            """
+            INSERT INTO heartbeats
+                (node_id, node_secret_hash, status, last_heartbeat)
+            VALUES (?, ?, ?, ?)
+            """
+        ).bind(
+            node_id,
+            metadata_json["node_secret"],
+            "pending",
+            metadata_json["last_heartbeat"],
+        ).run()
+        except Exception:
+            raise HTTPException(status_code=500,
+                                detail="Could not save node registration to heartbeat D1",
+                                )
+    insert_infnodes()
+    insert_heartbeats()
+
+          
 
     # Return the raw secret only once. Store only its hash in D1.
     return {
