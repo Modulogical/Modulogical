@@ -250,9 +250,5 @@ def generate(details: GenerateRequest):
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 
-if __name__ == "__main__":
-    register_node()
-    start_heartbeat_thread()
-
-    import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+register_node()
+start_heartbeat_thread()
