@@ -75,7 +75,7 @@ def node():
      disk = psutil.disk_usage("C:\\")
      data={
         "node_id" : f"node_{secrets.token_urlsafe(32)}",
-        "node_secret" : secrets.token_urlsafe(32),
+        "node_secret" : "",
         "modulogical_id" : "",
         "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
         "hardware" : {
@@ -150,8 +150,8 @@ def register_node():
  config_data = config()
  config_data.update({"registered" : 1})
  with open(CONFIG_FILE, "w") as Register_status:
-    json.dump(config_file, Register, indent=4)
-register_node()
+    json.dump(config_data, Register_status, indent=4)
+
 
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
