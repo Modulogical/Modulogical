@@ -129,8 +129,7 @@ async def register_node(request: Request):
 
     created_at = utc_now()
     metadata_json = json.dumps(metadata, separators=(",", ":"), ensure_ascii=False)
-    def insert_infnodes():
-     try:
+    try:
         await db.prepare(
             """
             INSERT INTO inference_nodes
@@ -145,7 +144,7 @@ async def register_node(request: Request):
             created_at,
             metadata_json["last_heartbeat"],
         ).run()
-     except Exception:
+    except Exception:
         raise HTTPException(
             status_code=500,
             detail="Could not save node registration; check that the D1 table has the expected columns.",
