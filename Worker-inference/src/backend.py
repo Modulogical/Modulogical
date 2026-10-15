@@ -150,9 +150,7 @@ async def register_node(request: Request):
             status_code=500,
             detail="Could not save node registration; check that the D1 table has the expected columns.",
         )
-
-     def insert_heartbeats():
-        try:
+    try:
          await db.prepare(
             """
             INSERT INTO heartbeats
@@ -165,12 +163,10 @@ async def register_node(request: Request):
             "pending",
             metadata_json["last_heartbeat"],
         ).run()
-        except Exception:
+    except Exception:
             raise HTTPException(status_code=500,
                                 detail="Could not save node registration to heartbeat D1",
                                 )
-    insert_infnodes()
-    insert_heartbeats()
 
           
 
