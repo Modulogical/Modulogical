@@ -139,17 +139,21 @@ def get_nvidia_gpus():
 
 # ---------------------------------------- Registration ---------------------------------------- #
 def register_node():
- metadata = node()
- response = requests.post(
+ config_data = config()
+ if config_data["registered"] == 1:
+    print("Already registered!")
+ else:
+  metadata = node()
+  response = requests.post(
    f"{WORKER_URL}/v1/nodes/register",
    json=metadata,
    timeout=15
-)
- response.raise_for_status()
- result = response.json()
- config_data = config()
- config_data.update({"registered" : 1})
- with open(CONFIG_FILE, "w") as Register_status:
+ )
+  response.raise_for_status()
+  result = response.json()
+  config_data = config()
+  config_data.update({"registered" : 1})
+  with open(CONFIG_FILE, "w") as Register_status:
     json.dump(config_data, Register_status, indent=4)
 
 #hi
