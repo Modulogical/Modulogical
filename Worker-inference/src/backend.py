@@ -147,7 +147,7 @@ async def register_node(request: Request):
         ).run()
     except Exception:
         raise HTTPException(
-            status_code=500,
+            status_code=501,
             detail="Could not save node registration; check that the D1 table has the expected columns.",
         )
     try:
