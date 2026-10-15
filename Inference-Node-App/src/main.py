@@ -151,25 +151,31 @@ def register_node():
  )
   response.raise_for_status()
   result = response.json()
+
   config_data = config()
   config_data.update({"registered" : 1})
   with open(CONFIG_FILE, "w") as Register_status:
     json.dump(config_data, Register_status, indent=4)
+ node_data = node()
+ node_data["node_secret"] = result["node_secret"]
+ with open(NODE_FILE, "w") as Write_secret:
+    json.dump(node_data, Write_secret, indent=4)
+
 
 #hi
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
 def send_heartbeat():
-    node = node()  # Your saved node.json
-    node_id = node["node_id"]
-    node_secret = node["node_secret"]
+    node_data = node()  # Your saved node.json
+    node_id = node_data["node_id"]
+    node_secret = node_data["node_secret"]
     HEARTBEAT_INTERVAL = 30
 
     url = f"{WORKER_URL}/v1/nodes/heartbeat"
 
     while True:
         config_data = config()
-        if config["registered"] == 1:
+        if config_data["registered"] == 1:
           try:
             metadata = {
                    "node_id" : node_id,
@@ -193,7 +199,7 @@ def send_heartbeat():
           except requests.RequestException as e:
             print("Heartbeat failed:", e)
 
-          time.sleep(HEARTBEAT_INTERVAL)
+        time.sleep(HEARTBEAT_INTERVAL)
 
 
 def start_heartbeat_thread():
