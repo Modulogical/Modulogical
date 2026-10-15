@@ -167,6 +167,7 @@ async def register_node(request: Request):
             raise HTTPException(status_code=500,
                                 detail="Could not save node registration to heartbeat D1",
                                 )
+#hi
 
           
 
