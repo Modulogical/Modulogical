@@ -152,7 +152,7 @@ def register_node():
  with open(CONFIG_FILE, "w") as Register_status:
     json.dump(config_data, Register_status, indent=4)
 
-
+#hi
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
 def send_heartbeat():
