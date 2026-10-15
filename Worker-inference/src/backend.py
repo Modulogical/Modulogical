@@ -74,6 +74,8 @@ async def heartbeat(request: Request):
 
         env = get_env(request)
         db = get_db(env)
+    except:
+        pass
 
 
         
