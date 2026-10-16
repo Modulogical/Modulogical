@@ -89,7 +89,20 @@ async def heartbeat(request: Request):
         if existing:
             timestamp = datetime.now().strftime("%H:%M:%S")
             try:
-                pass #cba
+                await db.prepare("""
+                INSERT INTO heartbeats
+                    (node_id, node_secret_hash, status, last_heartbeat)
+                 VALUES (?, ?, ?, ?)
+                """).bind(
+                node_id,
+                node_secret,
+                "online",
+                timestamp).run()
+            except Exception:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Could not log heartbeat")
+                return "Could not log heartbeat"
            
 
 
