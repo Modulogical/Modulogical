@@ -73,7 +73,8 @@ def node():
     with open(NODE_FILE, "w") as write_node:
      ram=psutil.virtual_memory()
      disk = psutil.disk_usage("C:\\")
-     data={
+     try: 
+      data={
         "node_id" : f"node_{secrets.token_urlsafe(32)}",
         "node_secret" : "",
         "modulogical_id" : "",
@@ -96,8 +97,33 @@ def node():
             },
         }
     }
-     json.dump(data, write_node, indent=4)
-     return data
+     except Exception:
+        data={
+                "node_id" : f"node_{secrets.token_urlsafe(32)}",
+                "node_secret" : "",
+                "modulogical_id" : "",
+                "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
+                "hardware" : {
+                    "cpu" : {
+                        "logical_cores" :  psutil.cpu_count(logical=True),
+                        "physical_cores" : psutil.cpu_count(logical=False)
+                    },
+                    "gpu" : {
+                        "name" : "couldn't get GPU",
+                        "vram_total_mb" : "couldn't get GPU"
+                    },
+                    "ram" : {
+                        "total_ram_gb" : round(ram.total / (1024 ** 3), 1)
+                    },
+                    "ssd" : {
+                        "total_gb" : round(disk.total / 1024**3,1),
+                        "free_gb" : round(disk.free / 1024**3,1)
+                    },
+                }
+            }
+
+    json.dump(data, write_node, indent=4)
+    return data
 
 # ---------- Load GPU data ---------- #
 
@@ -138,6 +164,7 @@ def get_nvidia_gpus():
         return []
 
 # ---------------------------------------- Registration ---------------------------------------- #
+
 def register_node():
  config_data = config()
  if config_data["registered"] == 1:
@@ -161,8 +188,6 @@ def register_node():
   with open(NODE_FILE, "w") as Write_secret:
     json.dump(node_data, Write_secret, indent=4)
 
-
-#hi
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
 def send_heartbeat():
