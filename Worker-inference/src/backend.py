@@ -90,14 +90,14 @@ async def heartbeat(request: Request):
             timestamp = datetime.now().strftime("%H:%M:%S")
             try:
                 await db.prepare("""
-                INSERT INTO heartbeats
-                    (node_id, node_secret_hash, status, last_heartbeat)
-                 VALUES (?, ?, ?, ?)
+                UPDATE inference_nodes
+                SET
+                   status = 'online',
+                   last_heartbeat = ?
+                WHERE node_id = ?;
                 """).bind(
-                node_id,
-                node_secret,
-                "online",
-                timestamp).run()
+                timestamp,
+                 node_id).run()
             except Exception:
                 raise HTTPException(
                     status_code=500,
