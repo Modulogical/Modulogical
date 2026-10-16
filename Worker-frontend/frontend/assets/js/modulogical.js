@@ -163,8 +163,8 @@ const Modulogical = (() => {
     { key: "engine-forge", label: "Engine Forge", href: "/engine-forge", icon: '<path d="M14.7 6.3a4.5 4.5 0 0 0-5.9 5.9L4 17v3h3l4.8-4.8a4.5 4.5 0 0 0 5.9-5.9l-2.4 2.4-2.1-2.1z"/>' },
     { key: "settings", label: "Settings", href: "/settings", icon: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9c.2.4.6.8 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.4 1z"/>' },
     { key: "themes", label: "Themes", href: "/themes", icon:  '<path d="M12 3a9 9 0 1 0 9 9h-3.2a2 2 0 0 1-2-2 2 2 0 0 0-2-2H12a2 2 0 0 1-2-2V3z"/><circle cx="17.5" cy="6.5" r="1"/><circle cx="19" cy="11" r="1"/><circle cx="15" cy="4.5" r="1"/>'},
-    { key: "about", label: "About", href: "/about", icon: '<path d="M6 9L12 15L18 9" />'},
-    { key: "George is cool", label: "Georgecool", href: "/george", icon: '<path d="M6 9L12 15L18 9" />'}
+    { key: "about", label: "About", href: "/about", icon: '<path d="M6 9L12 15L18 9" />'}
+  
   ];
 
   function renderSharedDesktopSidebar(sidebar, activePage, displayName){
