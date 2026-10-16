@@ -156,7 +156,7 @@ async def register_node(request: Request):
             detail="This node_id is already registered. Use the existing node credentials or implement an authenticated re-registration flow.",
         )
 
-    created_at = utc_now()
+    created_at = datetime.now().strftime("%H:%M:%S")
     metadata_json = json.dumps(metadata, separators=(",", ":"), ensure_ascii=False)
     try:
         await db.prepare(
