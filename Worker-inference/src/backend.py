@@ -67,24 +67,22 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
         "Authorization": f"Bearer {api_token}",
         "Content-Type": "application/json",
     }
-    options: dict[str, Any] = {"method": method, "headers": headers}
+    # Cloudflare Python Workers exposes fetch(url, *, method=..., headers=..., body=...).
+    # Its request options are keyword-only; passing an options dict as a second
+    # positional argument raises: fetch() takes 1 positional argument but 2 were given.
+    fetch_kwargs: dict[str, Any] = {"method": method, "headers": headers}
     if payload is not None:
-        options["body"] = json.dumps(payload, separators=(",", ":"))
+        fetch_kwargs["body"] = json.dumps(payload, separators=(",", ":"))
 
     try:
-        response = await fetch(url, options)
+        response = await fetch(url, **fetch_kwargs)
         response_text = await response.text()
         try:
             data = json.loads(response_text) if response_text else {}
         except ValueError:
             data = {}
-    except Exception as exc:
-    # Log the exception type, not credentials or request headers.
-     print(f"Cloudflare API fetch failed: {type(exc).__name__}: {exc}")
-     raise HTTPException(
-        status_code=502,
-        detail=f"Cloudflare API request failed ({type(exc).__name__})"
-    )
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not reach Cloudflare API")
 
     if not response.ok or not isinstance(data, dict) or data.get("success") is not True:
         # Avoid reflecting raw Cloudflare response bodies to the caller.
