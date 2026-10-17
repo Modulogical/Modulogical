@@ -29,7 +29,7 @@ INFERENCE_URL = os.getenv( #holds the url that connects to the AI server
 )
 
 THEME_KEY_PATTERN = re.compile(r"^[a-zA-Z0-9_-]+$")
-DEFAULT_THEME = "holographic"
+DEFAULT_THEME = "Company-Colours"
 
 pwd_hasher = PasswordHasher() #hashes the passwords to make them secure
 
