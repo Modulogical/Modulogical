@@ -78,8 +78,13 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
             data = json.loads(response_text) if response_text else {}
         except ValueError:
             data = {}
-    except Exception:
-        raise HTTPException(status_code=502, detail="Could not reach Cloudflare API")
+    except Exception as exc:
+    # Log the exception type, not credentials or request headers.
+     print(f"Cloudflare API fetch failed: {type(exc).__name__}: {exc}")
+     raise HTTPException(
+        status_code=502,
+        detail=f"Cloudflare API request failed ({type(exc).__name__})"
+    )
 
     if not response.ok or not isinstance(data, dict) or data.get("success") is not True:
         # Avoid reflecting raw Cloudflare response bodies to the caller.
