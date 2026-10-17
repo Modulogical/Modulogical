@@ -1,11 +1,10 @@
-
 name: Build and Commit Inference Node
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "Inference-Node-App/src/**"
+      - "Inference-Node-App/**"
       - ".github/workflows/build-inference-node.yml"
 
 permissions:
@@ -24,25 +23,28 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+          cache: "pip"
+          cache-dependency-path: "Inference-Node-App/requirements.txt"
 
       - name: Install dependencies
+        working-directory: Inference-Node-App
         run: |
           python -m pip install --upgrade pip
-          python -m pip install fastapi requests psutil uvicorn pydantic rich pyinstaller
+          python -m pip install -r requirements.txt
 
-      - name: Build executable
-        working-directory: Inference-Node-App/src
+      - name: Build desktop executable
+        working-directory: Inference-Node-App
         run: |
-          python -m PyInstaller --clean --noconfirm --onefile --name InferenceNode main.py
+          python -m PyInstaller --clean --noconfirm --onefile --windowed --name ModulogicalInferenceNode --add-data "src\ui;ui" src\main.py
 
       - name: Copy executable to releases
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path releases | Out-Null
-          Copy-Item "Inference-Node-App/src/dist/InferenceNode.exe" "releases/InferenceNode.exe" -Force
+          Copy-Item "Inference-Node-App/dist/ModulogicalInferenceNode.exe" "releases/ModulogicalInferenceNode.exe" -Force
 
       - name: Commit executable to repository
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "Build updated InferenceNode.exe"
-          file_pattern: "releases/InferenceNode.exe"
+          commit_message: "Build updated Modulogical Inference Node"
+          file_pattern: "releases/ModulogicalInferenceNode.exe"
