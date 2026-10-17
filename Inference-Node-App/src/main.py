@@ -97,6 +97,7 @@ def node():
             },
         }
     }
+      json.dump(data, write_node, indent=4)
      except Exception:
         data={
                 "node_id" : f"node_{secrets.token_urlsafe(32)}",
@@ -121,8 +122,7 @@ def node():
                     },
                 }
             }
-
-    json.dump(data, write_node, indent=4)
+        json.dump(data, write_node, indent=4)
     return data
 
 # ---------- Load GPU data ---------- #
@@ -169,6 +169,7 @@ def register_node():
  config_data = config()
  if config_data["registered"] == 1:
     print("Already registered!")
+    node()
  else:
   metadata = node()
   response = requests.post(
@@ -223,6 +224,9 @@ def send_heartbeat():
 
           except requests.RequestException as e:
             print("Heartbeat failed:", e)
+        else:
+           print("Unregistered!")
+           register_node()
 
         time.sleep(HEARTBEAT_INTERVAL)
 
@@ -236,6 +240,7 @@ def start_heartbeat_thread():
 
 
 # ---------------------------------------- Classes ---------------------------------------- #
+
 class GenerateRequest(BaseModel):
     prompt: str
     model: str = "gemma3:latest"
