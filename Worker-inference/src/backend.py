@@ -8,16 +8,17 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
-from workers import asgi
+from workers import asgi, fetch
 
 app = FastAPI(
     title="Modulogical Inference API",
-    version="0.3.0",
-    description="Node registration and lifecycle API for Modulogical.",
+    version="0.4.1",
+    description="Node registration, Cloudflare Tunnel provisioning, and lifecycle API.",
 )
 Default = asgi.entrypoint(app)
 
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
+CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
 
 
 def utc_now() -> str:
@@ -34,11 +35,15 @@ def get_env(request: Request) -> Any:
 def get_db(env: Any) -> Any:
     db = getattr(env, "INFERENCE_NODE", None)
     if db is None:
-        raise HTTPException(
-            status_code=500,
-            detail="D1 binding INFERENCE_NODE is unavailable",
-        )
+        raise HTTPException(status_code=500, detail="D1 binding INFERENCE_NODE is unavailable")
     return db
+
+
+def get_secret(env: Any, name: str) -> str:
+    value = getattr(env, name, None)
+    if not value:
+        raise HTTPException(status_code=500, detail=f"Missing Worker secret: {name}")
+    return str(value)
 
 
 def hash_secret(secret: str) -> str:
@@ -49,145 +54,127 @@ def bearer_secret(request: Request) -> str:
     authorization = request.headers.get("authorization", "")
     scheme, _, secret = authorization.partition(" ")
     if scheme.lower() != "bearer" or not secret.strip():
-        raise HTTPException(
-            status_code=401,
-            detail="Missing node secret; use Authorization: Bearer <node_secret>",
-        )
+        raise HTTPException(status_code=401, detail="Missing node secret; use Authorization: Bearer <node_secret>")
     return secret.strip()
+
+
+async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict | None = None) -> Any:
+    """Call the Cloudflare API using Worker fetch; never log or return API credentials."""
+    api_token = get_secret(env, "CLOUDFLARE_API_TOKEN")
+    account_id = get_secret(env, "CLOUDFLARE_ACCOUNT_ID")
+    url = f"{CLOUDFLARE_API}/{path.format(account_id=account_id)}"
+    headers = {
+        "Authorization": f"Bearer {api_token}",
+        "Content-Type": "application/json",
+    }
+    options: dict[str, Any] = {"method": method, "headers": headers}
+    if payload is not None:
+        options["body"] = json.dumps(payload, separators=(",", ":"))
+
+    try:
+        response = await fetch(url, options)
+        response_text = await response.text()
+        try:
+            data = json.loads(response_text) if response_text else {}
+        except ValueError:
+            data = {}
+    except Exception:
+        raise HTTPException(status_code=502, detail="Could not reach Cloudflare API")
+
+    if not response.ok or not isinstance(data, dict) or data.get("success") is not True:
+        # Avoid reflecting raw Cloudflare response bodies to the caller.
+        raise HTTPException(status_code=502, detail="Cloudflare API rejected tunnel provisioning")
+    return data.get("result")
+
+
+async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
+    """Create one remotely managed tunnel and return (tunnel_id, one-time token)."""
+    account_path = "accounts/{account_id}/cfd_tunnel"
+    result = await cloudflare_api(
+        env,
+        account_path,
+        method="POST",
+        payload={
+            "name": f"modulogical-{node_id}",
+            "config_src": "cloudflare",
+        },
+    )
+    if not isinstance(result, dict) or not result.get("id"):
+        raise HTTPException(status_code=502, detail="Cloudflare created no usable tunnel ID")
+
+    tunnel_id = str(result["id"])
+    try:
+        token_result = await cloudflare_api(
+            env,
+            f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}/token",
+            method="GET",
+        )
+        if not isinstance(token_result, str) or not token_result:
+            raise HTTPException(status_code=502, detail="Cloudflare returned no tunnel token")
+        return tunnel_id, token_result
+    except Exception:
+        # Best-effort cleanup so failed token retrieval does not leak an orphan tunnel.
+        try:
+            await cloudflare_api(
+                env,
+                f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}",
+                method="DELETE",
+            )
+        except Exception:
+            pass
+        raise
+
+
+async def delete_node_tunnel(env: Any, tunnel_id: str) -> None:
+    await cloudflare_api(
+        env,
+        f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}",
+        method="DELETE",
+    )
 
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "modulogical-inference"}
+    return {"status": "ok", "service": "modulogical-inference", "version": "0.4.1"}
 
 
-@app.post("/v1/nodes/heartbeat")
-async def heartbeat(request: Request):
-    """Accept heartbeats sent to /v1/nodes/heartbeat with a Bearer node secret.
+@app.post("/v1/nodes/register")
+async def register_node(request: Request):
+    """Register a node, provision its tunnel, and return its credentials once.
 
-    The body should contain at least {"node_id": "..."}; extra metadata is ignored
-    for authentication and server time is used for last_heartbeat.
+    Cloudflare API credentials are read only from Worker secrets; clients do not
+    need or receive those credentials. This endpoint is public until account-level
+    authorization is integrated, so apply abuse controls before broad public launch.
     """
     try:
         body = await request.json()
     except Exception:
         raise HTTPException(status_code=400, detail="Request body must be valid JSON")
-
     if not isinstance(body, dict):
         raise HTTPException(status_code=400, detail="Request body must be a JSON object")
 
     metadata = body.get("metadata", body)
     if not isinstance(metadata, dict):
         raise HTTPException(status_code=400, detail="'metadata' must be a JSON object")
-
     node_id = metadata.get("node_id")
     if not isinstance(node_id, str) or not NODE_ID_PATTERN.fullmatch(node_id):
         raise HTTPException(status_code=400, detail="Invalid or missing node_id")
-
-    supplied_secret = bearer_secret(request)
-    supplied_hash = hash_secret(supplied_secret)
-
-    db = get_db(get_env(request))
-
-    try:
-        saved = await db.prepare(
-            "SELECT node_secret_hash FROM heartbeats WHERE node_id = ?"
-        ).bind(node_id).first()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Could not query heartbeat credentials")
-
-    if not saved:
-        raise HTTPException(status_code=404, detail="Node heartbeat record not found")
-
-    saved_secret = saved.get("node_secret_hash") if isinstance(saved, dict) else saved["node_secret_hash"]
-
-    # Compatibility: earlier deployments stored the raw secret in the column named
-    # node_secret_hash. Accept it once, then migrate it to a SHA-256 hash.
-    if saved_secret not in (supplied_hash, supplied_secret):
-        raise HTTPException(status_code=401, detail="Invalid node secret")
-
-    if saved_secret == supplied_secret:
-        try:
-            await db.prepare(
-                "UPDATE heartbeats SET node_secret_hash = ? WHERE node_id = ?"
-            ).bind(supplied_hash, node_id).run()
-        except Exception:
-            raise HTTPException(status_code=500, detail="Could not migrate heartbeat credential")
-
-    timestamp = utc_now()
-
-    try:
-        await db.prepare(
-            """
-            UPDATE inference_nodes
-            SET status = ?, last_heartbeat = ?
-            WHERE node_id = ?
-            """
-        ).bind("online", timestamp, node_id).run()
-
-        await db.prepare(
-            """
-            UPDATE heartbeats
-            SET status = ?, last_heartbeat = ?
-            WHERE node_id = ?
-            """
-        ).bind("online", timestamp, node_id).run()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Could not update heartbeat status in D1")
-
-    return {
-        "ok": True,
-        "node_id": node_id,
-        "status": "online",
-        "last_heartbeat": timestamp,
-        "heartbeat_interval_seconds": 30,
-    }
-
-
-@app.post("/v1/nodes/register")
-async def register_node(request: Request):
-    """Register a node and issue a per-node secret once."""
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="Request body must be valid JSON")
-
-    if not isinstance(body, dict):
-        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
-
-    metadata = body.get("metadata", body)
-    if not isinstance(metadata, dict):
-        raise HTTPException(status_code=400, detail="'metadata' must be a JSON object")
-
-    node_id = metadata.get("node_id")
-    if not isinstance(node_id, str) or not NODE_ID_PATTERN.fullmatch(node_id):
-        raise HTTPException(status_code=400, detail="Invalid or missing node_id")
-
-    hardware = metadata.get("hardware", {})
-    if not isinstance(hardware, dict):
+    if not isinstance(metadata.get("hardware", {}), dict):
         raise HTTPException(status_code=400, detail="'hardware' must be a JSON object")
 
-    db = get_db(get_env(request))
-
+    env = get_env(request)
+    db = get_db(env)
     try:
         existing = await db.prepare(
             "SELECT node_id FROM inference_nodes WHERE node_id = ?"
         ).bind(node_id).first()
     except Exception:
-        raise HTTPException(
-            status_code=500,
-            detail="Could not query inference_nodes; check the D1 schema and binding.",
-        )
-
+        raise HTTPException(status_code=500, detail="Could not query inference_nodes; apply the tunnel migration first")
     if existing:
-        raise HTTPException(
-            status_code=409,
-            detail=(
-                "This node_id is already registered. Keep its existing node credentials; "
-                "do not register it again."
-            ),
-        )
+        raise HTTPException(status_code=409, detail="This node_id is already registered; use its existing credentials")
 
+    # Provision after validation but before inserting. If D1 fails, delete the tunnel.
+    tunnel_id, tunnel_token = await create_node_tunnel(env, node_id)
     node_secret = secrets.token_urlsafe(32)
     secret_hash = hash_secret(node_secret)
     created_at = utc_now()
@@ -197,55 +184,97 @@ async def register_node(request: Request):
         await db.prepare(
             """
             INSERT INTO inference_nodes
-                (node_id, node_secret_hash, status, metadata_json, created_at, last_heartbeat)
-            VALUES (?, ?, ?, ?, ?, ?)
+                (node_id, node_secret_hash, status, metadata_json, created_at, last_heartbeat,
+                 tunnel_id, tunnel_status, tunnel_created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         ).bind(
-            node_id, secret_hash, "pending", metadata_json, created_at, created_at
+            node_id, secret_hash, "pending", metadata_json, created_at, created_at,
+            tunnel_id, "created", created_at,
         ).run()
-
         await db.prepare(
             """
-            INSERT INTO heartbeats
-                (node_id, node_secret_hash, status, last_heartbeat)
+            INSERT INTO heartbeats (node_id, node_secret_hash, status, last_heartbeat)
             VALUES (?, ?, ?, ?)
             """
         ).bind(node_id, secret_hash, "pending", created_at).run()
     except Exception:
-        # D1 does not provide a transaction across these independent calls. If one
-        # insert fails, surface the failure so the schema can be corrected.
-        raise HTTPException(
-            status_code=500,
-            detail="Could not save node registration to both D1 tables; check their schemas.",
-        )
+        # D1 does not offer a transaction across these statements; clean up what we can.
+        try:
+            await db.prepare("DELETE FROM inference_nodes WHERE node_id = ?").bind(node_id).run()
+            await db.prepare("DELETE FROM heartbeats WHERE node_id = ?").bind(node_id).run()
+        except Exception:
+            pass
+        try:
+            await delete_node_tunnel(env, tunnel_id)
+        except Exception:
+            pass
+        raise HTTPException(status_code=500, detail="Could not save node and tunnel details to D1; check the migration and binding")
 
     return {
         "node_id": node_id,
         "node_secret": node_secret,
+        "tunnel_id": tunnel_id,
+        "tunnel_token": tunnel_token,
+        "tunnel_status": "created",
         "status": "pending",
         "created_at": created_at,
         "heartbeat_interval_seconds": 30,
-        "message": "Node registered. Save node_secret locally; it is returned only once.",
+        "message": "Node and tunnel registered. Save node_secret and tunnel_token locally; the tunnel token is returned only during registration.",
+        "note": "The tunnel is provisioned but has no published hostname or ingress route yet.",
     }
+
+
+@app.post("/v1/nodes/heartbeat")
+async def heartbeat(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Request body must be valid JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(status_code=400, detail="Request body must be a JSON object")
+    metadata = body.get("metadata", body)
+    if not isinstance(metadata, dict):
+        raise HTTPException(status_code=400, detail="'metadata' must be a JSON object")
+    node_id = metadata.get("node_id")
+    if not isinstance(node_id, str) or not NODE_ID_PATTERN.fullmatch(node_id):
+        raise HTTPException(status_code=400, detail="Invalid or missing node_id")
+
+    supplied_secret = bearer_secret(request)
+    supplied_hash = hash_secret(supplied_secret)
+    db = get_db(get_env(request))
+    try:
+        saved = await db.prepare("SELECT node_secret_hash FROM heartbeats WHERE node_id = ?").bind(node_id).first()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not query heartbeat credentials")
+    if not saved:
+        raise HTTPException(status_code=404, detail="Node heartbeat record not found")
+    saved_secret = saved.get("node_secret_hash") if isinstance(saved, dict) else saved["node_secret_hash"]
+    if saved_secret not in (supplied_hash, supplied_secret):
+        raise HTTPException(status_code=401, detail="Invalid node secret")
+    if saved_secret == supplied_secret:
+        await db.prepare("UPDATE heartbeats SET node_secret_hash = ? WHERE node_id = ?").bind(supplied_hash, node_id).run()
+
+    timestamp = utc_now()
+    try:
+        await db.prepare("UPDATE inference_nodes SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("online", timestamp, node_id).run()
+        await db.prepare("UPDATE heartbeats SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("online", timestamp, node_id).run()
+    except Exception:
+        raise HTTPException(status_code=500, detail="Could not update heartbeat status in D1")
+    return {"ok": True, "node_id": node_id, "status": "online", "last_heartbeat": timestamp, "heartbeat_interval_seconds": 30}
 
 
 @app.post("/v1/nodes/{node_id}/heartbeat")
 async def heartbeat_by_id(node_id: str, request: Request):
-    """Compatibility route for clients that put node_id in the URL."""
     if not NODE_ID_PATTERN.fullmatch(node_id):
         raise HTTPException(status_code=400, detail="Invalid node_id format")
-
     try:
         body = await request.json()
     except Exception:
         body = {}
-
     if not isinstance(body, dict):
         body = {}
     body["node_id"] = node_id
-
-    # Reuse the canonical handler while preserving the incoming Authorization header.
-    # This route is retained for compatibility with clients using the URL form.
     request._body = json.dumps(body).encode("utf-8")
     return await heartbeat(request)
 
@@ -254,34 +283,22 @@ async def heartbeat_by_id(node_id: str, request: Request):
 async def disconnect_node(node_id: str, request: Request):
     if not NODE_ID_PATTERN.fullmatch(node_id):
         raise HTTPException(status_code=400, detail="Invalid node_id format")
-
     supplied_secret = bearer_secret(request)
     supplied_hash = hash_secret(supplied_secret)
     db = get_db(get_env(request))
-
     try:
-        saved = await db.prepare(
-            "SELECT node_secret_hash FROM heartbeats WHERE node_id = ?"
-        ).bind(node_id).first()
+        saved = await db.prepare("SELECT node_secret_hash FROM heartbeats WHERE node_id = ?").bind(node_id).first()
     except Exception:
         raise HTTPException(status_code=500, detail="Could not query heartbeat credentials")
-
     if not saved:
         raise HTTPException(status_code=404, detail="Node not found")
-
-    saved_secret = saved["node_secret_hash"]
+    saved_secret = saved.get("node_secret_hash") if isinstance(saved, dict) else saved["node_secret_hash"]
     if saved_secret not in (supplied_hash, supplied_secret):
         raise HTTPException(status_code=401, detail="Invalid node secret")
-
     timestamp = utc_now()
     try:
-        await db.prepare(
-            "UPDATE inference_nodes SET status = ?, last_heartbeat = ? WHERE node_id = ?"
-        ).bind("offline", timestamp, node_id).run()
-        await db.prepare(
-            "UPDATE heartbeats SET status = ?, last_heartbeat = ? WHERE node_id = ?"
-        ).bind("offline", timestamp, node_id).run()
+        await db.prepare("UPDATE inference_nodes SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("offline", timestamp, node_id).run()
+        await db.prepare("UPDATE heartbeats SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("offline", timestamp, node_id).run()
     except Exception:
-        raise HTTPException(status_code=500, detail="Could not update node disconnect status")
-
+        raise HTTPException(status_code=500, detail="Could not mark node offline")
     return {"ok": True, "node_id": node_id, "status": "offline", "last_heartbeat": timestamp}

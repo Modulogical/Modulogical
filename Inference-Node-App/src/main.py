@@ -103,7 +103,6 @@ def node():
         "node_id" : f"node_{secrets.token_urlsafe(32)}",
         "node_secret" : "",
         "modulogical_id" : "",
-        "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
         "hardware" : {
             "cpu" : {
                 "logical_cores" :  psutil.cpu_count(logical=True),
@@ -128,7 +127,6 @@ def node():
                 "node_id" : f"node_{secrets.token_urlsafe(32)}",
                 "node_secret" : "",
                 "modulogical_id" : "",
-                "last_heartbeat" : datetime.now().strftime("%H:%M:%S"),
                 "hardware" : {
                     "cpu" : {
                         "logical_cores" :  psutil.cpu_count(logical=True),
@@ -191,29 +189,50 @@ def get_nvidia_gpus():
 # ---------------------------------------- Registration ---------------------------------------- #
 
 def register_node():
- config_data = config()
- if config_data["registered"] == 1:
-    log_event("Node is already registered.")
-    node()
- else:
-  metadata = node()
-  response = requests.post(
-   f"{WORKER_URL}/v1/nodes/register",
-   json=metadata,
-   timeout=15
- )
-  response.raise_for_status()
-  result = response.json()
-  log_event("Node registration accepted by Modulogical Worker.")
+    config_data = config()
+    if config_data.get("registered") == 1:
+        log_event("Node is already registered.")
+        return
 
-  config_data = config()
-  config_data.update({"registered" : 1})
-  with open(CONFIG_FILE, "w") as Register_status:
-    json.dump(config_data, Register_status, indent=4)
-  node_data = node()
-  node_data["node_secret"] = result["node_secret"]
-  with open(NODE_FILE, "w") as Write_secret:
-    json.dump(node_data, Write_secret, indent=4)
+    metadata = node()
+    response = requests.post(
+        f"{WORKER_URL}/v1/nodes/register",
+        json=metadata,
+        timeout=30,
+    )
+
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("detail", response.reason)
+        except (ValueError, AttributeError):
+            detail = response.reason
+        raise RuntimeError(f"Node registration failed ({response.status_code}): {detail}")
+
+    result = response.json()
+    required = ("node_secret", "tunnel_id", "tunnel_token")
+    missing = [key for key in required if not isinstance(result.get(key), str) or not result[key]]
+    if missing:
+        raise RuntimeError(
+            "Worker registration response is missing required fields: " + ", ".join(missing)
+        )
+
+    # Persist both one-time credentials before marking the node registered.
+    node_data = node()
+    node_data["node_secret"] = result["node_secret"]
+    node_data["tunnel_id"] = result["tunnel_id"]
+    node_data["tunnel_token"] = result["tunnel_token"]
+    node_data["tunnel_status"] = result.get("tunnel_status", "created")
+    with open(NODE_FILE, "w", encoding="utf-8") as handle:
+        json.dump(node_data, handle, indent=4)
+
+    config_data = config()
+    config_data["registered"] = 1
+    with open(CONFIG_FILE, "w", encoding="utf-8") as handle:
+        json.dump(config_data, handle, indent=4)
+
+    log_event(f"Node registered successfully. Tunnel provisioned: {result['tunnel_id']}")
+    log_event("Tunnel token saved locally; connectivity and routing are not configured yet.")
+
 
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
@@ -360,6 +379,8 @@ def api_status():
         "app": "Modulogical Inference Node",
         "registered": registered,
         "node_id": node_data.get("node_id", ""),
+        "tunnel_id": node_data.get("tunnel_id", ""),
+        "tunnel_status": node_data.get("tunnel_status", "not provisioned"),
         "last_heartbeat": node_data.get("last_heartbeat", "Never"),
         "hardware": node_data.get("hardware", {}),
         "ollama_online": ollama_online,
