@@ -1,5 +1,6 @@
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 import secrets
@@ -12,15 +13,32 @@ from pathlib import Path
 import subprocess
 import threading
 import time
+import sys
+import logging
+from collections import deque
 
 
-app = FastAPI()
+app = FastAPI(title="Modulogical Inference Node")
+
+# Keep the Python backend in this file; the desktop shell is served from ./ui.
+BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+UI_DIR = BASE_DIR / "ui"
+APP_LOGS = deque(maxlen=100)
+LOG_LOCK = threading.Lock()
+
+
+def log_event(message: str, level: str = "info"):
+    entry = {"time": datetime.now().astimezone().strftime("%H:%M:%S"), "level": level, "message": str(message)}
+    with LOG_LOCK:
+        APP_LOGS.appendleft(entry)
+    print(f"[{entry['time']}] {message}")
+
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
 WORKER_URL = "https://nodes.modulogical.com"
 
-APPDATA = Path(os.environ["LOCALAPPDATA"]) / "Modulogical" / "Inference Node"
+APPDATA = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Modulogical" / "Inference Node"
 APPDATA.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = APPDATA / "config.json"
@@ -168,7 +186,7 @@ def get_nvidia_gpus():
 def register_node():
  config_data = config()
  if config_data["registered"] == 1:
-    print("Already registered!")
+    log_event("Node is already registered.")
     node()
  else:
   metadata = node()
@@ -179,6 +197,7 @@ def register_node():
  )
   response.raise_for_status()
   result = response.json()
+  log_event("Node registration accepted by Modulogical Worker.")
 
   config_data = config()
   config_data.update({"registered" : 1})
@@ -192,41 +211,50 @@ def register_node():
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
 
 def send_heartbeat():
-    node_data = node()  # Your saved node.json
-    node_id = node_data["node_id"]
-    node_secret = node_data["node_secret"]
     HEARTBEAT_INTERVAL = 30
 
     url = f"{WORKER_URL}/v1/nodes/heartbeat"
 
     while True:
         config_data = config()
-        if config_data["registered"] == 1:
-          try:
-            metadata = {
-                   "node_id" : node_id,
+        if config_data.get("registered") != 1:
+            log_event("Node is not registered; attempting registration.")
+            try:
+                register_node()
+            except Exception as e:
+                log_event(f"Registration failed: {e}", "error")
+
+        # Reload persisted node credentials after registration so the first
+        # successful registration can be used by this same heartbeat loop.
+        node_data = {}
+        if NODE_FILE.exists():
+            try:
+                node_data = json.loads(NODE_FILE.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as e:
+                log_event(f"Could not read node configuration: {e}", "error")
+
+        config_data = config()
+        node_id = node_data.get("node_id")
+        node_secret = node_data.get("node_secret")
+        if config_data.get("registered") == 1 and node_id and node_secret:
+            try:
+                metadata = {
+                    "node_id": node_id,
                     "status": "online",
-                    "timestamp": datetime.now(
-                        timezone.utc
-                    ).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat()
                 }
-            response = requests.post(
-                url,
-                headers={
-                    "Authorization": f"Bearer {node_secret}"
-                },
-                json=metadata,
-                timeout=10
-            )
-
-            response.raise_for_status()
-            print("Heartbeat acknowledged:", response.status_code)
-
-          except requests.RequestException as e:
-            print("Heartbeat failed:", e)
-        else:
-           print("Unregistered!")
-           register_node()
+                response = requests.post(
+                    url,
+                    headers={"Authorization": f"Bearer {node_secret}"},
+                    json=metadata,
+                    timeout=10
+                )
+                response.raise_for_status()
+                log_event(f"Heartbeat acknowledged ({response.status_code}).")
+            except requests.RequestException as e:
+                log_event(f"Heartbeat failed: {e}", "error")
+        elif config_data.get("registered") == 1:
+            log_event("Node is marked registered but its saved credentials are incomplete.", "error")
 
         time.sleep(HEARTBEAT_INTERVAL)
 
@@ -290,5 +318,139 @@ def generate(details: GenerateRequest):
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 
-register_node()
-start_heartbeat_thread()
+# ---------------------------------------- Desktop UI and local status API ---------------------------------------- #
+
+@app.get("/")
+def desktop_home():
+    index_file = UI_DIR / "index.html"
+    if not index_file.exists():
+        return {"error": "UI assets were not found", "expected": str(index_file)}
+    return FileResponse(index_file)
+
+
+@app.get("/api/status")
+def api_status():
+    config_data = config()
+    node_data = {}
+    if NODE_FILE.exists():
+        try:
+            node_data = json.loads(NODE_FILE.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            node_data = {}
+
+    ollama_online = False
+    model_names = []
+    try:
+        ollama_response = requests.get("http://localhost:11434/api/tags", timeout=1.5)
+        ollama_online = ollama_response.ok
+        if ollama_online:
+            model_names = [item.get("name", "Unknown model") for item in ollama_response.json().get("models", [])]
+    except requests.RequestException:
+        pass
+
+    registered = config_data.get("registered") == 1
+    return {
+        "app": "Modulogical Inference Node",
+        "registered": registered,
+        "node_id": node_data.get("node_id", ""),
+        "last_heartbeat": node_data.get("last_heartbeat", "Never"),
+        "hardware": node_data.get("hardware", {}),
+        "ollama_online": ollama_online,
+        "models": model_names,
+        "config": config_data,
+        "worker_url": WORKER_URL,
+    }
+
+
+@app.get("/api/logs")
+def api_logs():
+    with LOG_LOCK:
+        return {"logs": list(APP_LOGS)}
+
+
+@app.get("/api/config")
+def api_get_config():
+    return config()
+
+
+@app.post("/api/config")
+def api_update_config(payload: dict):
+    """Update only recognised settings; secrets are never accepted from the UI."""
+    current = config()
+    allowed_sections = {
+        "resource_limits": {"cpu_percent", "gpu_percent", "max_concurrent_requests", "idle_only"},
+        "inference": {"enabled_models", "allow_remote_inference"},
+        "network": {"auto_connect", "auto_start"},
+        "application": {"start_with_windows", "minimize_to_tray"},
+    }
+    for section, allowed_keys in allowed_sections.items():
+        incoming = payload.get(section)
+        if isinstance(incoming, dict):
+            target = current.setdefault(section, {})
+            for key in allowed_keys:
+                if key in incoming:
+                    target[key] = incoming[key]
+    with open(CONFIG_FILE, "w", encoding="utf-8") as handle:
+        json.dump(current, handle, indent=4)
+    log_event("Settings saved.")
+    return {"ok": True, "config": current}
+
+
+@app.post("/api/reconnect")
+def api_reconnect():
+    def attempt():
+        try:
+            register_node()
+        except Exception as exc:
+            log_event(f"Registration attempt failed: {exc}", "error")
+    threading.Thread(target=attempt, daemon=True).start()
+    log_event("Registration/reconnect requested.")
+    return {"ok": True, "message": "Connection attempt started."}
+
+
+if UI_DIR.exists():
+    app.mount("/assets", StaticFiles(directory=UI_DIR / "assets", check_dir=False), name="assets")
+
+
+def main():
+    # Start the heartbeat/registration loop and local API before opening the window.
+    start_heartbeat_thread()
+    import uvicorn
+    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8765, log_level="warning"))
+    server_thread = threading.Thread(target=server.run, daemon=True)
+    server_thread.start()
+
+    # Wait briefly for the local API to become available.
+    for _ in range(50):
+        try:
+            if requests.get("http://127.0.0.1:8765/health", timeout=0.2).ok:
+                break
+        except requests.RequestException:
+            time.sleep(0.1)
+
+    try:
+        import webview
+        webview.create_window(
+            "Modulogical Inference Node",
+            "http://127.0.0.1:8765/",
+            width=1180,
+            height=780,
+            min_size=(820, 600),
+            background_color="#0b1020",
+        )
+        webview.start()
+    except ImportError:
+        log_event("pywebview is not installed; opening the dashboard in your default browser.", "warning")
+        import webbrowser
+        webbrowser.open("http://127.0.0.1:8765/")
+        try:
+            while server_thread.is_alive():
+                time.sleep(1)
+        except KeyboardInterrupt:
+            server.should_exit = True
+    finally:
+        server.should_exit = True
+
+
+if __name__ == "__main__":
+    main()
