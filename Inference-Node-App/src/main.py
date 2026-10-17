@@ -50,6 +50,16 @@ APPDATA.mkdir(parents=True, exist_ok=True)
 
 CONFIG_FILE = APPDATA / "config.json"
 NODE_FILE = APPDATA / "node.json"
+CLOUDFLARED_DIR = APPDATA / "bin"
+CLOUDFLARED_EXE = CLOUDFLARED_DIR / "cloudflared.exe"
+TUNNEL_TOKEN_FILE = APPDATA / "cloudflared-token.txt"
+CLOUDFLARED_DOWNLOAD_URL = (
+    "https://github.com/cloudflare/cloudflared/releases/latest/download/"
+    "cloudflared-windows-amd64.exe"
+)
+TUNNEL_PROCESS = None
+TUNNEL_PROCESS_LOCK = threading.Lock()
+TUNNEL_STATE = "not_started"
 
 # ------------------------------------ Initialise/Load startup files ------------------------------------ #
 
@@ -186,6 +196,127 @@ def get_nvidia_gpus():
     except (FileNotFoundError, subprocess.SubprocessError, ValueError):
         return []
 
+# ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
+
+def ensure_cloudflared() -> Path:
+    """Download the official Windows x64 cloudflared connector if it is absent."""
+    if os.name != "nt":
+        raise RuntimeError("Automatic cloudflared installation currently supports Windows only.")
+    if CLOUDFLARED_EXE.exists() and CLOUDFLARED_EXE.stat().st_size > 1_000_000:
+        try:
+            with CLOUDFLARED_EXE.open("rb") as handle:
+                if handle.read(2) == b"MZ":
+                    return CLOUDFLARED_EXE
+        except OSError:
+            pass
+        CLOUDFLARED_EXE.unlink(missing_ok=True)
+
+    CLOUDFLARED_DIR.mkdir(parents=True, exist_ok=True)
+    temporary_path = CLOUDFLARED_EXE.with_suffix(".download")
+    log_event("Downloading the official Cloudflare Tunnel connector (cloudflared)...")
+    try:
+        with requests.get(CLOUDFLARED_DOWNLOAD_URL, stream=True, timeout=(15, 120)) as response:
+            response.raise_for_status()
+            total = 0
+            with temporary_path.open("wb") as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 256):
+                    if not chunk:
+                        continue
+                    total += len(chunk)
+                    if total > 100 * 1024 * 1024:
+                        raise RuntimeError("cloudflared download exceeded the 100 MB safety limit.")
+                    handle.write(chunk)
+        with temporary_path.open("rb") as handle:
+            if handle.read(2) != b"MZ" or temporary_path.stat().st_size < 1_000_000:
+                raise RuntimeError("Downloaded cloudflared file did not look like a valid Windows executable.")
+        temporary_path.replace(CLOUDFLARED_EXE)
+        log_event("cloudflared downloaded successfully.")
+        return CLOUDFLARED_EXE
+    except Exception:
+        temporary_path.unlink(missing_ok=True)
+        raise
+
+
+def _watch_cloudflared_output(process):
+    """Read connector output without ever recording credentials or command arguments."""
+    global TUNNEL_STATE
+    try:
+        for raw_line in iter(process.stdout.readline, ""):
+            line = raw_line.strip()
+            if not line:
+                continue
+            lowered = line.lower()
+            if "registered tunnel connection" in lowered or "connection established" in lowered:
+                TUNNEL_STATE = "connected"
+                log_event("Cloudflare Tunnel connection established.")
+            elif "failed to" in lowered or "error" in lowered:
+                # Avoid dumping arbitrary connector output into the UI logs.
+                log_event("cloudflared reported a connection error; check Cloudflare Tunnel logs.", "error")
+        return_code = process.poll()
+        if return_code is not None:
+            TUNNEL_STATE = "offline"
+            log_event(f"cloudflared exited (code {return_code}).", "error" if return_code else "warning")
+    except Exception:
+        TUNNEL_STATE = "unknown"
+
+
+def start_cloudflared() -> bool:
+    """Start the locally installed connector using the node's saved tunnel token."""
+    global TUNNEL_PROCESS, TUNNEL_STATE
+    with TUNNEL_PROCESS_LOCK:
+        if TUNNEL_PROCESS is not None and TUNNEL_PROCESS.poll() is None:
+            return True
+
+        try:
+            node_data = json.loads(NODE_FILE.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            log_event(f"Cannot start Cloudflare Tunnel: node credentials could not be read ({type(exc).__name__}).", "error")
+            TUNNEL_STATE = "error"
+            return False
+
+        tunnel_token = node_data.get("tunnel_token")
+        if not isinstance(tunnel_token, str) or not tunnel_token.strip():
+            log_event("Cannot start Cloudflare Tunnel: no saved tunnel token is present.", "error")
+            TUNNEL_STATE = "not_configured"
+            return False
+
+        try:
+            connector = ensure_cloudflared()
+            # Keep the token out of process command-line arguments. The file is
+            # stored under the user's LocalAppData directory, not in app logs.
+            TUNNEL_TOKEN_FILE.write_text(tunnel_token.strip(), encoding="utf-8")
+            try:
+                os.chmod(TUNNEL_TOKEN_FILE, 0o600)
+            except OSError:
+                pass
+            creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+            TUNNEL_PROCESS = subprocess.Popen(
+                [str(connector), "tunnel", "--no-autoupdate", "run", "--token-file", str(TUNNEL_TOKEN_FILE)],
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                bufsize=1,
+                creationflags=creationflags,
+                cwd=str(CLOUDFLARED_DIR),
+            )
+            TUNNEL_STATE = "starting"
+            threading.Thread(target=_watch_cloudflared_output, args=(TUNNEL_PROCESS,), daemon=True).start()
+            time.sleep(0.5)
+            if TUNNEL_PROCESS.poll() is not None:
+                TUNNEL_STATE = "offline"
+                log_event(f"cloudflared exited immediately (code {TUNNEL_PROCESS.returncode}). Check the connector version and tunnel token.", "error")
+                return False
+            log_event("Cloudflare Tunnel connector started; waiting for Cloudflare to confirm a connection.")
+            return True
+        except Exception as exc:
+            TUNNEL_STATE = "error"
+            log_event(f"Could not start cloudflared ({type(exc).__name__}): {exc}", "error")
+            return False
+
+
 # ---------------------------------------- Registration ---------------------------------------- #
 
 def register_node():
@@ -231,7 +362,7 @@ def register_node():
         json.dump(config_data, handle, indent=4)
 
     log_event(f"Node registered successfully. Tunnel provisioned: {result['tunnel_id']}")
-    log_event("Tunnel token saved locally; connectivity and routing are not configured yet.")
+    start_cloudflared()
 
 
 # ---------------------------------------- Send Heartbeat ---------------------------------------- #
@@ -262,6 +393,8 @@ def send_heartbeat():
         config_data = config()
         node_id = node_data.get("node_id")
         node_secret = node_data.get("node_secret")
+        if config_data.get("registered") == 1 and node_data.get("tunnel_token"):
+            start_cloudflared()
         if config_data.get("registered") == 1 and node_id and node_secret:
             try:
                 metadata = {
@@ -380,7 +513,8 @@ def api_status():
         "registered": registered,
         "node_id": node_data.get("node_id", ""),
         "tunnel_id": node_data.get("tunnel_id", ""),
-        "tunnel_status": node_data.get("tunnel_status", "not provisioned"),
+        "tunnel_status": TUNNEL_STATE if node_data.get("tunnel_token") else node_data.get("tunnel_status", "not provisioned"),
+        "cloudflared_installed": CLOUDFLARED_EXE.exists(),
         "last_heartbeat": node_data.get("last_heartbeat", "Never"),
         "hardware": node_data.get("hardware", {}),
         "ollama_online": ollama_online,
