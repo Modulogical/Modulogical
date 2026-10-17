@@ -410,6 +410,10 @@ def send_heartbeat():
                 )
                 response.raise_for_status()
                 log_event(f"Heartbeat acknowledged ({response.status_code}).")
+                node_data = node()
+                node_data["last_heartbeat"] = datetime.now().strftime("%H:%M:%S")
+                with open(NODE_FILE, "w") as Write_node:
+                    json.dump(node_data, Write_node, indent=4)
             except requests.RequestException as e:
                 log_event(f"Heartbeat failed: {e}", "error")
         elif config_data.get("registered") == 1:
