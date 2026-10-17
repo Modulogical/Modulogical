@@ -31,7 +31,14 @@ def log_event(message: str, level: str = "info"):
     entry = {"time": datetime.now().astimezone().strftime("%H:%M:%S"), "level": level, "message": str(message)}
     with LOG_LOCK:
         APP_LOGS.appendleft(entry)
-    print(f"[{entry['time']}] {message}")
+    # PyInstaller --windowed can set stdout/stderr to None on Windows.
+    # Keep the UI log active without letting console logging crash the app.
+    stream = getattr(sys, "stdout", None)
+    if stream is not None:
+        try:
+            print(f"[{entry['time']}] {message}", file=stream, flush=True)
+        except (OSError, ValueError, AttributeError):
+            pass
 
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
@@ -416,7 +423,16 @@ def main():
     # Start the heartbeat/registration loop and local API before opening the window.
     start_heartbeat_thread()
     import uvicorn
-    server = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=8765, log_level="warning"))
+    # Disable Uvicorn's default dictConfig logging: its default formatter calls
+    # sys.stderr.isatty(), but sys.stderr can be None in a windowed .exe.
+    server = uvicorn.Server(uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=8765,
+        log_level="warning",
+        log_config=None,
+        access_log=False,
+    ))
     server_thread = threading.Thread(target=server.run, daemon=True)
     server_thread.start()
 
