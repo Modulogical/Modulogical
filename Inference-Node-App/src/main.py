@@ -43,6 +43,72 @@ def log_event(message: str, level: str = "info"):
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
 
+# Official Ollama for Windows installer. Downloaded on first launch if the
+# local Ollama API is not already available.
+OLLAMA_INSTALLER_URL = "https://ollama.com/download/OllamaSetup.exe"
+OLLAMA_INSTALLER = BASE_DIR / "bin" / "OllamaSetup.exe"
+OLLAMA_INSTALL_LOCK = threading.Lock()
+OLLAMA_INSTALL_STARTED = False
+
+
+def ensure_ollama_runtime():
+    """Launch Ollama if present; otherwise download and launch its official installer."""
+    global OLLAMA_INSTALL_STARTED
+
+    with OLLAMA_INSTALL_LOCK:
+        if OLLAMA_INSTALL_STARTED:
+            return
+        OLLAMA_INSTALL_STARTED = True
+
+    try:
+        # If Ollama is already running, no download or installation is needed.
+        try:
+            response = requests.get("http://localhost:11434/api/tags", timeout=2)
+            if response.ok:
+                log_event("Ollama runtime is already available.")
+                return
+        except requests.RequestException:
+            pass
+
+        if os.name != "nt":
+            log_event("Automatic Ollama runtime installation currently supports Windows only.", "warning")
+            return
+
+        OLLAMA_INSTALLER.parent.mkdir(parents=True, exist_ok=True)
+        if not OLLAMA_INSTALLER.exists() or OLLAMA_INSTALLER.stat().st_size < 1_000_000:
+            temporary_path = OLLAMA_INSTALLER.with_suffix(".download")
+            log_event("Downloading the official Ollama runtime installer...")
+            try:
+                with requests.get(OLLAMA_INSTALLER_URL, stream=True, timeout=(15, 180)) as response:
+                    response.raise_for_status()
+                    total = 0
+                    with temporary_path.open("wb") as handle:
+                        for chunk in response.iter_content(chunk_size=1024 * 256):
+                            if not chunk:
+                                continue
+                            total += len(chunk)
+                            if total > 1_000 * 1024 * 1024:
+                                raise RuntimeError("Ollama installer exceeded the 1 GB safety limit.")
+                            handle.write(chunk)
+                if temporary_path.stat().st_size < 1_000_000:
+                    raise RuntimeError("Downloaded Ollama installer was unexpectedly small.")
+                temporary_path.replace(OLLAMA_INSTALLER)
+            except Exception:
+                temporary_path.unlink(missing_ok=True)
+                raise
+
+        log_event("Launching the Ollama installer. Follow its installation prompts to finish setup.")
+        subprocess.Popen(
+            [str(OLLAMA_INSTALLER)],
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            cwd=str(OLLAMA_INSTALLER.parent),
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        )
+    except Exception as exc:
+        log_event(f"Could not download or launch the Ollama installer ({type(exc).__name__}).", "error")
+
 WORKER_URL = "https://nodes.modulogical.com"
 
 APPDATA = Path(os.environ.get("LOCALAPPDATA", str(Path.home()))) / "Modulogical" / "Inference Node"
@@ -478,6 +544,7 @@ def generate(details: GenerateRequest):
             if line:
                 # Preserve Ollama's JSON-lines stream.
                 yield line + b"\n"
+    print("Generating")
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 
@@ -580,6 +647,7 @@ if UI_DIR.exists():
 
 def main():
     # Start the heartbeat/registration loop and local API before opening the window.
+    threading.Thread(target=ensure_ollama_runtime, daemon=True).start()
     start_heartbeat_thread()
     import uvicorn
     # Disable Uvicorn's default dictConfig logging: its default formatter calls
@@ -587,7 +655,7 @@ def main():
     server = uvicorn.Server(uvicorn.Config(
         app,
         host="127.0.0.1",
-        port=8765,
+        port=8001,
         log_level="warning",
         log_config=None,
         access_log=False,
@@ -598,7 +666,7 @@ def main():
     # Wait briefly for the local API to become available.
     for _ in range(50):
         try:
-            if requests.get("http://127.0.0.1:8765/health", timeout=0.2).ok:
+            if requests.get("http://127.0.0.1:8001/health", timeout=0.2).ok:
                 break
         except requests.RequestException:
             time.sleep(0.1)
@@ -607,7 +675,7 @@ def main():
         import webview
         webview.create_window(
             "Modulogical Inference Node",
-            "http://127.0.0.1:8765/",
+            "http://127.0.0.1:8001/",
             width=1180,
             height=780,
             min_size=(820, 600),
@@ -617,7 +685,7 @@ def main():
     except ImportError:
         log_event("pywebview is not installed; opening the dashboard in your default browser.", "warning")
         import webbrowser
-        webbrowser.open("http://127.0.0.1:8765/")
+        webbrowser.open("http://127.0.0.1:8001/")
         try:
             while server_thread.is_alive():
                 time.sleep(1)
