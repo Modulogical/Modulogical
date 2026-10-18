@@ -20,7 +20,7 @@ Default = asgi.entrypoint(app)
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
 CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
 INFERENCE_HOSTNAME = "inference.modulogical.com"
-NODE_INFERENCE_ORIGIN = "http://localhost:8001"
+NODE_INFERENCE_ORIGIN = "http://127.0.0.1:8001"
 
 
 def utc_now() -> str:
