@@ -19,6 +19,8 @@ Default = asgi.entrypoint(app)
 
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
 CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
+INFERENCE_HOSTNAME = "inference.modulogical.com"
+NODE_INFERENCE_ORIGIN = "http://localhost:8001"
 
 
 def utc_now() -> str:
@@ -114,6 +116,25 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
         )
         if not isinstance(token_result, str) or not token_result:
             raise HTTPException(status_code=502, detail="Cloudflare returned no tunnel token")
+
+        # Configure this remotely-managed tunnel to forward inference-hostname
+        # requests to the local node API. Keep a catch-all 404 rule last.
+        await cloudflare_api(
+            env,
+            f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}/configurations",
+            method="PUT",
+            payload={
+                "config": {
+                    "ingress": [
+                        {
+                            "hostname": INFERENCE_HOSTNAME,
+                            "service": NODE_INFERENCE_ORIGIN,
+                        },
+                        {"service": "http_status:404"},
+                    ]
+                }
+            },
+        )
         return tunnel_id, token_result
     except Exception:
         # Best-effort cleanup so failed token retrieval does not leak an orphan tunnel.
@@ -224,7 +245,8 @@ async def register_node(request: Request):
         "created_at": created_at,
         "heartbeat_interval_seconds": 30,
         "message": "Node and tunnel registered. Save node_secret and tunnel_token locally; the tunnel token is returned only during registration.",
-        "note": "The tunnel is provisioned but has no published hostname or ingress route yet.",
+        "inference_hostname": INFERENCE_HOSTNAME,
+        "note": "Tunnel ingress is configured for inference.modulogical.com. DNS ownership and Worker-to-node dispatch must still be configured separately.",
     }
 
 
