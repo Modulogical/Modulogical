@@ -439,7 +439,10 @@ async def generate(request: Request):
     except Exception:
         raise HTTPException(status_code=502, detail="Could not reach the selected inference node")
 
-    response_headers = {"X-Inference-Node": str(selection["node_id"])}
+    response_headers = {
+        "X-Inference-Node": str(selection["node_id"]),
+        "X-Inference-Hostname": str(selection["hostname"]),
+    }
     if not response.ok:
         detail = await response.text()
         raise HTTPException(
