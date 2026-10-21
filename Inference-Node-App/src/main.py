@@ -385,6 +385,19 @@ def start_cloudflared() -> bool:
 
 # ---------------------------------------- Registration ---------------------------------------- #
 
+def installed_ollama_models():
+    try:
+        response = requests.get("http://localhost:11434/api/tags", timeout=2)
+        response.raise_for_status()
+        return [
+            item.get("name", "Unknown model")
+            for item in response.json().get("models", [])
+            if isinstance(item, dict)
+        ]
+    except (requests.RequestException, ValueError, AttributeError):
+        return None
+
+
 def register_node():
     config_data = config()
     if config_data.get("registered") == 1:
@@ -392,6 +405,7 @@ def register_node():
         return
 
     metadata = node()
+    metadata["models"] = installed_ollama_models() or []
     response = requests.post(
         f"{WORKER_URL}/v1/nodes/register",
         json=metadata,
@@ -466,8 +480,12 @@ def send_heartbeat():
                 metadata = {
                     "node_id": node_id,
                     "status": "online",
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "hardware": node_data.get("hardware", {}),
                 }
+                models = installed_ollama_models()
+                if models is not None:
+                    metadata["models"] = models
                 response = requests.post(
                     url,
                     headers={"Authorization": f"Bearer {node_secret}"},
@@ -569,14 +587,9 @@ def api_status():
             node_data = {}
 
     ollama_online = False
-    model_names = []
-    try:
-        ollama_response = requests.get("http://localhost:11434/api/tags", timeout=1.5)
-        ollama_online = ollama_response.ok
-        if ollama_online:
-            model_names = [item.get("name", "Unknown model") for item in ollama_response.json().get("models", [])]
-    except requests.RequestException:
-        pass
+    model_names = installed_ollama_models()
+    ollama_online = model_names is not None
+    model_names = model_names or []
 
     registered = config_data.get("registered") == 1
     return {
