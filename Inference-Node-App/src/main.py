@@ -292,7 +292,7 @@ def grab_cpu():
             "current_frequency" : f"{psutil.cpu_freq().current:.0f} MHz"
         }
         return cpu_data
-except Exception:
+    except Exception:
         return {}
     
 # ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
