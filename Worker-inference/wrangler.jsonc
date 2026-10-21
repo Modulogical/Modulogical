@@ -4,6 +4,10 @@
   "main": "src/backend.py",
   "compatibility_date": "2026-10-12",
   "compatibility_flags": ["python_workers"],
+  "routes": [
+    { "pattern": "nodes.modulogical.com/*", "zone_name": "modulogical.com" },
+    { "pattern": "inference.modulogical.com/*", "zone_name": "modulogical.com" }
+  ],
   "observability": {"enabled": true},
   "d1_databases": [{
     "binding": "INFERENCE_NODE",
