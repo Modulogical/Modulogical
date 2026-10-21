@@ -4,5 +4,10 @@ CREATE TABLE inference_nodes (
     status TEXT NOT NULL DEFAULT 'pending',
     metadata_json TEXT NOT NULL,
     created_at TEXT NOT NULL,
-    last_heartbeat TEXT NOT NULL
+    last_heartbeat TEXT NOT NULL,
+    tunnel_id TEXT NOT NULL,
+    tunnel_status TEXT NOT NULL DEFAULT 'pending',
+    tunnel_created_at TEXT NOT NULL
 )
+
+#tunnel_id, tunnel_status, tunnel_created_at
