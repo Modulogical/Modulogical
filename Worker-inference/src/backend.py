@@ -88,13 +88,13 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
         raise HTTPException(status_code=502, detail="Could not reach Cloudflare API")
 
     if not response.ok or not isinstance(data, dict) or data.get("success") is not True:
-    print(
+     print(
         "Cloudflare API failure:",
         response.status,
         path,
         data.get("errors", []),
     )
-    raise HTTPException(
+     raise HTTPException(
         status_code=502,
         detail="Cloudflare API rejected tunnel provisioning",
     )
