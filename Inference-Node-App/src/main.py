@@ -206,8 +206,9 @@ def node():
                 "modulogical_id" : "",
                 "hardware" : {
                     "cpu" : {
-                        "logical_cores" :  psutil.cpu_count(logical=True),
-                        "physical_cores" : psutil.cpu_count(logical=False)
+                        "os" : grab_cpu()["os"],
+                        "logical_cores" :  grab_cpu()["logical_processors"],
+                        "physical_cores" : grab_cpu()["physical_cores"]
                     },
                     "gpu" : {
                         "name" : "couldn't get GPU",
