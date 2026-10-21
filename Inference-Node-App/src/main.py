@@ -183,7 +183,7 @@ def node():
         "hardware" : {
             "cpu" : {
                 "logical_processors" : grab_cpu()["logical_processors"],
-                "physical_cores" : grab_cpu()[physical_cores"],
+                "physical_cores" : grab_cpu()["physical_cores"],
                 "name" : grab_cpu()["name"],
                 "os" : grab_cpu()["os"]
             },
