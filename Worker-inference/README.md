@@ -21,11 +21,20 @@ Python Cloudflare Worker using FastAPI and `pyproject.toml`.
    uv run pywrangler secret put CLOUDFLARE_ZONE_ID
    ```
 
-3. Apply the migration, replacing the database name:
+3. For a new database, apply both migrations in order, replacing the database
+   name. The second migration adds the node credential hash required by
+   registration and heartbeat authentication:
 
    ```powershell
    npx wrangler d1 execute YOUR_D1_DATABASE_NAME --remote --file=migrations/0001_inference_nodes.sql
+   npx wrangler d1 execute YOUR_D1_DATABASE_NAME --remote --file=migrations/0002_node_secret_hash.sql
    ```
+
+   If `inference_nodes` already exists, inspect its columns before applying
+   these files. `0001` does not alter an existing table, and `0002` will fail
+   if that table already has `node_secret_hash`. In particular, the older
+   schema in `tables/inference-nodes/inference_nodes.sql` is not upgraded by
+   these migrations.
 
 The Worker routes both `nodes.modulogical.com` and `inference.modulogical.com`.
 Ensure both base hostnames have proxied DNS records in the `modulogical.com`
