@@ -182,8 +182,10 @@ def node():
         "modulogical_id" : "",
         "hardware" : {
             "cpu" : {
-                "logical_cores" :  psutil.cpu_count(logical=True),
-                "physical_cores" : psutil.cpu_count(logical=False)
+                "logical_processors" : grab_cpu()["logical_processors"],
+                "physical_cores" : grab_cpu()[physical_cores"],
+                "name" : grab_cpu()["name"],
+                "os" : grab_cpu()["os"]
             },
             "gpu" : {
                 "name" : get_nvidia_gpus()[0]["name"],
@@ -206,9 +208,10 @@ def node():
                 "modulogical_id" : "",
                 "hardware" : {
                     "cpu" : {
-                        "os" : grab_cpu()["os"],
                         "logical_cores" :  grab_cpu()["logical_processors"],
-                        "physical_cores" : grab_cpu()["physical_cores"]
+                        "physical_cores" : grab_cpu()["physical_cores"],
+                        "name" : grab_cpu()["name"],
+                        "os" : grab_cpu()["os"]
                     },
                     "gpu" : {
                         "name" : "couldn't get GPU",
@@ -266,14 +269,30 @@ def get_nvidia_gpus():
 
 def grab_cpu():
     try:
+        result = subprocess.run(
+        [
+            "powershell",
+            "-NoProfile",
+            "-Command",
+            "(Get-CimInstance Win32_Processor | "
+            "Select-Object -First 1 -ExpandProperty Name)"
+        ],
+        capture_output=True,
+        text=True,
+        timeout=10,
+        check=True
+    )
+
+        print(f"Exact CPU model: {result.stdout.strip()}")
         cpu_data={
+            "name" : result.stdout.strip(),
             "os" : f"{platform.system()} {platform.release()}",
             "logical_processors": psutil.cpu_count(logical=True),
             "physical_cores" : psutil.cpu_count(logical=False),
             "current_frequency" : f"{psutil.cpu_freq().current:.0f} MHz"
         }
         return cpu_data
-    except Exception:
+except Exception:
         return {}
     
 # ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
