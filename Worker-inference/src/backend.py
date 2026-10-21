@@ -123,7 +123,7 @@ async def delete_node_dns_record(env: Any, dns_record_id: str) -> None:
 
 async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str, str]:
     """Create a tunnel and its hostname DNS record; return their IDs and token."""
-    account_path = "accounts/{account_id}/cfd_tunnel"
+    account_path = "accounts/{account_id}/cfd_tunnels"
     result = await cloudflare_api(
         env,
         account_path,
@@ -141,7 +141,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str, str]:
     try:
         token_result = await cloudflare_api(
             env,
-            f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}/token",
+            f"accounts/{{account_id}}/cfd_tunnels/{tunnel_id}/token",
             method="GET",
         )
         if not isinstance(token_result, str) or not token_result:
@@ -151,7 +151,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str, str]:
         # requests to the local node API. Keep a catch-all 404 rule last.
         await cloudflare_api(
             env,
-            f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}/configurations",
+            f"accounts/{{account_id}}/cfd_tunnels/{tunnel_id}/configurations",
             method="PUT",
             payload={
                 "config": {
@@ -176,7 +176,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str, str]:
         try:
             await cloudflare_api(
                 env,
-                f"accounts/{{account_id}}/cfd_tunnel/{tunnel_id}",
+                f"accounts/{{account_id}}/cfd_tunnels/{tunnel_id}",
                 method="DELETE",
             )
         except Exception:
