@@ -182,10 +182,10 @@ def node():
         "modulogical_id" : "",
         "hardware" : {
             "cpu" : {
-                "logical_processors" : grab_cpu()["logical_processors"],
-                "physical_cores" : grab_cpu()["physical_cores"],
-                "name" : grab_cpu()["name"],
-                "os" : grab_cpu()["os"]
+                "logical_processors" : grab_cpu()[0]["logical_processors"],
+                "physical_cores" : grab_cpu()[0]["physical_cores"],
+                "name" : grab_cpu()[0]["name"],
+                "os" : grab_cpu()[0]["os"]
             },
             "gpu" : {
                 "name" : get_nvidia_gpus()[0]["name"],
@@ -208,10 +208,10 @@ def node():
                 "modulogical_id" : "",
                 "hardware" : {
                     "cpu" : {
-                        "logical_cores" :  grab_cpu()["logical_processors"],
-                        "physical_cores" : grab_cpu()["physical_cores"],
-                        "name" : grab_cpu()["name"],
-                        "os" : grab_cpu()["os"]
+                        "logical_cores" :  grab_cpu()[0]["logical_processors"],
+                        "physical_cores" : grab_cpu()[0]["physical_cores"],
+                        "name" : grab_cpu()[0]["name"],
+                        "os" : grab_cpu()[0]["os"]
                     },
                     "gpu" : {
                         "name" : "couldn't get GPU",
@@ -284,16 +284,16 @@ def grab_cpu():
     )
 
         print(f"Exact CPU model: {result.stdout.strip()}")
-        cpu_data={
+        cpu_data=[{
             "name" : result.stdout.strip(),
             "os" : f"{platform.system()} {platform.release()}",
             "logical_processors": psutil.cpu_count(logical=True),
             "physical_cores" : psutil.cpu_count(logical=False),
             "current_frequency" : f"{psutil.cpu_freq().current:.0f} MHz"
-        }
+        }]
         return cpu_data
     except Exception:
-        return {}
+        return []
     
 # ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
 
