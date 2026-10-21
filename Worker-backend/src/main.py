@@ -470,7 +470,7 @@ async def get_context(request: Request, token: Optional[str] = None):
         "conversations": conversations,
         "messages": messages,
     })
-    
+
 async def build_prompt(prompt: str, account: dict, request: Request):
     conversations = await d1_all(
         request,

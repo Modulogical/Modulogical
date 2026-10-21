@@ -258,11 +258,7 @@ async def register_node(request: Request):
             json.dumps(hardware, separators=(",", ":")), telemetry, created_at, created_at,
         ).run()
     except Exception:
-        # Clean up the node row and tunnel if registration persistence fails.
-        try:
-            await db.prepare("DELETE FROM inference_nodes WHERE node_id = ?").bind(node_id).run()
-        except Exception:
-            pass
+        # Clean up this attempt's tunnel resources without touching any existing node row.
         try:
             await delete_node_dns_record(env, dns_record_id)
         except Exception:
