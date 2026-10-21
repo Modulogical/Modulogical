@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import StreamingResponse, FileResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
@@ -484,8 +484,7 @@ def send_heartbeat():
                     "hardware": node_data.get("hardware", {}),
                 }
                 models = installed_ollama_models()
-                if models is not None:
-                    metadata["models"] = models
+                metadata["models"] = models or []
                 response = requests.post(
                     url,
                     headers={"Authorization": f"Bearer {node_secret}"},
@@ -548,11 +547,14 @@ def generate(details: GenerateRequest):
     )
 
     if response.status_code != 200:
-        return {
-            "error": "Ollama request failed",
-            "status": response.status_code,
-            "detail": response.text
-        }
+        return JSONResponse(
+            status_code=502,
+            content={
+                "error": "Ollama request failed",
+                "status": response.status_code,
+                "detail": response.text,
+            },
+        )
 
     if not details.stream:
         return response.json()
