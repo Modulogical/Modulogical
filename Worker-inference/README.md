@@ -38,9 +38,26 @@ uv run pywrangler deploy
 
 ## Initial routes
 - `GET /health`
-- `POST /v1/nodes/register` — intentionally returns 501 until account authentication, D1 persistence and idempotent tunnel provisioning are implemented.
-- `POST /v1/nodes/{node_id}/heartbeat` — scaffold.
-- `POST /v1/nodes/{node_id}/disconnect` — scaffold.
+- `POST /v1/nodes/register` — registers a node and provisions its Cloudflare Tunnel.
+- `POST /v1/nodes/{node_id}/heartbeat` — refreshes node status, hardware, and installed models.
+- `POST /v1/nodes/{node_id}/disconnect` — marks a node offline.
+- `POST /v1/nodes/select` — returns the best fresh online hostname for an installed model.
+
+Node selection request:
+
+```json
+{
+   "model": "gemma3:latest",
+   "requirements": {
+      "ram_gb": 8,
+      "vram_mb": 4096,
+      "cpu_cores": 4,
+      "gpu": true
+   }
+}
+```
+
+`requirements` is optional; each numeric field defaults to zero and `gpu` defaults to `false`. Selection requires a heartbeat within 90 seconds and an exact case-insensitive installed-model match. The response includes `node_id`, `hostname`, `model`, and a hardware score. No eligible node returns HTTP 404.
 
 ## Security
 - The Cloudflare API token stays in Worker secrets.
