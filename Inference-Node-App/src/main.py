@@ -16,6 +16,7 @@ import time
 import sys
 import logging
 from collections import deque
+import platform
 
 
 app = FastAPI(title="Modulogical Inference Node")
@@ -224,7 +225,7 @@ def node():
         json.dump(data, write_node, indent=4)
     return data
 
-# ---------- Load GPU data ---------- #
+# ---------- Load Telemetry data ---------- #
 
 def get_nvidia_gpus():
     command = [
@@ -262,6 +263,18 @@ def get_nvidia_gpus():
     except (FileNotFoundError, subprocess.SubprocessError, ValueError):
         return []
 
+def grab_cpu():
+    try:
+        cpu_data={
+            "os" : f"{platform.system()} {platform.release()}",
+            "logical_processors": psutil.cpu_count(logical=True),
+            "physical_cores" : psutil.cpu_count(logical=False),
+            "current_frequency" : f"{psutil.cpu_freq().current:.0f} MHz"
+        }
+        return cpu_data
+    except Exception:
+        return {}
+    
 # ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
 
 def ensure_cloudflared() -> Path:
