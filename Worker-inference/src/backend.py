@@ -93,8 +93,36 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
     return data.get("result")
 
 
-async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
-    """Create one remotely managed tunnel and return (tunnel_id, one-time token)."""
+async def create_node_dns_record(env: Any, node_id: str, tunnel_id: str) -> str:
+    zone_id = get_secret(env, "CLOUDFLARE_ZONE_ID")
+    result = await cloudflare_api(
+        env,
+        f"zones/{zone_id}/dns_records",
+        method="POST",
+        payload={
+            "type": "CNAME",
+            "name": f"{node_id}.nodes.modulogical.com",
+            "content": f"{tunnel_id}.cfargotunnel.com",
+            "proxied": True,
+            "ttl": 1,
+        },
+    )
+    if not isinstance(result, dict) or not result.get("id"):
+        raise HTTPException(status_code=502, detail="Cloudflare created no usable node DNS record")
+    return str(result["id"])
+
+
+async def delete_node_dns_record(env: Any, dns_record_id: str) -> None:
+    zone_id = get_secret(env, "CLOUDFLARE_ZONE_ID")
+    await cloudflare_api(
+        env,
+        f"zones/{zone_id}/dns_records/{dns_record_id}",
+        method="DELETE",
+    )
+
+
+async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str, str]:
+    """Create a tunnel and its hostname DNS record; return their IDs and token."""
     account_path = "accounts/{account_id}/cfd_tunnel"
     result = await cloudflare_api(
         env,
@@ -109,6 +137,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
         raise HTTPException(status_code=502, detail="Cloudflare created no usable tunnel ID")
 
     tunnel_id = str(result["id"])
+    dns_record_id = None
     try:
         token_result = await cloudflare_api(
             env,
@@ -136,9 +165,14 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
                 }
             },
         )
-        return tunnel_id, token_result
+        dns_record_id = await create_node_dns_record(env, node_id, tunnel_id)
+        return tunnel_id, token_result, dns_record_id
     except Exception:
-        # Best-effort cleanup so failed token retrieval does not leak an orphan tunnel.
+        if dns_record_id:
+            try:
+                await delete_node_dns_record(env, dns_record_id)
+            except Exception:
+                pass
         try:
             await cloudflare_api(
                 env,
@@ -199,7 +233,7 @@ async def register_node(request: Request):
         raise HTTPException(status_code=409, detail="This node_id is already registered; use its existing credentials")
 
     # Provision after validation but before inserting. If D1 fails, delete the tunnel.
-    tunnel_id, tunnel_token = await create_node_tunnel(env, node_id)
+    tunnel_id, tunnel_token, dns_record_id = await create_node_tunnel(env, node_id)
     node_secret = secrets.token_urlsafe(32)
     secret_hash = hash_secret(node_secret)
     created_at = utc_now()
@@ -215,18 +249,22 @@ async def register_node(request: Request):
         await db.prepare(
             """
             INSERT INTO inference_nodes
-                (node_id, account_id, node_secret_hash, status, hostname, tunnel_id,
+                (node_id, account_id, node_secret_hash, status, hostname, tunnel_id, dns_record_id,
                  hardware_json, telemetry_json, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """
         ).bind(
-            node_id, "", secret_hash, "pending", hostname, tunnel_id,
+            node_id, "", secret_hash, "pending", hostname, tunnel_id, dns_record_id,
             json.dumps(hardware, separators=(",", ":")), telemetry, created_at, created_at,
         ).run()
     except Exception:
         # Clean up the node row and tunnel if registration persistence fails.
         try:
             await db.prepare("DELETE FROM inference_nodes WHERE node_id = ?").bind(node_id).run()
+        except Exception:
+            pass
+        try:
+            await delete_node_dns_record(env, dns_record_id)
         except Exception:
             pass
         try:
@@ -239,6 +277,7 @@ async def register_node(request: Request):
         "node_id": node_id,
         "node_secret": node_secret,
         "tunnel_id": tunnel_id,
+        "dns_record_id": dns_record_id,
         "tunnel_token": tunnel_token,
         "tunnel_status": "created",
         "status": "pending",
@@ -319,9 +358,15 @@ async def choose_node(db: Any, model: str, requirements: dict[str, Any]) -> dict
     min_ram_gb = numeric_value(requirements.get("ram_gb", 0))
     min_vram_mb = numeric_value(requirements.get("vram_mb", 0))
     min_cpu_cores = numeric_value(requirements.get("cpu_cores", 0))
+    min_physical_cores = numeric_value(requirements.get("cpu_physical_cores", 0))
     requires_gpu = requirements.get("gpu", False)
     if not isinstance(requires_gpu, bool):
         raise HTTPException(status_code=400, detail="'requirements.gpu' must be a boolean")
+    requested_gpu_name = requirements.get("gpu_name")
+    if requested_gpu_name is not None and (
+        not isinstance(requested_gpu_name, str) or not requested_gpu_name.strip()
+    ):
+        raise HTTPException(status_code=400, detail="'requirements.gpu_name' must be a non-empty string")
 
     cutoff = (datetime.now(timezone.utc) - timedelta(seconds=HEARTBEAT_TTL_SECONDS)).isoformat()
     try:
@@ -362,15 +407,23 @@ async def choose_node(db: Any, model: str, requirements: dict[str, Any]) -> dict
         ram_gb = numeric_value(ram.get("total_ram_gb"))
         vram_mb = numeric_value(gpu.get("vram_total_mb"))
         cpu_cores = numeric_value(cpu.get("logical_cores"))
-        if ram_gb < min_ram_gb or vram_mb < min_vram_mb or cpu_cores < min_cpu_cores:
+        physical_cores = numeric_value(cpu.get("physical_cores"))
+        if (
+            ram_gb < min_ram_gb
+            or vram_mb < min_vram_mb
+            or cpu_cores < min_cpu_cores
+            or physical_cores < min_physical_cores
+        ):
             continue
         if requires_gpu and vram_mb <= 0:
+            continue
+        if requested_gpu_name and requested_gpu_name.casefold() not in str(gpu.get("name", "")).casefold():
             continue
 
         hostname = row.get("hostname")
         if not isinstance(hostname, str) or not hostname:
             continue
-        score = ram_gb + (vram_mb / 1024 * 2) + (cpu_cores * 0.25)
+        score = (vram_mb / 1024 * 8) + ram_gb + (cpu_cores * 0.25)
         candidates.append((score, row, hostname))
 
     if not candidates:

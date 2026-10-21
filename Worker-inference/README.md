@@ -11,7 +11,9 @@ Python Cloudflare Worker using FastAPI and `pyproject.toml`.
 
 ## Configure
 1. In `wrangler.jsonc`, replace `database_name` with the exact name of your existing D1 database. The database ID is set to the Modulogical D1 ID from the existing project context.
-2. Add secrets (never commit them to source control):
+2. Add Worker secrets (never commit them to source control). The API token needs
+   permission to manage Cloudflare Tunnels for the account and DNS records in the
+   `modulogical.com` zone:
 
    ```powershell
    uv run pywrangler secret put CLOUDFLARE_API_TOKEN
@@ -24,6 +26,11 @@ Python Cloudflare Worker using FastAPI and `pyproject.toml`.
    ```powershell
    npx wrangler d1 execute YOUR_D1_DATABASE_NAME --remote --file=migrations/0001_inference_nodes.sql
    ```
+
+The Worker routes both `nodes.modulogical.com` and `inference.modulogical.com`.
+Ensure both base hostnames have proxied DNS records in the `modulogical.com`
+zone. Node registration creates a proxied CNAME from each
+`{node_id}.nodes.modulogical.com` hostname to its Cloudflare Tunnel.
 
 ## Run locally
 ```powershell
@@ -52,12 +59,14 @@ Node selection request:
       "ram_gb": 8,
       "vram_mb": 4096,
       "cpu_cores": 4,
-      "gpu": true
+      "cpu_physical_cores": 2,
+      "gpu": true,
+      "gpu_name": "NVIDIA RTX"
    }
 }
 ```
 
-`requirements` is optional; each numeric field defaults to zero and `gpu` defaults to `false`. Selection requires a heartbeat within 90 seconds and an exact case-insensitive installed-model match. The response includes `node_id`, `hostname`, `model`, and a hardware score. No eligible node returns HTTP 404.
+   `requirements` is optional; numeric fields default to zero, `gpu` defaults to `false`, and `gpu_name` is an optional case-insensitive substring match. Selection requires a heartbeat within 90 seconds and an exact case-insensitive installed-model match. Eligible nodes are ranked with GPU VRAM weighted most heavily, followed by system RAM and logical CPU cores. The response includes `node_id`, `hostname`, `model`, and a hardware score. No eligible node returns HTTP 404.
 
 ## Security
 - The Cloudflare API token stays in Worker secrets.
