@@ -87,10 +87,20 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
         raise HTTPException(status_code=502, detail="Could not reach Cloudflare API")
 
     if not response.ok or not isinstance(data, dict) or data.get("success") is not True:
-        # Avoid reflecting raw Cloudflare response bodies to the caller.
-        raise HTTPException(status_code=502, detail="Cloudflare API rejected tunnel provisioning")
-    return data.get("result")
+        errors = data.get("errors", []) if isinstance(data, dict) else []
+        print(
+            "Cloudflare API failure:",
+            "method=", method,
+            "path=", path.split("?")[0],
+            "http_status=", response.status,
+            "errors=", json.dumps(errors, separators=(",", ":")),
+        )
+        raise HTTPException(
+            status_code=502,
+            detail="Cloudflare API rejected tunnel provisioning; check Worker logs",
+        )
 
+    return data.get("result")
 
 async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
     """Create a tunnel, configure ingress, create its DNS record, and return credentials."""
