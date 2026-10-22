@@ -238,10 +238,17 @@ async def register_node(request: Request):
 
         await db.prepare("""
             INSERT INTO heartbeats (
-                node_id, node_secret_hash, status, last_heartbeat
-            ) VALUES (?, ?, ?, ?)
+                node_id, node_secret_hash, status, last_heartbeat,
+                cpu_utilisation, logical_processors, ram_available,
+                ram_free_percent, gpu_vram_available, gpu_name,
+                gpu_utilisation_percent, timestamp
+
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """).bind(
-            node_id, secret_hash, "pending", created_at
+            node_id, secret_hash, "pending", created_at,
+            "not recorded","not recorded","not recorded",
+            "not recorded","not recorded","not recorded",
+            "not recorded","not recorded",
         ).run()
 
     except Exception as exc:
