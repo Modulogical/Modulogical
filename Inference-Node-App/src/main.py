@@ -164,69 +164,54 @@ def config():
  
 # - Node Catch-all function - #
 def node():
- if NODE_FILE.exists():
-    with open(NODE_FILE, "r") as read_node:
-        node_data=json.load(read_node)
-        with open(NODE_FILE, "w") as New_heartbeat:
-            node_data.update({"last_heartbeat" : datetime.now().strftime("%H:%M:%S")})
-            json.dump(node_data, New_heartbeat, indent=4)
-            return node_data
- else: 
-    with open(NODE_FILE, "w") as write_node:
-     ram=psutil.virtual_memory()
-     disk = psutil.disk_usage("C:\\")
-     try: 
-      data={
-        "node_id" : f"node_{secrets.token_urlsafe(32)}",
-        "node_secret" : "",
-        "modulogical_id" : "",
-        "hardware" : {
-            "cpu" : {
-                "logical_processors" : grab_cpu()[0]["logical_processors"],
-                "physical_cores" : grab_cpu()[0]["physical_cores"],
-                "name" : grab_cpu()[0]["name"],
-                "os" : grab_cpu()[0]["os"]
+    """Load the saved node identity or create it with best-effort hardware detection."""
+    if NODE_FILE.exists():
+        with open(NODE_FILE, "r", encoding="utf-8") as handle:
+            node_data = json.load(handle)
+        node_data["last_heartbeat"] = datetime.now().strftime("%H:%M:%S")
+        with open(NODE_FILE, "w", encoding="utf-8") as handle:
+            json.dump(node_data, handle, indent=4)
+        return node_data
+
+    ram = psutil.virtual_memory()
+    try:
+        disk = psutil.disk_usage("C:\\")
+    except (OSError, ValueError):
+        disk = None
+
+    cpu_list = grab_cpu()
+    cpu = cpu_list[0] if cpu_list else {}
+    gpu_list = get_nvidia_gpus()
+    gpu = gpu_list[0] if gpu_list else {}
+
+    data = {
+        "node_id": f"node_{secrets.token_urlsafe(32)}",
+        "node_secret": "",
+        "modulogical_id": "",
+        "hardware": {
+            "cpu": {
+                "logical_processors": cpu.get("logical_processors"),
+                "physical_cores": cpu.get("physical_cores"),
+                "name": cpu.get("name", "Unknown CPU"),
+                "os": cpu.get("os", f"{platform.system()} {platform.release()}"),
+                "current_frequency": cpu.get("current_frequency"),
             },
-            "gpu" : {
-                "name" : get_nvidia_gpus()[0]["name"],
-                "vram_total_mb" : get_nvidia_gpus()[0]["vram_total_mb"]
+            "gpu": {
+                "name": gpu.get("name", "No supported NVIDIA GPU detected"),
+                "vram_total_mb": gpu.get("vram_total_mb"),
+                "vram_free_mb": gpu.get("vram_free_mb"),
+                "vram_used_mb": gpu.get("vram_used_mb"),
+                "utilisation_percent": gpu.get("utilisation_percent"),
             },
-            "ram" : {
-                "total_ram_gb" : round(ram.total / (1024 ** 3), 1)
+            "ram": {"total_ram_gb": round(ram.total / (1024 ** 3), 1)},
+            "ssd": {
+                "total_gb": round(disk.total / (1024 ** 3), 1) if disk else None,
+                "free_gb": round(disk.free / (1024 ** 3), 1) if disk else None,
             },
-            "ssd" : {
-                "total_gb" : round(disk.total / 1024**3,1),
-                "free_gb" : round(disk.free / 1024**3,1)
-            },
-        }
+        },
     }
-      json.dump(data, write_node, indent=4)
-     except Exception:
-        data={
-                "node_id" : f"node_{secrets.token_urlsafe(32)}",
-                "node_secret" : "",
-                "modulogical_id" : "",
-                "hardware" : {
-                    "cpu" : {
-                        "logical_cores" :  grab_cpu()[0]["logical_processors"],
-                        "physical_cores" : grab_cpu()[0]["physical_cores"],
-                        "name" : grab_cpu()[0]["name"],
-                        "os" : grab_cpu()[0]["os"]
-                    },
-                    "gpu" : {
-                        "name" : "couldn't get GPU",
-                        "vram_total_mb" : "couldn't get GPU"
-                    },
-                    "ram" : {
-                        "total_ram_gb" : round(ram.total / (1024 ** 3), 1)
-                    },
-                    "ssd" : {
-                        "total_gb" : round(disk.total / 1024**3,1),
-                        "free_gb" : round(disk.free / 1024**3,1)
-                    },
-                }
-            }
-        json.dump(data, write_node, indent=4)
+    with open(NODE_FILE, "w", encoding="utf-8") as handle:
+        json.dump(data, handle, indent=4)
     return data
 
 # ---------- Load Telemetry data ---------- #
