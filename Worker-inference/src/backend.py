@@ -211,7 +211,7 @@ async def register_node(request: Request):
                 (node_id, node_secret_hash, status, metadata_json, cpu, os, logical_processors,
                 physical_cores, gpu, vram, ram, total_storage, created_at, last_heartbeat, tunnel_id,
                 tunnel_status, tunnel_created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """
         ).bind(
             node_id, 
