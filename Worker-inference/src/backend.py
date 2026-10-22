@@ -250,10 +250,41 @@ VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             pass
         try:
             await delete_node_tunnel(env, tunnel_id)
-        except Exception:
-            pass
-        raise HTTPException(status_code=500, detail="Could not save node and tunnel details to D1; check the migration and binding")
+        except Exception as exc:
+         print(
+            "D1 registration save failed:",
+            type(exc).__name__,
+            str(exc)
+        )
 
+         try:
+            await db.prepare(
+                "DELETE FROM inference_nodes WHERE node_id = ?"
+            ).bind(node_id).run()
+
+            await db.prepare(
+                "DELETE FROM heartbeats WHERE node_id = ?"
+            ).bind(node_id).run()
+         except Exception as cleanup_exc:
+            print(
+                "D1 registration cleanup failed:",
+                type(cleanup_exc).__name__,
+                str(cleanup_exc)
+            )
+
+         try:
+            await delete_node_tunnel(env, tunnel_id)
+         except Exception as tunnel_exc:
+            print(
+                "Tunnel cleanup failed:",
+                type(tunnel_exc).__name__,
+                str(tunnel_exc)
+            )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Could not save node and tunnel details to D1; check Worker logs"
+        )
     return {
         "node_id": node_id,
         "node_secret": node_secret,
