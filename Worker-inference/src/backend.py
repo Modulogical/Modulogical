@@ -204,86 +204,67 @@ async def register_node(request: Request):
     created_at = utc_now()
     metadata_json = json.dumps(metadata, separators=(",", ":"), ensure_ascii=False)
 
-    try:
-        await db.prepare(
-            """
-            INSERT INTO inference_nodes (
-    node_id, node_secret_hash, status, metadata_json,
-    cpu, os, logical_processors, physical_cores,
-    gpu, vram, ram, total_storage,
-    created_at, last_heartbeat, tunnel_id,
-    tunnel_status, tunnel_created_at
-)
-VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            """
-        ).bind(
-            node_id,
-            secret_hash,
-            "pending",
-            metadata_json,
-            (metadata.get("hardware") or {}).get("cpu", {}).get("name"),
-            (metadata.get("hardware") or {}).get("cpu", {}).get("os"),
-            (metadata.get("hardware") or {}).get("cpu", {}).get("logical_processors"),
-            (metadata.get("hardware") or {}).get("cpu", {}).get("physical_cores"),
-            (metadata.get("hardware") or {}).get("gpu", {}).get("name"),
-            (metadata.get("hardware") or {}).get("gpu", {}).get("vram_total_mb"),
-            (metadata.get("hardware") or {}).get("ram", {}).get("total_ram_gb"),
-            (metadata.get("hardware") or {}).get("ssd", {}).get("total_gb"),
-            created_at,
-            created_at,
-            tunnel_id,
-            "pending",
-            created_at,
-        ).run()
-        await db.prepare(
-            """
-            INSERT INTO heartbeats (node_id, node_secret_hash, status, last_heartbeat)
-            VALUES (?, ?, ?, ?)
-            """
-        ).bind(node_id, secret_hash, "pending", created_at).run()
-    except Exception:
-        # D1 does not offer a transaction across these statements; clean up what we can.
-        try:
-            await db.prepare("DELETE FROM inference_nodes WHERE node_id = ?").bind(node_id).run()
-            await db.prepare("DELETE FROM heartbeats WHERE node_id = ?").bind(node_id).run()
-        except Exception:
-            pass
-        try:
-            await delete_node_tunnel(env, tunnel_id)
-        except Exception as exc:
-         print(
-            "D1 registration save failed:",
-            type(exc).__name__,
-            str(exc)
-        )
+    stage = "insert_inference_nodes"
 
-         try:
+    try:
+        hardware = metadata.get("hardware") or {}
+        cpu = hardware.get("cpu") or {}
+        gpu = hardware.get("gpu") or {}
+        ram = hardware.get("ram") or {}
+        ssd = hardware.get("ssd") or {}
+
+        await db.prepare("""
+            INSERT INTO inference_nodes (
+                node_id, node_secret_hash, status, metadata_json,
+                cpu, os, logical_processors, physical_cores,
+                gpu, vram, ram, total_storage,
+                created_at, last_heartbeat, tunnel_id,
+                tunnel_status, tunnel_created_at
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """).bind(
+            node_id, secret_hash, "pending", metadata_json,
+            str(cpu.get("name") or "Unknown"),
+            str(cpu.get("os") or "Unknown"),
+            str(cpu.get("logical_processors") or 0),
+            str(cpu.get("physical_cores") or 0),
+            str(gpu.get("name") or "Unknown"),
+            str(gpu.get("vram_total_mb") or 0),
+            str(ram.get("total_ram_gb") or 0),
+            str(ssd.get("total_gb") or 0),
+            created_at, created_at, tunnel_id, "pending", created_at
+        ).run()
+
+        stage = "insert_heartbeats"
+
+        await db.prepare("""
+            INSERT INTO heartbeats (
+                node_id, node_secret_hash, status, last_heartbeat
+            ) VALUES (?, ?, ?, ?)
+        """).bind(
+            node_id, secret_hash, "pending", created_at
+        ).run()
+
+    except Exception as exc:
+        print(f"Registration database failure at {stage}: {type(exc).__name__}: {exc}")
+
+        try:
             await db.prepare(
                 "DELETE FROM inference_nodes WHERE node_id = ?"
             ).bind(node_id).run()
-
             await db.prepare(
                 "DELETE FROM heartbeats WHERE node_id = ?"
             ).bind(node_id).run()
-         except Exception as cleanup_exc:
-            print(
-                "D1 registration cleanup failed:",
-                type(cleanup_exc).__name__,
-                str(cleanup_exc)
-            )
+        except Exception:
+            pass
 
-         try:
+        try:
             await delete_node_tunnel(env, tunnel_id)
-         except Exception as tunnel_exc:
-            print(
-                "Tunnel cleanup failed:",
-                type(tunnel_exc).__name__,
-                str(tunnel_exc)
-            )
+        except Exception:
+            pass
 
         raise HTTPException(
             status_code=500,
-            detail="Could not save node and tunnel details to D1; check Worker logs"
+            detail=f"Database stage: {stage}; {type(exc).__name__}: {exc}"
         )
     return {
         "node_id": node_id,
