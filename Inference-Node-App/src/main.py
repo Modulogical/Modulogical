@@ -198,10 +198,10 @@ def node():
             },
             "gpu": {
                 "name": gpu.get("name", "No supported NVIDIA GPU detected"),
-                "vram_total_mb": gpu.get("vram_total_mb"),
-                "vram_free_mb": gpu.get("vram_free_mb"),
-                "vram_used_mb": gpu.get("vram_used_mb"),
-                "utilisation_percent": gpu.get("utilisation_percent"),
+                "vram_total_mb": gpu.get("vram_total_mb", "No supported NVIDIA GPU detected" ),
+                "vram_free_mb": gpu.get("vram_free_mb", "No supported NVIDIA GPU detected"),
+                "vram_used_mb": gpu.get("vram_used_mb", "No supported NVIDIA GPU detected"),
+                "utilisation_percent": gpu.get("utilisation_percent", "No supported NVIDIA GPU detected"),
             },
             "ram": {"total_ram_gb": round(ram.total / (1024 ** 3), 1)},
             "ssd": {
@@ -279,7 +279,74 @@ def grab_cpu():
         return cpu_data
     except Exception:
         return []
-    
+
+def get_live_telemetry():
+    # CPU utilisation (%)
+    cpu_percent = psutil.cpu_percent(interval=0.2)
+
+    # System RAM
+    memory = psutil.virtual_memory()
+
+    # Disk space on the Windows system drive
+    disk = psutil.disk_usage("C:\\")
+
+    telemetry = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "cpu": {
+            "utilisation_percent": cpu_percent,
+            "logical_processors": psutil.cpu_count(logical=True),
+        },
+        "ram": {
+            "total_mb": round(memory.total / 1024**2),
+            "available_mb": round(memory.available / 1024**2),
+            "used_percent": memory.percent,
+        },
+        "disk": {
+            "free_gb": round(disk.free / 1024**3, 2),
+            "used_percent": disk.percent,
+        },
+        "gpu": {},
+    }
+
+    # NVIDIA GPU telemetry
+    try:
+        result = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-gpu=index,name,memory.total,memory.free,"
+                "memory.used,utilization.gpu",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=3,
+            check=True,
+        )
+
+        for line in result.stdout.strip().splitlines():
+            parts = [x.strip() for x in line.split(",")]
+            if len(parts) != 6:
+                continue
+
+            index, name, total, free, used, utilisation = parts
+
+            telemetry["gpu"].update({
+                "index": int(index),
+                "name": name,
+                "vram_total_mb": int(total),
+                "vram_free_mb": int(free),
+                "vram_used_mb": int(used),
+                "utilisation_percent": (
+                    int(utilisation)
+                    if utilisation.isdigit()
+                    else None
+                ),
+            })
+
+    except (FileNotFoundError, subprocess.SubprocessError, ValueError):
+        telemetry["gpu_status"] = "unavailable"
+
+    return telemetry
 # ---------------------------------------- Cloudflare Tunnel connector ---------------------------------------- #
 
 def ensure_cloudflared() -> Path:
@@ -477,6 +544,14 @@ def send_heartbeat():
         config_data = config()
         node_id = node_data.get("node_id")
         node_secret = node_data.get("node_secret")
+        telemetry = get_live_telemetry()
+        cpu_utilisation = telemetry["cpu"]["utilisation_percent"]
+        logical_processors = telemetry["cpu"]["logical_processors"]
+        ram_available = telemetry["ram"]["available_mb"]
+        ram_free_percent = 1 - telemetry["ram"]["used_percent"]
+        gpu_vram_available = telemetry.get("vram_free_mb", "No NVIDIA GPU Detected"),
+        gpu_name = telemetry["gpu"].get("name", "No NVIDIA GPU Detected")
+        gpu_utilisation_percent = telemetry["gpu"].get("utilisation_percent", "No NVIDIA GPU Detected" )
         if config_data.get("registered") == 1 and node_data.get("tunnel_token"):
             start_cloudflared()
         if config_data.get("registered") == 1 and node_id and node_secret:
@@ -484,6 +559,13 @@ def send_heartbeat():
                 metadata = {
                     "node_id": node_id,
                     "status": "online",
+                    "cpu_utilisation" : cpu_utilisation,
+                    "logical_processors" : logical_processors,
+                    "ram_available" : ram_available,
+                    "ram_free_percent" : ram_free_percent,
+                    "gpu_vram_available" : gpu_vram_available,
+                    "gpu_name" : gpu_name,
+                    "gpu_utilisation_percent" : gpu_utilisation_percent,
                     "timestamp": datetime.now(timezone.utc).isoformat()
                 }
                 response = requests.post(
