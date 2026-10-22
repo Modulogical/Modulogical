@@ -327,35 +327,50 @@ async def heartbeat(request: Request):
     gpu_vram_available = metadata.get("gpu_vram_available")
     gpu_name = metadata.get("gpu_name")
     gpu_utilisation_percent = metadata.get("gpu_utilisation_percent")
+   
     try:
-        await db.prepare("UPDATE inference_nodes SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("online", timestamp, node_id).run()
-        await db.prepare("""UPDATE heartbeats SET status = ?,
-                        last_heartbeat = ?,
-                        node_id = ?,
-                        cpu_utilisation = ?,
-                        logical_processors = ?,
-                        ram_available = ?,
-                        ram_free_percent = ?,
-                        gpu_vram_available = ?,
-                        gpu_name = ?,
-                        gpu_utilisation_percent = ?,
-                        timestamp = ?
-                        WHERE node_id = ?""").bind(
-                             status,
-                             timestamp, 
-                             node_id,
-                             cpu_utilisation,
-                             logical_processors,
-                             ram_available,
-                             ram_free_percent,
-                             gpu_vram_available,
-                             gpu_name,
-                             gpu_utilisation_percent,
-                             timestamp,
-                             ).run()
-    except Exception:
-        raise HTTPException(status_code=500, detail="Could not update heartbeat status in D1")
-    return {"ok": True, "node_id": node_id, "status": "online", "last_heartbeat": timestamp, "heartbeat_interval_seconds": 30}
+        await db.prepare("""
+            UPDATE inference_nodes
+            SET status = ?, last_heartbeat = ?
+            WHERE node_id = ?
+        """).bind(
+            "online", timestamp, node_id
+        ).run()
+
+        await db.prepare("""
+            UPDATE heartbeats SET
+                status = ?,
+                last_heartbeat = ?,
+                cpu_utilisation = ?,
+                logical_processors = ?,
+                ram_available = ?,
+                ram_free_percent = ?,
+                gpu_vram_available = ?,
+                gpu_name = ?,
+                gpu_utilisation_percent = ?,
+                timestamp = ?
+            WHERE node_id = ?
+        """).bind(
+            "online",
+            timestamp,
+            cpu_utilisation,
+            logical_processors,
+            ram_available,
+            ram_free_percent,
+            gpu_vram_available,
+            gpu_name,
+            gpu_utilisation_percent,
+            timestamp,
+            node_id,
+        ).run()
+
+    except Exception as exc:
+        print(f"Heartbeat database update failed: {type(exc).__name__}: {exc}")
+        raise HTTPException(
+            status_code=500,
+            detail="Could not update heartbeat status in D1"
+        )
+
 
 
 @app.post("/v1/nodes/{node_id}/heartbeat")

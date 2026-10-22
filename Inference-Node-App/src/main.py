@@ -548,8 +548,8 @@ def send_heartbeat():
         cpu_utilisation = telemetry["cpu"]["utilisation_percent"]
         logical_processors = telemetry["cpu"]["logical_processors"]
         ram_available = telemetry["ram"]["available_mb"]
-        ram_free_percent = 1 - telemetry["ram"]["used_percent"]
-        gpu_vram_available = telemetry.get("vram_free_mb", "No NVIDIA GPU Detected"),
+        ram_free_percent = 100 - telemetry["ram"]["used_percent"]
+        gpu_vram_available = telemetry["gpu"].get("vram_free_mb", "No NVIDIA GPU Detected")
         gpu_name = telemetry["gpu"].get("name", "No NVIDIA GPU Detected")
         gpu_utilisation_percent = telemetry["gpu"].get("utilisation_percent", "No NVIDIA GPU Detected" )
         if config_data.get("registered") == 1 and node_data.get("tunnel_token"):
