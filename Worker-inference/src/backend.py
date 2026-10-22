@@ -207,11 +207,14 @@ async def register_node(request: Request):
     try:
         await db.prepare(
             """
-            INSERT INTO inference_nodes
-                (node_id, node_secret_hash, status, metadata_json, cpu, os, logical_processors,
-                physical_cores, gpu, vram, ram, total_storage, created_at, last_heartbeat, tunnel_id,
-                tunnel_status, tunnel_created_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            INSERT INTO inference_nodes (
+    node_id, node_secret_hash, status, metadata_json,
+    cpu, os, logical_processors, physical_cores,
+    gpu, vram, ram, total_storage,
+    created_at, last_heartbeat, tunnel_id,
+    tunnel_status, tunnel_created_at
+)
+VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             """
         ).bind(
             node_id,
