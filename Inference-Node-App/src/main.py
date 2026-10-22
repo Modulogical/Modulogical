@@ -17,6 +17,7 @@ import sys
 import logging
 from collections import deque
 import platform
+import string
 #hi
 
 app = FastAPI(title="Modulogical Inference Node")
@@ -27,6 +28,11 @@ UI_DIR = BASE_DIR / "ui"
 APP_LOGS = deque(maxlen=100)
 LOG_LOCK = threading.Lock()
 
+def generate_node_id() -> str:
+    alphabet = string.ascii_lowercase + string.digits
+    return "node-" + "".join(
+        secrets.choice(alphabet) for _ in range(20)
+    )
 
 def log_event(message: str, level: str = "info"):
     entry = {"time": datetime.now().astimezone().strftime("%H:%M:%S"), "level": level, "message": str(message)}
@@ -185,7 +191,7 @@ def node():
     gpu = gpu_list[0] if gpu_list else {}
 
     data = {
-        "node_id": f"node_{secrets.token_urlsafe(32)}",
+        "node_id": generate_node_id(),
         "node_secret": "",
         "modulogical_id": "",
         "hardware": {
