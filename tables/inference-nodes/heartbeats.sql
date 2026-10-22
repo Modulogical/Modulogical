@@ -10,5 +10,6 @@ CREATE TABLE heartbeats (
     gpu_vram_available TEXT NOT NULL,
     gpu_name TEXT NOT NULL,
     gpu_utilisation_percent TEXT NOT NULL,
-    timestamp TEXT NOT NULL
+    timestamp TEXT NOT NULL,
+    tunnel_hostname TEXT NOT NULL
 )
