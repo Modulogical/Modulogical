@@ -20,6 +20,7 @@ Default = asgi.entrypoint(app)
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
 CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
 NODE_INFERENCE_ORIGIN = "http://127.0.0.1:8001"
+NODE_HOSTNAME_SUFFIX = "node.modulogical.com"
 
 
 def utc_now() -> str:
@@ -92,8 +93,10 @@ async def cloudflare_api(env: Any, path: str, method: str = "GET", payload: dict
 
 
 async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
-    """Create one remotely managed tunnel and return (tunnel_id, one-time token)."""
+    """Create a tunnel, configure ingress, create its DNS record, and return credentials."""
     account_path = "accounts/{account_id}/cfd_tunnel"
+    hostname = f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
+    zone_id = get_secret(env, "CLOUDFLARE_ZONE_ID")
     result = await cloudflare_api(
         env,
         account_path,
@@ -126,7 +129,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
                 "config": {
                     "ingress": [
                         {
-                            "hostname": f"{node_id}.nodes.modulogical.com",
+                            "hostname": hostname,
                             "service": NODE_INFERENCE_ORIGIN,
                         },
                         {"service": "http_status:404"},
@@ -134,9 +137,43 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
                 }
             },
         )
+
+        # Point this node's hostname at its Cloudflare Tunnel. Reuse/update an
+        # existing CNAME so retries don't fail on a duplicate DNS record.
+        dns_payload = {
+            "type": "CNAME",
+            "name": hostname,
+            "content": f"{tunnel_id}.cfargotunnel.com",
+            "proxied": True,
+            "ttl": 1,
+            "comment": f"Modulogical node tunnel for {node_id}",
+        }
+        existing_records = await cloudflare_api(
+            env,
+            f"zones/{zone_id}/dns_records?type=CNAME&name={hostname}",
+            method="GET",
+        )
+        if isinstance(existing_records, list) and existing_records:
+            existing_record = existing_records[0]
+            record_id = existing_record.get("id") if isinstance(existing_record, dict) else None
+            if not record_id:
+                raise HTTPException(status_code=502, detail="Cloudflare returned an invalid existing DNS record")
+            await cloudflare_api(
+                env,
+                f"zones/{zone_id}/dns_records/{record_id}",
+                method="PUT",
+                payload=dns_payload,
+            )
+        else:
+            await cloudflare_api(
+                env,
+                f"zones/{zone_id}/dns_records",
+                method="POST",
+                payload=dns_payload,
+            )
         return tunnel_id, token_result
     except Exception:
-        # Best-effort cleanup so failed token retrieval does not leak an orphan tunnel.
+        # Best-effort cleanup so failed provisioning does not leave an orphan tunnel.
         try:
             await cloudflare_api(
                 env,
@@ -231,7 +268,7 @@ async def register_node(request: Request):
             str(ram.get("total_ram_gb") or 0),
             str(ssd.get("total_gb") or 0),
             created_at, created_at, tunnel_id, "pending", created_at,
-            f"{node_id}.nodes.modulogical.com"
+            f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
         ).run()
 
         stage = "insert_heartbeats"
@@ -248,7 +285,7 @@ async def register_node(request: Request):
             node_id, secret_hash, "pending", created_at,
             "not recorded","not recorded","not recorded",
             "not recorded","not recorded","not recorded",
-            "not recorded","not recorded", "not recorded"
+            "not recorded","not recorded", f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
         ).run()
 
     except Exception as exc:
@@ -268,6 +305,25 @@ async def register_node(request: Request):
             await delete_node_tunnel(env, tunnel_id)
         except Exception:
             pass
+        # The DNS record may have been created before a later D1 insert failed.
+        try:
+            zone_id = get_secret(env, "CLOUDFLARE_ZONE_ID")
+            hostname = f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
+            records = await cloudflare_api(
+                env,
+                f"zones/{zone_id}/dns_records?type=CNAME&name={hostname}",
+                method="GET",
+            )
+            if isinstance(records, list):
+                for record in records:
+                    if isinstance(record, dict) and record.get("id"):
+                        await cloudflare_api(
+                            env,
+                            f"zones/{zone_id}/dns_records/{record['id']}",
+                            method="DELETE",
+                        )
+        except Exception:
+            pass
 
         raise HTTPException(
             status_code=500,
@@ -283,8 +339,10 @@ async def register_node(request: Request):
         "created_at": created_at,
         "heartbeat_interval_seconds": 30,
         "message": "Node and tunnel registered. Save node_secret and tunnel_token locally; the tunnel token is returned only during registration.",
-        "inference_hostname": f"{node_id}.nodes.modulogical.com",
-        "note": "Tunnel ingress is configured for inference.modulogical.com. DNS ownership and Worker-to-node dispatch must still be configured separately.",
+        "inference_hostname": f"{node_id}.{NODE_HOSTNAME_SUFFIX}",
+        "dns_status": "created",
+        "dns_target": f"{tunnel_id}.cfargotunnel.com",
+        "note": "The node hostname has a proxied CNAME record pointing to its Cloudflare Tunnel. Allow time for DNS and tunnel configuration to propagate.",
     }
 
 
