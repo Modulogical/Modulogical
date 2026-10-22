@@ -19,7 +19,6 @@ Default = asgi.entrypoint(app)
 
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
 CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
-INFERENCE_HOSTNAME = "inference.modulogical.com"
 NODE_INFERENCE_ORIGIN = "http://127.0.0.1:8001"
 
 
@@ -127,7 +126,7 @@ async def create_node_tunnel(env: Any, node_id: str) -> tuple[str, str]:
                 "config": {
                     "ingress": [
                         {
-                            "hostname": INFERENCE_HOSTNAME,
+                            "hostname": f"{node_id}.nodes.modulogical.com",
                             "service": NODE_INFERENCE_ORIGIN,
                         },
                         {"service": "http_status:404"},
@@ -219,8 +218,8 @@ async def register_node(request: Request):
                 cpu, os, logical_processors, physical_cores,
                 gpu, vram, ram, total_storage,
                 created_at, last_heartbeat, tunnel_id,
-                tunnel_status, tunnel_created_at
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                tunnel_status, tunnel_created_at, tunnel_hostname
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """).bind(
             node_id, secret_hash, "pending", metadata_json,
             str(cpu.get("name") or "Unknown"),
@@ -231,7 +230,8 @@ async def register_node(request: Request):
             str(gpu.get("vram_total_mb") or 0),
             str(ram.get("total_ram_gb") or 0),
             str(ssd.get("total_gb") or 0),
-            created_at, created_at, tunnel_id, "pending", created_at
+            created_at, created_at, tunnel_id, "pending", created_at,
+            f"{node_id}.nodes.modulogical.com"
         ).run()
 
         stage = "insert_heartbeats"
@@ -241,14 +241,14 @@ async def register_node(request: Request):
                 node_id, node_secret_hash, status, last_heartbeat,
                 cpu_utilisation, logical_processors, ram_available,
                 ram_free_percent, gpu_vram_available, gpu_name,
-                gpu_utilisation_percent, timestamp
+                gpu_utilisation_percent, timestamp, tunnel_hostname
 
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """).bind(
             node_id, secret_hash, "pending", created_at,
             "not recorded","not recorded","not recorded",
             "not recorded","not recorded","not recorded",
-            "not recorded","not recorded",
+            "not recorded","not recorded", "not recorded"
         ).run()
 
     except Exception as exc:
@@ -283,7 +283,7 @@ async def register_node(request: Request):
         "created_at": created_at,
         "heartbeat_interval_seconds": 30,
         "message": "Node and tunnel registered. Save node_secret and tunnel_token locally; the tunnel token is returned only during registration.",
-        "inference_hostname": INFERENCE_HOSTNAME,
+        "inference_hostname": f"{node_id}.nodes.modulogical.com",
         "note": "Tunnel ingress is configured for inference.modulogical.com. DNS ownership and Worker-to-node dispatch must still be configured separately.",
     }
 

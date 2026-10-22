@@ -504,6 +504,7 @@ def register_node():
     node_data["tunnel_id"] = result["tunnel_id"]
     node_data["tunnel_token"] = result["tunnel_token"]
     node_data["tunnel_status"] = result.get("tunnel_status", "created")
+    node_data["tunnel_hostname"] = result.get("tunnel_hostname", "couldn't assign")
     with open(NODE_FILE, "w", encoding="utf-8") as handle:
         json.dump(node_data, handle, indent=4)
 
@@ -566,7 +567,7 @@ def send_heartbeat():
                     "gpu_vram_available" : gpu_vram_available,
                     "gpu_name" : gpu_name,
                     "gpu_utilisation_percent" : gpu_utilisation_percent,
-                    "timestamp": datetime.now(timezone.utc).isoformat()
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
                 response = requests.post(
                     url,
