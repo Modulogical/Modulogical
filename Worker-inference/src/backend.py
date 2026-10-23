@@ -258,7 +258,7 @@ async def register_node(request: Request):
         gpu = hardware.get("gpu") or {}
         ram = hardware.get("ram") or {}
         ssd = hardware.get("ssd") or {}
-        models = metadata_json.get("models") or []
+        models = metadata.get("models") or []
 
         await db.prepare("""
             INSERT INTO inference_nodes (
