@@ -12,7 +12,10 @@
       "binding": "DB",
       "database_name": "modulogical-atlas",
       "database_id": "60274c4e-362a-4dda-ac2c-222ddbbe9e1a"
-    }
+    },
+    {"binding": "INFERENCE_NODES",
+     "database_name": "inference-nodes",
+     "database_id" : "380f9d27-bb93-4904-9b2f-4480ef79542e"}
   ],
   "observability": {
     "logs": {

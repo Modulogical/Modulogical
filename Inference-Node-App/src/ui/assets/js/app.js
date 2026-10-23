@@ -44,7 +44,7 @@ async function refreshStatus() {
     setText('side-subtitle', data.ollama_online ? 'Local inference available' : 'Ollama unavailable');
     setText('ollama-status', data.ollama_online ? 'Online' : 'Offline');
     setText('model-count', `${(data.models || []).length} model${(data.models || []).length === 1 ? '' : 's'} detected`);
-    setText('cpu-cores', data.hardware?.cpu?.logical_cores);
+    setText('cpu-cores', data.hardware?.cpu?.logical_processors);
     setText('ram-total', formatBytesGB(data.hardware?.ram?.total_ram_gb));
     setText('node-id', data.node_id, 'Not available');
     setText('worker-url', data.worker_url);
