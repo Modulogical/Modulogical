@@ -435,8 +435,8 @@ async def heartbeat(request: Request):
             gpu_name,
             gpu_utilisation_percent,
             timestamp,
-            node_id,
             str(models),
+            node_id,
         ).run()
 
     except Exception as exc:
