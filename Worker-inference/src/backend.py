@@ -299,7 +299,7 @@ async def register_node(request: Request):
             "not recorded","not recorded","not recorded",
             "not recorded","not recorded","not recorded",
             "not recorded","not recorded", f"{node_id}.{NODE_HOSTNAME_SUFFIX}",
-            models,
+            str(models),
         ).run()
 
     except Exception as exc:
@@ -436,7 +436,7 @@ async def heartbeat(request: Request):
             gpu_utilisation_percent,
             timestamp,
             node_id,
-            models
+            str(models),
         ).run()
 
     except Exception as exc:
