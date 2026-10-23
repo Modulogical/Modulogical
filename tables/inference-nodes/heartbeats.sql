@@ -11,5 +11,6 @@ CREATE TABLE heartbeats (
     gpu_name TEXT NOT NULL,
     gpu_utilisation_percent TEXT NOT NULL,
     timestamp TEXT NOT NULL,
-    tunnel_hostname TEXT NOT NULL
+    tunnel_hostname TEXT NOT NULL,
+    models TEXT NOT NULL DEFAULT '[]'
 )

@@ -258,6 +258,7 @@ async def register_node(request: Request):
         gpu = hardware.get("gpu") or {}
         ram = hardware.get("ram") or {}
         ssd = hardware.get("ssd") or {}
+        models = metadata_json.get("models") or []
 
         await db.prepare("""
             INSERT INTO inference_nodes (
@@ -265,8 +266,9 @@ async def register_node(request: Request):
                 cpu, os, logical_processors, physical_cores,
                 gpu, vram, ram, total_storage,
                 created_at, last_heartbeat, tunnel_id,
-                tunnel_status, tunnel_created_at, tunnel_hostname
-            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                tunnel_status, tunnel_created_at, tunnel_hostname,
+                models
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """).bind(
             node_id, secret_hash, "pending", metadata_json,
             str(cpu.get("name") or "Unknown"),
@@ -278,7 +280,8 @@ async def register_node(request: Request):
             str(ram.get("total_ram_gb") or 0),
             str(ssd.get("total_gb") or 0),
             created_at, created_at, tunnel_id, "pending", created_at,
-            f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
+            f"{node_id}.{NODE_HOSTNAME_SUFFIX}",
+            str(models),
         ).run()
 
         stage = "insert_heartbeats"
@@ -288,14 +291,15 @@ async def register_node(request: Request):
                 node_id, node_secret_hash, status, last_heartbeat,
                 cpu_utilisation, logical_processors, ram_available,
                 ram_free_percent, gpu_vram_available, gpu_name,
-                gpu_utilisation_percent, timestamp, tunnel_hostname
+                gpu_utilisation_percent, timestamp, tunnel_hostname, models
 
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """).bind(
             node_id, secret_hash, "pending", created_at,
             "not recorded","not recorded","not recorded",
             "not recorded","not recorded","not recorded",
-            "not recorded","not recorded", f"{node_id}.{NODE_HOSTNAME_SUFFIX}"
+            "not recorded","not recorded", f"{node_id}.{NODE_HOSTNAME_SUFFIX}",
+            models,
         ).run()
 
     except Exception as exc:
@@ -395,6 +399,7 @@ async def heartbeat(request: Request):
     gpu_vram_available = metadata.get("gpu_vram_available")
     gpu_name = metadata.get("gpu_name")
     gpu_utilisation_percent = metadata.get("gpu_utilisation_percent")
+    models = metadata.get("models", "No models available")
    
     try:
         await db.prepare("""
@@ -416,7 +421,8 @@ async def heartbeat(request: Request):
                 gpu_vram_available = ?,
                 gpu_name = ?,
                 gpu_utilisation_percent = ?,
-                timestamp = ?
+                timestamp = ?,
+                models = ?
             WHERE node_id = ?
         """).bind(
             "online",
@@ -430,6 +436,7 @@ async def heartbeat(request: Request):
             gpu_utilisation_percent,
             timestamp,
             node_id,
+            models
         ).run()
 
     except Exception as exc:

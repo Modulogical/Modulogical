@@ -194,6 +194,7 @@ def node():
         "node_id": generate_node_id(),
         "node_secret": "",
         "modulogical_id": "",
+        "models": "",
         "hardware": {
             "cpu": {
                 "logical_processors": cpu.get("logical_processors"),
@@ -559,6 +560,7 @@ def send_heartbeat():
         gpu_vram_available = telemetry["gpu"].get("vram_free_mb", "No NVIDIA GPU Detected")
         gpu_name = telemetry["gpu"].get("name", "No NVIDIA GPU Detected")
         gpu_utilisation_percent = telemetry["gpu"].get("utilisation_percent", "No NVIDIA GPU Detected" )
+        models = node_data.get("models", "No models available")
         if config_data.get("registered") == 1 and node_data.get("tunnel_token"):
             start_cloudflared()
         if config_data.get("registered") == 1 and node_id and node_secret:
@@ -574,6 +576,7 @@ def send_heartbeat():
                     "gpu_name" : gpu_name,
                     "gpu_utilisation_percent" : gpu_utilisation_percent,
                     "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "models" : models
                 }
                 response = requests.post(
                     url,
@@ -694,6 +697,11 @@ def api_status():
         ollama_online = ollama_response.ok
         if ollama_online:
             model_names = [item.get("name", "Unknown model") for item in ollama_response.json().get("models", [])]
+            with open(NODE_FILE, "r") as get_node:
+                node_data=json.load(get_node)
+                node_data["models"] = model_names
+            with open(NODE_FILE, "w") as write_models:
+                json.dump(node_data, write_models, indent=4)
     except requests.RequestException:
         pass
 

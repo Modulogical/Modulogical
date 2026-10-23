@@ -16,7 +16,8 @@ CREATE TABLE inference_nodes (
     tunnel_id TEXT NOT NULL,
     tunnel_status TEXT NOT NULL DEFAULT 'pending',
     tunnel_created_at TEXT NOT NULL,
-    tunnel_hostname TEXT NOT NULL
+    tunnel_hostname TEXT NOT NULL,
+    models TEXT NOT NULL
 )
 
 #tunnel_id, tunnel_status, tunnel_created_at
