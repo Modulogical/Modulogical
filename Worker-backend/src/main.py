@@ -1,9 +1,12 @@
+import ast
 import hashlib
 import json
 import os
+import random
 import re
 import secrets
-from typing import Optional
+from datetime import datetime, timedelta, timezone
+from typing import Any, Iterable, Optional
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError
@@ -538,9 +541,191 @@ STICK TO YOUR PERSONALITY AND IDENTITY
 DO NOT PRETEND TO KNOW SOMETHING YOU DON'T ALREADY KNOW
 """
 
-async def run_inference(prompt: str, temperature: float, model: str):
+# ---------------------------------------- Load balancer ---------------------------------------- #
+# Picks which inference node serves a request: online -> has the model -> best hardware.
+# Reads the INFERENCE_NODE D1 binding (same database the inference worker writes to).
+
+# Stage 1: online if marked 'online' and heartbeated within this window
+# (3 missed 30s beats). Nodes that die without /disconnect stay 'online' in D1
+# forever, so the timestamp check is what actually catches them.
+ONLINE_WINDOW_SECONDS = 90
+
+# Stage 3 floor: model -> (min total VRAM in MB, min total RAM in GB).
+# PLACEHOLDER numbers: tune these to what your models actually need.
+MODEL_REQUIREMENTS: dict[str, tuple[int, float]] = {
+    "llama3.2": (4096, 8),
+    "gemma3": (4096, 8),
+    "gemma4:26b": (20480, 32),
+    "gpt-oss:20b": (16384, 24),
+}
+DEFAULT_REQUIREMENT = (0, 0)  # unknown model: no hardware floor
+
+# Stage 3 ranking weights (higher score = better node). Each term is 0..1.
+W_IDLE = 0.5         # GPU idleness right now
+W_VRAM_FREE = 0.3    # free VRAM, relative to the best candidate
+W_VRAM_TOTAL = 0.2   # total VRAM (capability), relative to the best candidate
+JITTER = 0.05        # random tie-break so near-equal nodes share bursts
+
+_QUERY = """
+SELECT n.node_id, n.status, n.last_heartbeat, n.tunnel_hostname,
+       n.vram, n.ram, n.models AS node_models,
+       h.models AS hb_models, h.gpu_vram_available, h.gpu_utilisation_percent
+FROM inference_nodes n
+LEFT JOIN heartbeats h ON h.node_id = n.node_id
+WHERE n.status = 'online'
+"""
+
+# ------------------------------- parsing ------------------------------- #
+
+_NUMBER = re.compile(r"-?\d+(?:\.\d+)?")
+
+
+def _norm(model: str) -> str:
+    m = str(model).strip().lower()
+    return m if ":" in m else f"{m}:latest"
+
+
+def _requirement(model: str) -> tuple[int, float]:
+    m = _norm(model)
+    return (
+        MODEL_REQUIREMENTS.get(m)
+        or MODEL_REQUIREMENTS.get(m.split(":")[0])
+        or DEFAULT_REQUIREMENT
+    )
+
+
+def _num(value: Any, default: float = 0.0) -> float:
+    """First number in a TEXT value; 'not recorded' etc. -> default."""
+    match = _NUMBER.search(str(value)) if value is not None else None
+    return float(match.group()) if match else default
+
+
+def _mb(value: Any, default: float = 0.0) -> float:
+    """Like _num, but converts values written as '12.5 GB' to MB."""
+    n = _num(value, default)
+    return n * 1024 if isinstance(value, str) and "gb" in value.lower() else n
+
+
+def _models(value: Any) -> list[str]:
+    """Parse a models column. Handles JSON, Python-repr (str(list)), or junk."""
+    if isinstance(value, (list, tuple)):
+        items: Any = value
+    elif isinstance(value, str):
+        items = None
+        for parse in (json.loads, ast.literal_eval):
+            try:
+                items = parse(value)
+                break
+            except (ValueError, SyntaxError):
+                continue
+    else:
+        items = None
+    if not isinstance(items, (list, tuple)):
+        return []
+    return [m for m in items if isinstance(m, str)]
+
+
+def _rows(result: Any) -> list:
+    rows = result.get("results") if isinstance(result, dict) else getattr(result, "results", result)
+    if hasattr(rows, "to_py"):  # JS proxy -> Python
+        rows = rows.to_py()
+    return list(rows or [])
+
+
+def _fresh(value: Any, cutoff: datetime) -> bool:
+    try:
+        t = datetime.fromisoformat(str(value))
+    except ValueError:
+        return False
+    if t.tzinfo is None:
+        t = t.replace(tzinfo=timezone.utc)
+    return t >= cutoff
+
+
+# -------------------------------- stages -------------------------------- #
+
+def stage_online(rows: list[dict], now: datetime | None = None) -> list[dict]:
+    cutoff = (now or datetime.now(timezone.utc)) - timedelta(seconds=ONLINE_WINDOW_SECONDS)
+    return [
+        r for r in rows
+        if r.get("status") == "online"
+        and r.get("tunnel_hostname")
+        and _fresh(r.get("last_heartbeat"), cutoff)
+    ]
+
+
+def stage_model(rows: list[dict], model: str) -> list[dict]:
+    wanted = _norm(model)
+    out = []
+    for r in rows:
+        installed = _models(r.get("hb_models")) or _models(r.get("node_models"))
+        match = {_norm(m): m for m in installed}.get(wanted)
+        if match:
+            out.append({**r, "model": match})  # node's own name for the model
+    return out
+
+
+def stage_hardware(rows: list[dict], model: str) -> list[dict]:
+    need_vram, need_ram = _requirement(model)
+    eligible = []
+    for r in rows:
+        vram_total = _mb(r.get("vram"))
+        if vram_total < need_vram or _num(r.get("ram")) < need_ram:
+            continue
+        util = min(max(_num(r.get("gpu_utilisation_percent"), 50.0), 0.0), 100.0)
+        eligible.append({
+            **r,
+            "_idle": 1.0 - util / 100.0,
+            "_vram_free": _mb(r.get("gpu_vram_available")),
+            "_vram_total": vram_total,
+        })
+    if not eligible:
+        return []
+
+    max_free = max(e["_vram_free"] for e in eligible) or 1.0
+    max_total = max(e["_vram_total"] for e in eligible) or 1.0
+    for e in eligible:
+        e["score"] = (
+            W_IDLE * e["_idle"]
+            + W_VRAM_FREE * e["_vram_free"] / max_free
+            + W_VRAM_TOTAL * e["_vram_total"] / max_total
+            + random.random() * JITTER
+        )
+    return sorted(eligible, key=lambda e: e["score"], reverse=True)
+
+
+# ------------------------------ public API ------------------------------ #
+
+async def ranked_nodes(db: Any, model: str, exclude: Iterable[str] = ()) -> list[dict]:
+    """All eligible nodes for `model`, best first: [{node_id, hostname, model, score}]."""
+    skip = set(exclude)
+    result = await db.prepare(_QUERY).all()
+    rows = [dict(r) for r in _rows(result) if r["node_id"] not in skip]
+
+    rows = stage_online(rows)
+    rows = stage_model(rows, model)
+    rows = stage_hardware(rows, model)
+
+    return [
+        {
+            "node_id": r["node_id"],
+            "hostname": r["tunnel_hostname"],
+            "model": r["model"],
+            "score": r["score"],
+        }
+        for r in rows
+    ]
+
+
+async def select_node(db: Any, model: str, exclude: Iterable[str] = ()) -> dict | None:
+    """Best node for `model`, or None if no node qualifies."""
+    nodes = await ranked_nodes(db, model, exclude)
+    return nodes[0] if nodes else None
+
+
+async def run_inference(prompt: str, temperature: float, model: str, url: str = INFERENCE_URL):
     result = await fetch_json(
-        INFERENCE_URL,
+        url,
         {"prompt": prompt, "model": model, "temperature": float(temperature), "stream": False},
     )
     response = result.get("response") or result.get("text") or result.get("output")
@@ -549,7 +734,7 @@ async def run_inference(prompt: str, temperature: float, model: str):
     return str(response)
 
 
-async def stream_inference(prompt: str, temperature: float, model: str):
+async def stream_inference(prompt: str, temperature: float, model: str, url: str = INFERENCE_URL):
     """Yield text from the PC inference NDJSON stream as it arrives."""
     payload = {
         "prompt": prompt,
@@ -567,8 +752,8 @@ async def stream_inference(prompt: str, temperature: float, model: str):
         dict_converter=Object.fromEntries,
     )
 
-    print(f"[Atlas] streaming inference request -> {INFERENCE_URL}")
-    response = await fetch(INFERENCE_URL, options)
+    print(f"[Atlas] streaming inference request -> {url}")
+    response = await fetch(url, options)
     print(f"[Atlas] streaming inference response <- {response.status}")
 
     if not response.ok:
@@ -651,21 +836,37 @@ async def chat(details: ChatDetails, request: Request):
             502,
         )
 
+    # Load balancer: online -> has the model -> best hardware. Needs the
+    # INFERENCE_NODE D1 binding (same database the inference worker uses).
+    try:
+        candidates = await ranked_nodes(env_from(request).INFERENCE_NODE, model)
+    except Exception as exc:
+        print(f"[Atlas] LOAD BALANCER ERROR: {type(exc).__name__}: {exc}")
+        return json_response({"error": "Could not look up inference nodes."}, 502)
+    if not candidates:
+        return json_response({"error": "No inference node is currently available for this model."}, 503)
+
     async def generate_stream():
         chunks = []
 
-        try:
-            async for piece in stream_inference(prompt, temperature, model):
-                piece = clean_ansi(piece)
-                if piece:
-                    chunks.append(piece)
-                    yield piece
-        except Exception as exc:
-            print(f"[Atlas] STREAM ERROR: {type(exc).__name__}: {exc}")
+        # Try the best node first; on failure before any text was sent, fall
+        # through to the next one (max 3). Once text has streamed we can't switch.
+        for node in candidates[:3]:
+            url = f"https://{node['hostname']}/generate"
+            try:
+                async for piece in stream_inference(prompt, temperature, node["model"], url):
+                    piece = clean_ansi(piece)
+                    if piece:
+                        chunks.append(piece)
+                        yield piece
+                break
+            except Exception as exc:
+                print(f"[Atlas] STREAM ERROR via {node['node_id']}: {type(exc).__name__}: {exc}")
+                if chunks:
+                    break  # partial reply already delivered; keep it
+        else:
             # Keep internal exception details out of the client response.
-            # The client receives the text already generated, if any.
-            if not chunks:
-                yield "Could not reach inference server."
+            yield "Could not reach inference server."
             return
 
         response_text = "".join(chunks)
