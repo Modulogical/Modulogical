@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import StreamingResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -658,7 +658,19 @@ def generate(details: GenerateRequest):
 # ---------------------------------------- Desktop UI and local status API ---------------------------------------- #
 
 @app.get("/")
-def desktop_home():
+def desktop_home(request: Request):
+    host = request.headers.get("host", "").split(":", 1)[0].lower()
+    if host not in {"127.0.0.1", "localhost"}:
+        return {
+            "app": "Modulogical Inference Node",
+            "message": "JSON inference API",
+            "endpoints": {
+                "health": "/health",
+                "status": "/api/status",
+                "generate": {"method": "POST", "path": "/generate"},
+            },
+        }
+
     index_file = UI_DIR / "index.html"
     if not index_file.exists():
         return {"error": "UI assets were not found", "expected": str(index_file)}
