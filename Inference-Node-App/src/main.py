@@ -20,7 +20,7 @@ import platform
 import string
 #hi
 
-app = FastAPI(title="Modulogical Inference Node")
+app = FastAPI(title="Modulogical Inference Node", docs_url=None, redoc_url=None)
 
 # Keep the Python backend in this file; the desktop shell is served from ./ui.
 BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
@@ -711,6 +711,7 @@ def api_status():
         "models": model_names,
         "config": config_data,
         "worker_url": WORKER_URL,
+        "logical_processors": node_data["cpu"].get("logical_processors")
     }
 
 
