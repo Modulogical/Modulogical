@@ -550,7 +550,8 @@ DO NOT PRETEND TO KNOW SOMETHING YOU DON'T ALREADY KNOW
 # forever, so the timestamp check is what actually catches them.
 ONLINE_WINDOW_SECONDS = 90
 
-# Stage 3 floor: model -> (min total VRAM in MB, min total RAM in GB).
+# Stage 3 preferred minimum (a ranking tier, not a filter):
+# model -> (min total VRAM in MB, min total RAM in GB).
 # PLACEHOLDER numbers: tune these to what your models actually need.
 MODEL_REQUIREMENTS: dict[str, tuple[int, float]] = {
     "llama3.2": (4096, 8),
@@ -565,6 +566,7 @@ W_IDLE = 0.5         # GPU idleness right now
 W_VRAM_FREE = 0.3    # free VRAM, relative to the best candidate
 W_VRAM_TOTAL = 0.2   # total VRAM (capability), relative to the best candidate
 JITTER = 0.05        # random tie-break so near-equal nodes share bursts
+TIER_BONUS = 2.0     # meeting the hardware floor always beats not meeting it
 
 _QUERY = """
 SELECT n.node_id, n.status, n.last_heartbeat, n.tunnel_hostname,
@@ -666,32 +668,35 @@ def stage_model(rows: list[dict], model: str) -> list[dict]:
 
 
 def stage_hardware(rows: list[dict], model: str) -> list[dict]:
+    """Rank best-first. The hardware floor is a tier, not a filter: nodes that
+    meet it always outrank nodes that don't, but under-spec nodes stay in the
+    list as a last resort, so a lone weak node can still serve."""
     need_vram, need_ram = _requirement(model)
-    eligible = []
+    ranked = []
     for r in rows:
         vram_total = _mb(r.get("vram"))
-        if vram_total < need_vram or _num(r.get("ram")) < need_ram:
-            continue
         util = min(max(_num(r.get("gpu_utilisation_percent"), 50.0), 0.0), 100.0)
-        eligible.append({
+        ranked.append({
             **r,
+            "meets_floor": vram_total >= need_vram and _num(r.get("ram")) >= need_ram,
             "_idle": 1.0 - util / 100.0,
             "_vram_free": _mb(r.get("gpu_vram_available")),
             "_vram_total": vram_total,
         })
-    if not eligible:
+    if not ranked:
         return []
 
-    max_free = max(e["_vram_free"] for e in eligible) or 1.0
-    max_total = max(e["_vram_total"] for e in eligible) or 1.0
-    for e in eligible:
+    max_free = max(e["_vram_free"] for e in ranked) or 1.0
+    max_total = max(e["_vram_total"] for e in ranked) or 1.0
+    for e in ranked:
         e["score"] = (
-            W_IDLE * e["_idle"]
+            (TIER_BONUS if e["meets_floor"] else 0.0)
+            + W_IDLE * e["_idle"]
             + W_VRAM_FREE * e["_vram_free"] / max_free
             + W_VRAM_TOTAL * e["_vram_total"] / max_total
             + random.random() * JITTER
         )
-    return sorted(eligible, key=lambda e: e["score"], reverse=True)
+    return sorted(ranked, key=lambda e: e["score"], reverse=True)
 
 
 # ------------------------------ public API ------------------------------ #
@@ -712,6 +717,7 @@ async def ranked_nodes(db: Any, model: str, exclude: Iterable[str] = ()) -> list
             "hostname": r["tunnel_hostname"],
             "model": r["model"],
             "score": r["score"],
+            "meets_floor": r["meets_floor"],
         }
         for r in rows
     ]
