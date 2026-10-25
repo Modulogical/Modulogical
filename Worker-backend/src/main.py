@@ -729,6 +729,41 @@ async def select_node(db: Any, model: str, exclude: Iterable[str] = ()) -> dict 
     return nodes[0] if nodes else None
 
 
+# --- Online model list (feeds the chat's model picker, and "auto") ---
+_ONLINE_MODELS_QUERY = """
+SELECT m.model AS model, n.node_id AS node_id, n.status AS status,
+       n.last_heartbeat AS last_heartbeat, n.tunnel_hostname AS tunnel_hostname
+FROM models m
+JOIN inference_nodes n ON n.node_id = m.node_id
+WHERE n.status = 'online'
+"""
+_MODEL_NAME = re.compile(r"[a-z0-9][a-z0-9._/:+-]{0,99}")  # same rule the heartbeat enforces
+
+# "auto" takes the first of these that is online, else the model with most nodes.
+AUTO_PREFERENCE = ["gemma3:latest", "llama3.2:latest"]
+
+
+async def online_models(db: Any) -> dict[str, int]:
+    """Models served by at least one online node: {model name: number of nodes}.
+    Uses the same online test as the balancer, so the picker never offers a
+    model the balancer would refuse. Each model appears once."""
+    result = await db.prepare(_ONLINE_MODELS_QUERY).all()
+    rows = stage_online([dict(r) for r in _rows(result)])
+    nodes: dict[str, set] = {}
+    for r in rows:
+        name = str(r["model"]).strip().lower()
+        if _MODEL_NAME.fullmatch(name):
+            nodes.setdefault(name, set()).add(r["node_id"])
+    return {name: len(ids) for name, ids in nodes.items()}
+
+
+def pick_auto(counts: dict[str, int]) -> str | None:
+    for name in AUTO_PREFERENCE:
+        if name in counts:
+            return name
+    return sorted(counts, key=lambda n: (-counts[n], n))[0] if counts else None
+
+
 async def run_inference(prompt: str, temperature: float, model: str, url: str = INFERENCE_URL):
     result = await fetch_json(
         url,
@@ -831,6 +866,14 @@ async def chat(details: ChatDetails, request: Request):
         return json_response({"response": "Invalid Token, you must log in first"}, 401)
 
     model = Models.get(details.model, details.model) if details.model else "LlaMa3.2"
+    if str(model).strip().lower() == "auto":  # frontend "Auto": pick from what is online now
+        try:
+            model = pick_auto(await online_models(env_from(request).INFERENCE_NODE))
+        except Exception as exc:
+            print(f"[Atlas] AUTO MODEL ERROR: {type(exc).__name__}: {exc}")
+            return json_response({"error": "Could not look up inference nodes."}, 502)
+        if not model:
+            return json_response({"error": "No inference node is currently available."}, 503)
     temperature = details.temperature if details.temperature is not None else 0.2
 
     try:
@@ -919,6 +962,18 @@ async def modules(details: ModuleDetails, request: Request):
     if details.Module not in MODULE_DATABASE:
         return json_response({"output": "Module not found"}, 404)
     return json_response({"output": "Module execution is not enabled in this Worker build."}, 501)
+
+@app.get("/models/online")
+async def get_online_models(request: Request, token: Optional[str] = None):
+    account = await authenticate(request, token)
+    if not account:
+        return json_response({"error": "Unauthorized"}, 401)
+    try:
+        counts = await online_models(env_from(request).INFERENCE_NODE)
+    except Exception as exc:
+        print(f"[Atlas] ONLINE MODELS ERROR: {type(exc).__name__}: {exc}")
+        return json_response({"error": "Could not look up online models."}, 502)
+    return json_response({"models": [{"name": name, "nodes": counts[name]} for name in sorted(counts)]})
 
 @app.get("/")
 async def root():
