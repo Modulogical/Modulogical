@@ -657,7 +657,7 @@ def generate(details: GenerateRequest):
             if line:
                 # Preserve Ollama's JSON-lines stream.
                 yield line + b"\n"
-    print("Generating")
+    log_event(f"Inference Received. Model: {details.model}")
 
     return StreamingResponse(stream(), media_type="application/x-ndjson")
 
