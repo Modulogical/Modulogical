@@ -35,7 +35,8 @@ jobs:
       - name: Build desktop executable
         working-directory: Inference-Node-App
         run: |
-          python -m PyInstaller --clean --noconfirm --onefile --windowed --name ModuNode --add-data "src\ui;ui" src\main.py
+          python -m PyInstaller --clean --noconfirm --onefile --windowed --name ModuNode --icon "src\ui\assets\img\icon.ico" --add-data "src\ui;ui" src\main.py
+
 
       - name: Copy executable to releases
         shell: pwsh
