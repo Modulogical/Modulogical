@@ -194,7 +194,7 @@ def node():
         "node_id": generate_node_id(),
         "node_secret": "",
         "modulogical_id": "",
-        "models": "",
+        "models": api_status()["models"],
         "hardware": {
             "cpu": {
                 "logical_processors": cpu.get("logical_processors"),

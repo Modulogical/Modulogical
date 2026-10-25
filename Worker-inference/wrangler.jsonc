@@ -9,5 +9,8 @@
     "binding": "INFERENCE_NODE",
     "database_name": "inference-nodes",
     "database_id": "380f9d27-bb93-4904-9b2f-4480ef79542e"
-  }]
+  }],
+  "triggers": {
+     "crons": ["*/5 * * * *"] 
+    }
 }
