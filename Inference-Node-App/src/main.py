@@ -236,7 +236,8 @@ def get_nvidia_gpus():
             capture_output=True,
             text=True,
             timeout=5,
-            check=True
+            check=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
         )
 
         gpus = []
@@ -272,7 +273,8 @@ def grab_cpu():
         capture_output=True,
         text=True,
         timeout=10,
-        check=True
+        check=True,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
     )
 
         print(f"Exact CPU model: {result.stdout.strip()}")
@@ -328,6 +330,7 @@ def get_live_telemetry():
             text=True,
             timeout=3,
             check=True,
+            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         )
 
         for line in result.stdout.strip().splitlines():
