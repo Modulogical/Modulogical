@@ -360,6 +360,58 @@ async def register_node(request: Request):
     }
 
 
+# ---------------------------- shared model table ---------------------------- #
+# models(node_id, model): one row per model each node currently has installed.
+# The chat worker reads this to list models; it must join inference_nodes for
+# liveness, because a node that crashes never gets to remove its own rows.
+
+MAX_MODELS_PER_NODE = 40  # D1 allows 100 bound params per statement; we use <= 2n+1
+
+
+def model_names(raw: Any) -> list[str]:
+    """Clean a heartbeat's model list: lowercase, ':latest' default, de-duplicated."""
+    if isinstance(raw, str):
+        try:
+            raw = json.loads(raw)
+        except ValueError:
+            return []  # e.g. "No models available"
+    if not isinstance(raw, list):
+        return []
+    names: list[str] = []
+    for item in raw:
+        if isinstance(item, dict):  # tolerate Ollama-style {"name": ...} entries
+            item = item.get("name") or item.get("model")
+        if not isinstance(item, str):
+            continue
+        name = item.strip().lower()
+        if not name or len(name) > 100 or any(c.isspace() for c in name):
+            continue
+        if ":" not in name:
+            name += ":latest"
+        if name not in names:
+            names.append(name)
+        if len(names) >= MAX_MODELS_PER_NODE:
+            break
+    return names
+
+
+async def sync_node_models(db: Any, node_id: str, names: list[str]) -> None:
+    """Make this node's rows in `models` equal `names`. Inserts first, then
+    removes stale rows, so the node never briefly has no models."""
+    if not names:
+        await db.prepare("DELETE FROM models WHERE node_id = ?").bind(node_id).run()
+        return
+    pairs = ", ".join("(?, ?)" for _ in names)
+    params = [value for name in names for value in (node_id, name)]
+    await db.prepare(
+        f"INSERT OR IGNORE INTO models (node_id, model) VALUES {pairs}"
+    ).bind(*params).run()
+    keep = ", ".join("?" for _ in names)
+    await db.prepare(
+        f"DELETE FROM models WHERE node_id = ? AND model NOT IN ({keep})"
+    ).bind(node_id, *names).run()
+
+
 @app.post("/v1/nodes/heartbeat")
 async def heartbeat(request: Request):
     try:
@@ -445,6 +497,13 @@ async def heartbeat(request: Request):
             status_code=500,
             detail="Could not update heartbeat status in D1"
         )
+
+    # Publish this node's models to the shared table. A failure here is logged
+    # but must not fail the heartbeat, which is what keeps the node marked online.
+    try:
+        await sync_node_models(db, node_id, model_names(models))
+    except Exception as exc:
+        print(f"Model table sync failed for {node_id}: {type(exc).__name__}: {exc}")
 
 
 
