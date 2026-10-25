@@ -69,15 +69,43 @@ const Modulogical = (() => {
     return getTheme();
   }
 
-  // Model registry — IDs are exactly what the backend already expects.
-  // "auto" has no backend ID: it is sent as the literal string "auto" so the
-  // backend can implement real automatic routing. Until it does, treat any
-  // non-auto response model as the definitive "actually used" model.
-  const MODELS = [
-    { key: "auto",      id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Auto",      blurb: "Best model for this request",  description: "Automatically selecting the best model" },
-    { key: "efficient", id: "YCaXXcxd9qg_TbaC0WXHpbMsBMgwZOaIX9pIjeP-W-E", label: "Efficient", blurb: "Fast everyday responses",       description: "Fast everyday responses" },
-    { key: "lightweight",     id: "nFOin8rHgAul9HWygNv4semqq9MNx71NEBpMMNrVYXY", label: "Lightweight",     blurb: "General reasoning",              description: "General reasoning" }
-  ];
+  // Model registry. "Auto" is always offered and is sent as the literal string
+  // "auto"; the backend resolves it to a model that is online right now. Every
+  // other entry comes from GET /models/online, which lists the models currently
+  // served by at least one online node, once each. The list is updated in place,
+  // so existing references to Modulogical.MODELS stay valid. Entry ids are the
+  // model names the backend routes on.
+  const AUTO_MODEL = { key: "auto", id: "auto", label: "Auto", blurb: "Best model for this request", description: "Automatically selecting the best model" };
+  const MODEL_BLURBS = { "gemma3": "Fast everyday responses", "llama3.2": "General reasoning" };
+  const MODELS = [AUTO_MODEL];
+
+  function modelLabel(name){ return String(name).replace(/:latest$/, ""); }
+  function modelBlurb(name){ return MODEL_BLURBS[String(name).split(":")[0]] || "Available now"; }
+
+  // Re-reads the online model list. Resolves true if the list was refreshed,
+  // false if it could not be (the last known list is kept in that case).
+  async function refreshModels(){
+    const token = getToken();
+    if (!token) return false;
+    try {
+      const res = await fetch(API + "/models/online?token=" + encodeURIComponent(token), { headers: headers(false) });
+      if (!res.ok) return false;
+      const data = await res.json();
+      const seen = new Set();
+      const online = [];
+      for (const item of (data && data.models) || []) {
+        const name = item && typeof item.name === "string" ? item.name.trim().toLowerCase() : "";
+        if (!name || seen.has(name)) continue;
+        seen.add(name);
+        online.push({ key: name, id: name, label: modelLabel(name), blurb: modelBlurb(name), description: modelBlurb(name) });
+      }
+      MODELS.splice(0, MODELS.length, AUTO_MODEL, ...online);
+      return true;
+    } catch (e) {
+      console.error("Could not load online models:", e);
+      return false;
+    }
+  }
 
   function modelByKey(key){ return MODELS.find(m => m.key === key); }
   function modelById(id){ return MODELS.find(m => m.id === id); }
@@ -497,7 +525,7 @@ const Modulogical = (() => {
 
   return {
     API, TOKEN_KEY, MODEL_KEY, MODULE_KEY, NAME_KEY, USERNAME_KEY, THEME_KEY, DEFAULT_THEME, THEMES,
-    MODELS, modelByKey, modelById,
+    MODELS, modelByKey, modelById, modelLabel, refreshModels,
     getToken, setToken, clearSession,
     getModelKey, setModelKey, themeByKey, getTheme, applyTheme, loadTheme,
     headers, requireAuth, logout, goToEntry,

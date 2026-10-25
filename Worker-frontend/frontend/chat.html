@@ -347,6 +347,7 @@
   .model-option.selected .dot{ background: var(--accent); }
   .model-option .name{ font-size: .84rem; font-weight: 560; color: var(--text-1); }
   .model-option .desc{ font-size: .74rem; color: var(--text-2); }
+  #model-popover{ max-height: 320px; overflow-y: auto; }
 
   .temp-popover{ width: 220px; padding: 14px 14px 10px; }
   .temp-popover-row{ display: flex; justify-content: space-between; font-size: .78rem; color: var(--text-2); margin-bottom: 8px; }
@@ -898,22 +899,50 @@
   const modelPillLabel = document.getElementById("model-pill-label");
   const modelActualHint = document.getElementById("model-actual-hint");
 
+  // Model names come from nodes, so never put them into markup unescaped.
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+
   function renderModelPopover(){
-    const current = Modulogical.getModelKey();
+    const current = (Modulogical.modelByKey(Modulogical.getModelKey()) || Modulogical.modelByKey("auto")).key;
     modelPopover.innerHTML = Modulogical.MODELS.map(m => `
-      <div class="model-option${m.key === current ? " selected" : ""}" data-key="${m.key}" role="option">
-        <span class="dot"></span><div><div class="name">${m.label}</div><div class="desc">${m.blurb}</div></div>
+      <div class="model-option${m.key === current ? " selected" : ""}" data-key="${escapeHtml(m.key)}" role="option">
+        <span class="dot"></span><div><div class="name">${escapeHtml(m.label)}</div><div class="desc">${escapeHtml(m.blurb)}</div></div>
       </div>`).join("");
     modelPopover.querySelectorAll(".model-option").forEach(opt => opt.addEventListener("click", () => {
       Modulogical.setModelKey(opt.getAttribute("data-key")); applySelectedModel(); closePopovers();
     }));
   }
 
+  let modelsChecked = false;  // true once the online list has loaded at least once
+
   function applySelectedModel(){
-    const model = Modulogical.modelByKey(Modulogical.getModelKey()) || Modulogical.modelByKey("auto");
-    modelPillLabel.textContent = model.label;
-    modelActualHint.textContent = model.key === "auto" ? "Auto — automatically selecting the best model" : model.label + " — " + model.description;
+    const key = Modulogical.getModelKey();
+    const model = Modulogical.modelByKey(key);
+    if (model) {
+      modelPillLabel.textContent = model.label;
+      modelActualHint.textContent = model.key === "auto" ? "Auto — automatically selecting the best model" : model.label + " — " + model.description;
+    } else if (!modelsChecked) {
+      modelPillLabel.textContent = Modulogical.modelLabel(key);
+      modelActualHint.textContent = "Checking availability…";
+    } else {
+      // The saved model is not online right now; messages go out as Auto until it is.
+      modelPillLabel.textContent = "Auto";
+      modelActualHint.textContent = "Selected model is offline — using Auto";
+    }
   }
+
+  // Keep the picker in step with which models are online.
+  function syncModels(){
+    return Modulogical.refreshModels().then(ok => {
+      if (ok) modelsChecked = true;
+      applySelectedModel();
+      if (modelPopover.classList.contains("open")) renderModelPopover();
+    });
+  }
+  const modelsReady = syncModels();
+  setInterval(() => { if (!document.hidden) syncModels(); }, 30000);
 
   const tempPill = document.getElementById("temp-pill");
   const tempPopover = document.getElementById("temp-popover");
@@ -923,7 +952,7 @@
   }
   modelPill.addEventListener("click", e => {
     e.stopPropagation(); const willOpen = !modelPopover.classList.contains("open"); closePopovers();
-    if (willOpen) { renderModelPopover(); modelPopover.classList.add("open"); modelPill.setAttribute("aria-expanded", "true"); }
+    if (willOpen) { renderModelPopover(); modelPopover.classList.add("open"); modelPill.setAttribute("aria-expanded", "true"); syncModels(); }
   });
   tempPill.addEventListener("click", e => {
     e.stopPropagation(); const willOpen = !tempPopover.classList.contains("open"); closePopovers();
@@ -953,6 +982,7 @@
     addUserMessage(shown);
     const msg = addAssistantMessage(opts && opts.topic ? opts.topic : sent);
 
+    await modelsReady;  // so the first message after page load uses the real selection
     const modelKey = Modulogical.getModelKey();
     const model = (Modulogical.modelByKey(modelKey) || Modulogical.modelByKey("auto")).id;
     let response;
@@ -970,10 +1000,25 @@
       busy = false; updateSendState(); return;
     }
 
+    if (!response.ok) {
+      let message = "Something went wrong. Try again in a moment.";
+      try {
+        const err = await response.json();
+        if (err && typeof err.error === "string") message = err.error;
+        else if (err && typeof err.response === "string") message = err.response;
+      } catch (_) {}
+      msg.text = message;
+      msg.textEl.innerHTML = DOMPurify.sanitize(marked.parse(message));
+      await msg.loader.finish();
+      busy = false; updateSendState();
+      syncModels();  // the online list may be out of date
+      return;
+    }
+
     const usedModelId = response.headers.get("X-Atlas-Model");
     if (usedModelId) {
       const used = Modulogical.modelById(usedModelId);
-      msg.tagEl.textContent = used ? "· " + used.label : "";
+      msg.tagEl.textContent = "· " + (used ? used.label : Modulogical.modelLabel(usedModelId));
     }
 
     const reader = response.body.getReader();

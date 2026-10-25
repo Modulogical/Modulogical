@@ -366,6 +366,9 @@ async def register_node(request: Request):
 # liveness, because a node that crashes never gets to remove its own rows.
 
 MAX_MODELS_PER_NODE = 40  # D1 allows 100 bound params per statement; we use <= 2n+1
+# Names end up in the chat UI and in an HTTP header, so allow only what Ollama
+# model names use (letters, digits, . _ / : + -). This rules out markup.
+MODEL_NAME_RE = re.compile(r"[a-z0-9][a-z0-9._/:+-]{0,99}")
 
 
 def model_names(raw: Any) -> list[str]:
@@ -384,7 +387,7 @@ def model_names(raw: Any) -> list[str]:
         if not isinstance(item, str):
             continue
         name = item.strip().lower()
-        if not name or len(name) > 100 or any(c.isspace() for c in name):
+        if not MODEL_NAME_RE.fullmatch(name):
             continue
         if ":" not in name:
             name += ":latest"
