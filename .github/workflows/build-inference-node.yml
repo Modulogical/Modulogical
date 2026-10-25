@@ -35,16 +35,16 @@ jobs:
       - name: Build desktop executable
         working-directory: Inference-Node-App
         run: |
-          python -m PyInstaller --clean --noconfirm --onefile --windowed --name ModulogicalInferenceNode --add-data "src\ui;ui" src\main.py
+          python -m PyInstaller --clean --noconfirm --onefile --windowed --name ModuNode --add-data "src\ui;ui" src\main.py
 
       - name: Copy executable to releases
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force -Path releases | Out-Null
-          Copy-Item "Inference-Node-App/dist/ModulogicalInferenceNode.exe" "releases/ModulogicalInferenceNode.exe" -Force
+          Copy-Item "Inference-Node-App/dist/ModuNode.exe" "releases/ModuNode.exe" -Force
 
       - name: Commit executable to repository
         uses: stefanzweifel/git-auto-commit-action@v6
         with:
-          commit_message: "Build updated Modulogical Inference Node"
-          file_pattern: "releases/ModulogicalInferenceNode.exe"
+          commit_message: "ModuNode"
+          file_pattern: "releases/ModuNode.exe"
