@@ -4,7 +4,7 @@ import hashlib
 import json
 import re
 import secrets
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -15,7 +15,7 @@ app = FastAPI(
     version="0.4.1",
     description="Node registration, Cloudflare Tunnel provisioning, and lifecycle API.",
 )
-Default = asgi.entrypoint(app)
+_AppEntrypoint = asgi.entrypoint(app)  # HTTP handling; `Default` (below) adds the cron job
 
 NODE_ID_PATTERN = re.compile(r"^[a-zA-Z0-9_-]{8,80}$")
 CLOUDFLARE_API = "https://api.cloudflare.com/client/v4"
@@ -415,6 +415,61 @@ async def sync_node_models(db: Any, node_id: str, names: list[str]) -> None:
     ).bind(node_id, *names).run()
 
 
+# ------------------------------- stale-node sweep ------------------------------ #
+# A node that crashes, loses power or loses network never calls /disconnect, so
+# its status would stay 'online' forever. A cron trigger runs this sweep.
+# (The balancer and model picker already ignore nodes with an old heartbeat;
+# this keeps the database itself accurate.)
+
+STALE_AFTER_SECONDS = 120  # 4 missed 30s heartbeats
+
+
+async def mark_stale_nodes_offline(db: Any) -> list[str]:
+    """Mark online nodes with an old (or unreadable) heartbeat as offline and
+    remove their rows from the shared models table. last_heartbeat is left
+    alone, so it still records when the node was really last seen."""
+    cutoff = datetime.now(timezone.utc) - timedelta(seconds=STALE_AFTER_SECONDS)
+    result = await db.prepare(
+        "SELECT node_id, last_heartbeat FROM inference_nodes WHERE status = 'online'"
+    ).all()
+    rows = result.get("results") if isinstance(result, dict) else getattr(result, "results", result)
+    if hasattr(rows, "to_py"):
+        rows = rows.to_py()
+
+    stale: list[str] = []
+    for row in rows or []:
+        try:
+            seen = datetime.fromisoformat(str(row["last_heartbeat"]))
+            if seen.tzinfo is None:
+                seen = seen.replace(tzinfo=timezone.utc)
+            is_stale = seen < cutoff
+        except (ValueError, TypeError):
+            is_stale = True  # unreadable timestamp: can't be trusted as online
+        if is_stale:
+            stale.append(row["node_id"])
+
+    for i in range(0, len(stale), 80):  # stay well under D1's 100 bound parameters
+        chunk = stale[i:i + 80]
+        marks = ", ".join("?" for _ in chunk)
+        await db.prepare(f"UPDATE inference_nodes SET status = 'offline' WHERE node_id IN ({marks})").bind(*chunk).run()
+        await db.prepare(f"UPDATE heartbeats SET status = 'offline' WHERE node_id IN ({marks})").bind(*chunk).run()
+        await db.prepare(f"DELETE FROM models WHERE node_id IN ({marks})").bind(*chunk).run()
+    return stale
+
+
+class Default(_AppEntrypoint):
+    """Same HTTP behaviour as before, plus the Cron Trigger handler."""
+
+    async def scheduled(self, controller, env, ctx):
+        try:
+            stale = await mark_stale_nodes_offline(get_db(env))
+        except Exception as exc:
+            print(f"Cron stale-node sweep failed: {type(exc).__name__}: {exc}")
+            raise  # shows up as a failed run under the Worker's Cron Events
+        if stale:
+            print(f"Cron: marked {len(stale)} stale node(s) offline: {stale}")
+
+
 @app.post("/v1/nodes/heartbeat")
 async def heartbeat(request: Request):
     try:
@@ -547,4 +602,8 @@ async def disconnect_node(node_id: str, request: Request):
         await db.prepare("UPDATE heartbeats SET status = ?, last_heartbeat = ? WHERE node_id = ?").bind("offline", timestamp, node_id).run()
     except Exception:
         raise HTTPException(status_code=500, detail="Could not mark node offline")
+    try:  # a disconnected node no longer offers its models
+        await db.prepare("DELETE FROM models WHERE node_id = ?").bind(node_id).run()
+    except Exception as exc:
+        print(f"Model table cleanup failed for {node_id}: {type(exc).__name__}: {exc}")
     return {"ok": True, "node_id": node_id, "status": "offline", "last_heartbeat": timestamp}
